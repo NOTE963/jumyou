@@ -533,13 +533,6 @@
     opacity: 0.35;
     text-decoration: line-through;
   }
-  .rank-item .rank-change {
-    font-size: 0.6rem;
-    margin-left: 2px;
-  }
-  .rank-item .rank-change.up { color: #2ecc71; }
-  .rank-item .rank-change.down { color: #ff6b6b; }
-  .rank-item .rank-change.same { color: #bbb; }
   .rank-num {
     font-weight: 800;
     width: 32px;
@@ -567,7 +560,7 @@
     margin-left: auto;
     color: #ff6b6b;
     font-weight: 800;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
   }
   .rank-empty {
     color: #ccc;
@@ -696,7 +689,7 @@
 
 <script>
 // =============================================
-//  ✅ Firebase設定（あなたのプロジェクト）
+//  Firebase設定
 // =============================================
 const firebaseConfig = {
   apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
@@ -709,7 +702,6 @@ const firebaseConfig = {
   measurementId: "G-FBZF2NHEC9"
 };
 
-// Firebase初期化
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -745,9 +737,6 @@ function saveUid(uid) {
   setCookie('petUserUid', uid);
 }
 
-// =============================================
-//  自動ログイン
-// =============================================
 function autoLogin() {
   const savedUid = getSavedUid();
   if (savedUid) {
@@ -784,7 +773,7 @@ let isStudyMode = false;
 let isPhoneFlipped = false;
 let isDead = false;
 let lifeDecreaseInterval = null;
-let rankUnsubscribe = null;  // リアルタイムリスナー
+let rankUnsubscribe = null;
 
 // ペット変更制限
 const CHANGE_COOLDOWN_DAYS = 3;
@@ -846,6 +835,11 @@ function formatTimeShort(seconds) {
   if (h > 0) return `${h}時間${m}分${s}秒`;
   else if (m > 0) return `${m}分${s}秒`;
   else return `${s}秒`;
+}
+
+// ★ 秒数表示（カンマ区切り）
+function formatSeconds(seconds) {
+  return Math.floor(seconds).toLocaleString() + 's';
 }
 
 // =============================================
@@ -947,11 +941,7 @@ function setDead() {
   
   localStorage.setItem('charPetDead', 'true');
   if (myUid) {
-    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
-      snapshot.forEach(doc => {
-        doc.ref.update({ isDead: true });
-      });
-    });
+    saveRankingOnline(currentUser, currentChar, 0);
   }
   
   studyResult.innerHTML = `
@@ -1204,7 +1194,6 @@ auth.onAuthStateChanged(user => {
     saveUid(myUid);
     console.log('✅ ログイン完了:', myUid);
     loadUserData();
-    // リアルタイムランキング開始
     startRealtimeRanking();
   } else {
     console.log('⏳ 未ログイン');
@@ -1217,9 +1206,9 @@ auth.onAuthStateChanged(user => {
 function loadUserData() {
   if (!myUid) return;
   
-  db.collection('users').doc(myUid).get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
+  db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data();
       if (data.userName) {
         currentUser = data.userName;
         userNameInput.value = currentUser;
@@ -1237,12 +1226,12 @@ function loadUserData() {
 async function checkUserNameUnique(name) {
   if (!name || name === 'ゲスト') return true;
   try {
-    const snapshot = await db.collection('users')
+    const snapshot = await db.collection('rankings')
       .where('userName', '==', name)
       .get();
     let isUnique = true;
     snapshot.forEach(doc => {
-      if (doc.id !== myUid) isUnique = false;
+      if (doc.data().userId !== myUid) isUnique = false;
     });
     return isUnique;
   } catch (error) {
@@ -1257,10 +1246,13 @@ async function saveUserNameToFirestore(name) {
     return false;
   }
   try {
-    await db.collection('users').doc(myUid).set({
-      userName: name,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
+    if (!snapshot.empty) {
+      await snapshot.docs[0].ref.update({
+        userName: name,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
     return true;
   } catch (error) {
     console.error('保存エラー:', error);
@@ -1307,10 +1299,9 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ リアルタイムランキング（Firestore） ★
+//  ★ リアルタイムランキング（30人・秒数表示） ★
 // =============================================
 function startRealtimeRanking() {
-  // 既存のリスナーを解除
   if (rankUnsubscribe) {
     rankUnsubscribe();
     rankUnsubscribe = null;
@@ -1318,7 +1309,6 @@ function startRealtimeRanking() {
 
   updateInfo.textContent = '🔄 リアルタイム接続中...';
 
-  // 30人まで、寿命が多い順にリアルタイム監視
   rankUnsubscribe = db.collection('rankings')
     .orderBy('currentLife', 'desc')
     .limit(30)
@@ -1334,7 +1324,8 @@ function startRealtimeRanking() {
       snapshot.forEach(doc => {
         const data = doc.data();
         const currentLife = data.currentLife || 0;
-        const displayTime = formatLifeTime(currentLife);
+        // ★ 秒数表示（カンマ区切り）
+        const displayTime = formatSeconds(currentLife);
         const isDeadRank = data.isDead || false;
         
         const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
@@ -1356,7 +1347,6 @@ function startRealtimeRanking() {
 
       rankList.innerHTML = html;
       
-      // 最終更新時刻
       const now = new Date();
       const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       updateInfo.textContent = `🟢 リアルタイム更新中（${rank}人） • ${timeStr}`;
@@ -1369,7 +1359,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ランキング保存（Firestore）
+//  ★ ランキング保存（1ユーザー1件・上書き） ★
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1377,6 +1367,7 @@ async function saveRankingOnline(user, char, seconds) {
     return;
   }
   try {
+    // 自分の既存データを検索
     const snapshot = await db.collection('rankings')
       .where('userId', '==', myUid)
       .get();
@@ -1384,17 +1375,19 @@ async function saveRankingOnline(user, char, seconds) {
     const currentLife = currentLifeSeconds;
 
     if (!snapshot.empty) {
+      // 既存データを上書き更新
       const doc = snapshot.docs[0];
       await doc.ref.update({
-        totalSeconds: firebase.firestore.FieldValue.increment(seconds),
         currentLife: currentLife,
         userName: user,
         petChar: char,
         isDead: isDead,
+        totalSeconds: firebase.firestore.FieldValue.increment(seconds),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('✅ オンライン更新完了');
+      console.log('✅ ランキング更新完了');
     } else {
+      // 新規作成
       await db.collection('rankings').add({
         userId: myUid,
         userName: user,
@@ -1405,7 +1398,7 @@ async function saveRankingOnline(user, char, seconds) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('✅ オンライン新規保存完了');
+      console.log('✅ ランキング新規保存完了');
     }
   } catch (error) {
     console.error('保存エラー:', error);
