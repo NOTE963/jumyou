@@ -1111,7 +1111,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ リアルタイムランキング（修正版） ★
+//  リアルタイムランキング
 // =============================================
 function startRealtimeRanking() {
   if (rankUnsubscribe) {
@@ -1131,12 +1131,10 @@ function startRealtimeRanking() {
         const data = doc.data();
         const userName = data.userName || '';
         
-        // ゲストは除外
         if (userName === 'ゲスト' || userName.trim() === '') {
           return;
         }
 
-        // 削除済みフラグが立っているものは除外
         if (data.isDeleted === true) {
           return;
         }
@@ -1144,7 +1142,6 @@ function startRealtimeRanking() {
         filteredData.push({ id: doc.id, ...data });
       });
 
-      // 上位30人に絞る
       filteredData = filteredData.slice(0, 30);
 
       if (filteredData.length === 0) {
@@ -1191,7 +1188,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ランキング保存（ゲストは保存しない）
+//  ★ ランキング保存（1人1件を確実に） ★
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1205,10 +1202,15 @@ async function saveRankingOnline(user, char, seconds) {
   }
 
   try {
-    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
+    // 自分のデータを検索（1件のみ存在するはず）
+    const snapshot = await db.collection('rankings')
+      .where('userId', '==', myUid)
+      .get();
+
     const currentLife = currentLifeSeconds;
 
     if (!snapshot.empty) {
+      // 既存データを上書き更新（1件のみ）
       const doc = snapshot.docs[0];
       await doc.ref.update({
         currentLife: currentLife,
@@ -1218,8 +1220,21 @@ async function saveRankingOnline(user, char, seconds) {
         totalSeconds: firebase.firestore.FieldValue.increment(seconds),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('✅ ランキング更新完了');
+      console.log('✅ ランキング更新完了（1件）');
+      
+      // 念のため、複数件あった場合の処理（古いデータを削除）
+      if (snapshot.size > 1) {
+        console.warn('⚠️ 複数件のデータが見つかりました。整理します...');
+        const batch = db.batch();
+        // 最初の1件以外を削除
+        for (let i = 1; i < snapshot.docs.length; i++) {
+          batch.delete(snapshot.docs[i].ref);
+        }
+        await batch.commit();
+        console.log('✅ 重複データを削除しました');
+      }
     } else {
+      // 新規作成（1件のみ）
       await db.collection('rankings').add({
         userId: myUid,
         userName: user,
@@ -1230,7 +1245,7 @@ async function saveRankingOnline(user, char, seconds) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('✅ ランキング新規保存完了');
+      console.log('✅ ランキング新規保存完了（1件）');
     }
   } catch (error) {
     console.error('保存エラー:', error);
@@ -1238,7 +1253,7 @@ async function saveRankingOnline(user, char, seconds) {
 }
 
 // =============================================
-//  アカウント削除処理（修正版）
+//  アカウント削除処理
 // =============================================
 async function deleteAccount() {
   if (!myUid) {
@@ -1260,7 +1275,7 @@ async function deleteAccount() {
   deleteStatus.className = 'status-msg';
 
   try {
-    // 1. Firestoreデータ削除（確実に実行）
+    // 1. Firestoreデータ削除
     deleteStatus.textContent = '⏳ Firestoreデータ削除中...';
     const checkSnapshot = await db.collection('rankings').where('userId', '==', myUid).get();
     
@@ -1268,26 +1283,9 @@ async function deleteAccount() {
       const batch = db.batch();
       checkSnapshot.forEach(doc => {
         batch.delete(doc.ref);
-        console.log('🗑️ 削除対象:', doc.id);
       });
       await batch.commit();
       console.log('✅ Firestore削除完了（' + checkSnapshot.size + '件）');
-      
-      // 削除確認
-      const verifySnapshot = await db.collection('rankings').where('userId', '==', myUid).get();
-      if (verifySnapshot.empty) {
-        console.log('✅ 削除確認完了（データなし）');
-        deleteStatus.textContent = '✅ Firestore削除完了';
-      } else {
-        console.warn('⚠️ まだ' + verifySnapshot.size + '件残っています。個別削除します...');
-        for (const doc of verifySnapshot.docs) {
-          await doc.ref.delete();
-        }
-        deleteStatus.textContent = '✅ Firestore削除完了（個別削除）';
-      }
-    } else {
-      console.log('⚠️ 削除するデータがありません');
-      deleteStatus.textContent = '⚠️ 削除するデータがありません';
     }
 
     // 2. localStorage削除
@@ -1299,11 +1297,9 @@ async function deleteAccount() {
       'petUserUid'
     ];
     keys.forEach(key => localStorage.removeItem(key));
-    console.log('✅ localStorage削除完了');
 
     // 3. Cookie削除
     document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    console.log('✅ Cookie削除完了');
 
     // 4. Firebase認証削除
     deleteStatus.textContent = '⏳ 認証情報削除中...';
@@ -1311,20 +1307,12 @@ async function deleteAccount() {
     if (user) {
       try {
         await user.delete();
-        console.log('✅ Firebase認証削除完了');
       } catch (authError) {
-        console.warn('認証削除エラー:', authError.code);
         if (authError.code === 'auth/requires-recent-login') {
-          deleteStatus.textContent = '⏳ 再認証中...';
           await auth.signOut();
           await auth.signInAnonymously();
           const newUser = auth.currentUser;
-          if (newUser) {
-            await newUser.delete();
-            console.log('✅ 再認証後、削除完了');
-          }
-        } else {
-          throw authError;
+          if (newUser) await newUser.delete();
         }
       }
     }
