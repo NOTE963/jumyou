@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ペットと勉強 - 寿命は1回</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<style>
+  * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .container {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    border-radius: 44px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.5);
+    width: 100%;
+    max-width: 460px;
+    min-height: 720px;
+    padding: 24px 22px 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ===== タブ ===== */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: #f0edf0;
+    border: none;
+    color: #888;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 12px 0;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.25s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    letter-spacing: 0.5px;
+  }
+  .tab-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    color: #4a2a3a;
+    box-shadow: 0 4px 16px rgba(255, 154, 158, 0.35);
+  }
+  .tab-btn.dead {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .tab-btn:active { transform: scale(0.94); }
+
+  .screen {
+    display: none;
+    animation: fadeIn 0.35s ease;
+  }
+  .screen.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========================================
+     ペット画面
+     ======================================== */
+  .pet-screen {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(10px);
+    border-radius: 32px;
+    padding: 20px 16px 18px;
+    min-height: 500px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+  }
+  .pet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    color: #666;
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-weight: 600;
+  }
+  .pet-header .label {
+    color: #aaa;
+    font-weight: 500;
+  }
+  .pet-header .life {
+    color: #ff6b6b;
+    font-weight: 800;
+    font-size: 1.0rem;
+  }
+  .pet-header .life.danger {
+    color: #dc3545;
+    animation: blink 0.5s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+  .pet-header .user {
+    color: #888;
+    font-size: 0.7rem;
+    background: rgba(0,0,0,0.04);
+    padding: 2px 14px;
+    border-radius: 30px;
+  }
+  .pet-header .growth {
+    color: #2ecc71;
+    font-size: 0.7rem;
+  }
+  .pet-header .status-badge {
+    font-size: 0.6rem;
+    padding: 3px 12px;
+    border-radius: 30px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .status-badge.alive {
+    background: #d4edda;
+    color: #155724;
+  }
+  .status-badge.dead {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .pet-area {
+    position: relative;
+    width: 100%;
+    height: 320px;
+    background: linear-gradient(145deg, #faf5fa, #f0ecf0);
+    border-radius: 24px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 2px dashed rgba(200, 180, 190, 0.2);
+    box-shadow: inset 0 4px 20px rgba(0,0,0,0.02);
+  }
+  .pet-area.dead-area {
+    filter: grayscale(0.8);
+    opacity: 0.5;
+  }
+  .pet-char {
+    position: absolute;
+    font-weight: 800;
+    color: #ff6b6b;
+    text-shadow: 0 4px 20px rgba(255, 107, 107, 0.20);
+    cursor: default;
+    pointer-events: none;
+    will-change: transform;
+    line-height: 1;
+    transition: font-size 0.8s ease;
+    white-space: nowrap;
+  }
+  .pet-char.dead-char {
+    color: #dc3545 !important;
+    text-shadow: 0 0 60px rgba(220, 53, 69, 0.4) !important;
+  }
+  .gameover-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #dc3545;
+    text-shadow: 0 4px 30px rgba(220, 53, 69, 0.3);
+    background: rgba(255,255,255,0.92);
+    padding: 18px 30px;
+    border-radius: 24px;
+    border: 3px solid #dc3545;
+    display: none;
+    box-shadow: 0 12px 48px rgba(220, 53, 69, 0.15);
+    letter-spacing: 2px;
+  }
+  .gameover-overlay.show {
+    display: block;
+  }
+
+  .note {
+    color: #bbb;
+    font-size: 0.6rem;
+    text-align: center;
+    margin-top: 8px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+
+  /* ========================================
+     勉強画面
+     ======================================== */
+  .study-screen {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(10px);
+    border-radius: 32px;
+    padding: 28px 18px 22px;
+    min-height: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+    text-align: center;
+  }
+  .study-screen h2 {
+    color: #4a2a3a;
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .study-sub {
+    color: #aaa;
+    font-size: 0.7rem;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .study-timer {
+    font-size: 4.0rem;
+    font-weight: 900;
+    color: #4a2a3a;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 16px 12px;
+    border-radius: 28px;
+    border: 2px solid rgba(200, 180, 190, 0.15);
+    letter-spacing: 4px;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+  }
+  .study-timer.running {
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+  }
+
+  .study-status {
+    font-size: 1rem;
+    color: #888;
+    margin-bottom: 14px;
+    min-height: 28px;
+    font-weight: 500;
+  }
+  .study-status .highlight {
+    color: #2ecc71;
+    font-weight: 700;
+  }
+  .study-status .highlight.active {
+    color: #ff6b6b;
+  }
+
+  .study-btn-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .study-btn-group button {
+    flex: 1;
+    border: none;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 14px 0;
+    border-radius: 60px;
+    cursor: pointer;
+    transition: 0.12s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    letter-spacing: 0.5px;
+  }
+  .study-btn-group button:active { transform: scale(0.94); }
+  .study-btn-group button:disabled {
+    opacity: 0.3;
+    transform: scale(0.96);
+    pointer-events: none;
+  }
+  .btn-study-start {
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    color: #4a2a3a;
+  }
+  .btn-study-start:hover:not(:disabled) {
+    box-shadow: 0 6px 24px rgba(255, 154, 158, 0.35);
+    transform: translateY(-2px);
+  }
+  .btn-study-stop {
+    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
+    color: white;
+  }
+  .btn-study-stop:hover:not(:disabled) {
+    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.25);
+    transform: translateY(-2px);
+  }
+  .btn-study-reset {
+    background: #e8e4e8;
+    color: #888;
+    flex: 0.4;
+  }
+
+  .study-result {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    color: #666;
+    font-size: 0.85rem;
+    min-height: 50px;
+    border: 1px solid rgba(0,0,0,0.03);
+    line-height: 1.6;
+  }
+  .study-result .result-life {
+    color: #ff6b6b;
+    font-weight: 800;
+    font-size: 1.1rem;
+  }
+  .study-result .result-dead {
+    color: #dc3545;
+    font-weight: 700;
+  }
+
+  /* ========================================
+     設定画面
+     ======================================== */
+  .settings-screen {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(10px);
+    border-radius: 32px;
+    padding: 22px 18px;
+    min-height: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+  }
+  .settings-screen h2 {
+    color: #4a2a3a;
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .setting-group {
+    margin-bottom: 16px;
+  }
+  .setting-group label {
+    color: #888;
+    font-size: 0.8rem;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .setting-row {
+    display: flex;
+    gap: 10px;
+  }
+  .setting-row input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(0,0,0,0.05);
+    border-radius: 30px;
+    padding: 12px 16px;
+    color: #333;
+    font-size: 1.2rem;
+    text-align: center;
+    outline: none;
+    min-width: 0;
+    transition: 0.2s;
+    font-weight: 600;
+  }
+  .setting-row input:focus {
+    border-color: #ff9a9e;
+    box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.08);
+  }
+  .setting-row input:disabled {
+    opacity: 0.3;
+  }
+  .setting-row input::placeholder {
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+  .btn-setting {
+    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.12s ease;
+    box-shadow: 0 4px 16px rgba(63, 43, 150, 0.12);
+    letter-spacing: 0.5px;
+  }
+  .btn-setting:active { transform: scale(0.94); }
+  .btn-setting:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .btn-setting:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20);
+  }
+  .btn-danger {
+    background: #f8d7da;
+    border: none;
+    color: #721c24;
+    font-weight: 700;
+    padding: 12px 16px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.12s ease;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    letter-spacing: 0.5px;
+  }
+  .btn-danger:active { transform: scale(0.96); }
+  .btn-danger:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: #f5c6cb;
+  }
+  .btn-revive {
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    color: #4a2a3a;
+    box-shadow: 0 4px 16px rgba(252, 182, 159, 0.25);
+  }
+  .btn-revive:hover:not(:disabled) {
+    box-shadow: 0 6px 24px rgba(252, 182, 159, 0.40);
+    transform: translateY(-2px);
+  }
+  .status-msg {
+    color: #ff6b6b;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 6px;
+    min-height: 20px;
+    font-weight: 500;
+  }
+  .status-msg.success {
+    color: #2ecc71;
+  }
+
+  /* ========================================
+     ランキング画面
+     ======================================== */
+  .rank-screen {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(10px);
+    border-radius: 32px;
+    padding: 22px 18px;
+    min-height: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
+  }
+  .rank-screen h2 {
+    color: #4a2a3a;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 4px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .rank-sub {
+    color: #bbb;
+    font-size: 0.7rem;
+    text-align: center;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .rank-list {
+    max-height: 360px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .rank-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    color: #666;
+    font-size: 0.85rem;
+    background: rgba(255,255,255,0.2);
+    border-radius: 14px;
+    margin-bottom: 4px;
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-item.top1 { background: linear-gradient(135deg, #fff9e6, #fef3d1); }
+  .rank-item.top2 { background: linear-gradient(135deg, #f5f5f5, #ececec); }
+  .rank-item.top3 { background: linear-gradient(135deg, #fdf4ed, #fae8db); }
+  .rank-item.dead-rank {
+    opacity: 0.35;
+    text-decoration: line-through;
+  }
+  .rank-num {
+    font-weight: 800;
+    width: 32px;
+    color: #ccc;
+    font-size: 0.8rem;
+  }
+  .rank-num.gold { color: #f5a623; }
+  .rank-num.silver { color: #b0b0b0; }
+  .rank-num.bronze { color: #cd7f32; }
+  .rank-user {
+    color: #333;
+    font-weight: 700;
+    min-width: 56px;
+  }
+  .rank-pet {
+    color: #aaa;
+    font-size: 0.8rem;
+  }
+  .rank-pet span {
+    color: #4a2a3a;
+    font-size: 1.0rem;
+    font-weight: 700;
+  }
+  .rank-time {
+    margin-left: auto;
+    color: #ff6b6b;
+    font-weight: 800;
+    font-size: 0.8rem;
+  }
+  .rank-empty {
+    color: #ccc;
+    text-align: center;
+    padding: 40px 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .rank-online-btn {
+    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: 30px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 14px;
+    transition: 0.12s ease;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 16px rgba(63, 43, 150, 0.12);
+    letter-spacing: 0.5px;
+  }
+  .rank-online-btn:active { transform: scale(0.96); }
+  .rank-online-btn:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .rank-online-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20);
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: #fad0c4; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== タブ ===== -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="pet">ペット</button>
+    <button class="tab-btn" data-tab="study">勉強</button>
+    <button class="tab-btn" data-tab="settings">設定</button>
+    <button class="tab-btn" data-tab="rank">ランキング</button>
+  </div>
+
+  <!-- ========================================
+       ペット画面
+       ======================================== -->
+  <div class="screen active" id="screen-pet">
+    <div class="pet-screen">
+      <div class="pet-header">
+        <span class="label">ペット</span>
+        <span class="user" id="headerUser">ゲスト</span>
+        <span>寿命 <span class="life" id="lifeSpan">36:00:00</span></span>
+        <span class="growth">Lv.<span id="growthLevel">1</span></span>
+        <span class="status-badge alive" id="statusBadge">生存中</span>
+      </div>
+      <div class="pet-area" id="petArea">
+        <div class="pet-char" id="petChar">たま</div>
+        <div class="gameover-overlay" id="gameoverOverlay">GAME OVER</div>
+      </div>
+      <div class="note" id="petNote">寿命はリアルタイムで減ります。勉強して延ばしましょう。</div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       勉強画面
+       ======================================== -->
+  <div class="screen" id="screen-study">
+    <div class="study-screen">
+      <h2>勉強タイマー</h2>
+      <div class="study-sub">スマホを伏せて勉強開始。戻すと自動停止</div>
+
+      <div class="study-timer" id="studyTimer">00:00:00</div>
+
+      <div class="study-status" id="studyStatus">
+        待機中 — 開始ボタンを押してから伏せてください
+      </div>
+
+      <div class="study-btn-group">
+        <button class="btn-study-start" id="studyStartBtn">開始</button>
+        <button class="btn-study-stop" id="studyStopBtn" disabled>停止</button>
+        <button class="btn-study-reset" id="studyResetBtn">リセット</button>
+      </div>
+
+      <div class="study-result" id="studyResult">
+        勉強するとここに結果が表示されます
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       設定画面
+       ======================================== -->
+  <div class="screen" id="screen-settings">
+    <div class="settings-screen">
+      <h2>設定</h2>
+
+      <div class="setting-group">
+        <label>ユーザー名</label>
+        <div class="setting-row">
+          <input id="userNameInput" type="text" placeholder="名前を入力" value="ゲスト" maxlength="16">
+          <button class="btn-setting" id="setUserNameBtn">変更</button>
+        </div>
+        <div class="status-msg" id="userStatus"></div>
+      </div>
+
+      <div class="setting-group">
+        <label>ペットの名前（6文字まで）</label>
+        <div class="setting-row">
+          <input id="charInput" type="text" placeholder="ペットの名前" value="たま" maxlength="6">
+          <button class="btn-setting" id="setCharBtn">変更</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
+      </div>
+
+      <div class="setting-group">
+        <button class="btn-danger btn-revive" id="reviveBtn">新しいペットを始める</button>
+        <div class="status-msg" id="reviveStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       ランキング画面
+       ======================================== -->
+  <div class="screen" id="screen-rank">
+    <div class="rank-screen">
+      <h2>全世界ランキング</h2>
+      <div class="rank-sub">ユーザー名（ペットの名前）</div>
+      <div class="rank-list" id="rankList">
+        <div class="rank-empty">読み込み中...</div>
+      </div>
+      <button class="rank-online-btn" id="onlineRankBtn" disabled>
+        ログイン中...
+      </button>
+      <div class="note" style="margin-top:10px;">全世界のユーザーと競えます</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =============================================
+//  ✅ Firebase設定（あなたのプロジェクト）
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
+  authDomain: "jumyou.firebaseapp.com",
+  databaseURL: "https://jumyou-default-rtdb.firebaseio.com",
+  projectId: "jumyou",
+  storageBucket: "jumyou.firebasestorage.app",
+  messagingSenderId: "441346887929",
+  appId: "1:441346887929:web:0ca3115f8d1f806df49228",
+  measurementId: "G-FBZF2NHEC9"
+};
+
+// Firebase初期化
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// =============================================
+//  グローバル状態
+// =============================================
+let isRunning = false;
+let startTime = 0;
+let timerInterval = null;
+let currentLifeSeconds = 36 * 3600;
+let currentChar = 'たま';
+let currentUser = 'ゲスト';
+let myUid = '';
+let petSize = 40;
+let growthLevel = 1;
+let lastGrowthCheck = Date.now();
+let isStudyMode = false;
+let isPhoneFlipped = false;
+let isDead = false;
+let lifeDecreaseInterval = null;
+
+// DOM
+const petChar = document.getElementById('petChar');
+const petArea = document.getElementById('petArea');
+const lifeSpan = document.getElementById('lifeSpan');
+const headerUser = document.getElementById('headerUser');
+const growthLevelEl = document.getElementById('growthLevel');
+const statusBadge = document.getElementById('statusBadge');
+const gameoverOverlay = document.getElementById('gameoverOverlay');
+const petNote = document.getElementById('petNote');
+const studyTimer = document.getElementById('studyTimer');
+const studyStatus = document.getElementById('studyStatus');
+const studyResult = document.getElementById('studyResult');
+const studyStartBtn = document.getElementById('studyStartBtn');
+const studyStopBtn = document.getElementById('studyStopBtn');
+const studyResetBtn = document.getElementById('studyResetBtn');
+const charInput = document.getElementById('charInput');
+const setCharBtn = document.getElementById('setCharBtn');
+const userNameInput = document.getElementById('userNameInput');
+const setUserNameBtn = document.getElementById('setUserNameBtn');
+const resetRankBtn = document.getElementById('resetRankBtn');
+const reviveBtn = document.getElementById('reviveBtn');
+const reviveStatus = document.getElementById('reviveStatus');
+const onlineRankBtn = document.getElementById('onlineRankBtn');
+const rankList = document.getElementById('rankList');
+const userStatus = document.getElementById('userStatus');
+
+// =============================================
+//  タブ切り替え
+// =============================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'rank') loadOnlineRanking();
+  });
+});
+
+// =============================================
+//  寿命表示
+// =============================================
+function formatLifeTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function formatTimeShort(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}時間${m}分${s}秒`;
+  else if (m > 0) return `${m}分${s}秒`;
+  else return `${s}秒`;
+}
+
+// =============================================
+//  寿命減少処理
+// =============================================
+function startLifeDecrease() {
+  if (lifeDecreaseInterval) return;
+  if (isDead) return;
+  if (isRunning) return;
+
+  lifeDecreaseInterval = setInterval(() => {
+    if (currentLifeSeconds > 0 && !isRunning && !isDead) {
+      currentLifeSeconds--;
+      updatePet();
+      
+      if (currentLifeSeconds <= 0) {
+        currentLifeSeconds = 0;
+        clearInterval(lifeDecreaseInterval);
+        lifeDecreaseInterval = null;
+        setDead();
+      }
+    }
+  }, 1000);
+}
+
+function stopLifeDecrease() {
+  if (lifeDecreaseInterval) {
+    clearInterval(lifeDecreaseInterval);
+    lifeDecreaseInterval = null;
+  }
+}
+
+// =============================================
+//  死亡処理
+// =============================================
+function setDead() {
+  if (isDead) return;
+  isDead = true;
+  stopLifeDecrease();
+  
+  petChar.textContent = '✕';
+  petChar.classList.add('dead-char');
+  petArea.classList.add('dead-area');
+  gameoverOverlay.classList.add('show');
+  lifeSpan.classList.add('danger');
+  statusBadge.textContent = '死亡';
+  statusBadge.className = 'status-badge dead';
+  petNote.textContent = 'ペットは死亡しました。設定から新しいペットを始められます。';
+  
+  studyStartBtn.disabled = true;
+  studyStartBtn.textContent = '死亡';
+  charInput.disabled = true;
+  setCharBtn.disabled = true;
+  
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab !== 'rank' && btn.dataset.tab !== 'settings') {
+      btn.classList.add('dead');
+    }
+  });
+  
+  localStorage.setItem('charPetDead', 'true');
+  if (myUid) {
+    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
+      snapshot.forEach(doc => {
+        doc.ref.update({ isDead: true });
+      });
+    });
+  }
+  
+  studyResult.innerHTML = `
+    <span class="result-dead">ペットが死亡しました</span><br>
+    設定の「新しいペットを始める」で復活できます
+  `;
+}
+
+// =============================================
+//  復活処理
+// =============================================
+function revivePet() {
+  isDead = false;
+  currentLifeSeconds = 36 * 3600;
+  currentChar = 'たま';
+  petSize = 40;
+  growthLevel = 1;
+  lastGrowthCheck = Date.now();
+  
+  petChar.textContent = currentChar;
+  petChar.classList.remove('dead-char');
+  petArea.classList.remove('dead-area');
+  gameoverOverlay.classList.remove('show');
+  lifeSpan.classList.remove('danger');
+  statusBadge.textContent = '生存中';
+  statusBadge.className = 'status-badge alive';
+  petNote.textContent = '寿命はリアルタイムで減ります。勉強して延ばしましょう。';
+  
+  studyStartBtn.disabled = false;
+  studyStartBtn.textContent = '開始';
+  charInput.disabled = false;
+  setCharBtn.disabled = false;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('dead');
+  });
+  
+  localStorage.removeItem('charPetDead');
+  if (myUid) {
+    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
+      snapshot.forEach(doc => {
+        doc.ref.update({ isDead: false });
+      });
+    });
+  }
+  
+  updatePet();
+  setTimeout(() => { startLifeDecrease(); }, 1000);
+  
+  reviveStatus.textContent = '新しいペットを始めました';
+  reviveStatus.className = 'status-msg success';
+  setTimeout(() => { reviveStatus.textContent = ''; }, 3000);
+}
+
+// =============================================
+//  スマホ裏返し検知
+// =============================================
+function initOrientationSensor() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && 
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    document.addEventListener('click', function iOSPermission() {
+      DeviceOrientationEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            document.removeEventListener('click', iOSPermission);
+          }
+        })
+        .catch(console.error);
+    });
+  } else {
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+}
+
+function handleOrientation(event) {
+  const gamma = event.gamma || 0;
+  const beta = event.beta || 0;
+  const isFlipped = Math.abs(gamma) > 50 || Math.abs(beta) > 120;
+
+  if (isFlipped !== isPhoneFlipped) {
+    isPhoneFlipped = isFlipped;
+    
+    if (isPhoneFlipped && isStudyMode && !isRunning && !isDead) {
+      startStudyTimer();
+    } else if (!isPhoneFlipped && isRunning) {
+      stopStudyTimer();
+    }
+  }
+}
+
+// =============================================
+//  勉強タイマー制御
+// =============================================
+function startStudyTimer() {
+  if (isRunning) return;
+  if (isDead) {
+    studyStatus.innerHTML = 'ペットが死亡しています。復活させてください';
+    return;
+  }
+  if (!currentChar || currentChar.trim() === '') {
+    studyStatus.innerHTML = 'ペットの名前を設定してください';
+    return;
+  }
+
+  stopLifeDecrease();
+
+  isRunning = true;
+  startTime = Date.now();
+  studyStartBtn.disabled = true;
+  studyStopBtn.disabled = false;
+  studyTimer.classList.add('running');
+  studyStatus.innerHTML = '勉強中！ スマホを戻すと終了';
+
+  timerInterval = setInterval(() => {
+    const diff = (Date.now() - startTime) / 1000;
+    updateStudyTimer(diff);
+  }, 200);
+}
+
+function stopStudyTimer() {
+  if (!isRunning) return;
+
+  isRunning = false;
+  clearInterval(timerInterval);
+  timerInterval = null;
+  studyStartBtn.disabled = false;
+  studyStopBtn.disabled = true;
+  studyTimer.classList.remove('running');
+
+  const elapsed = (Date.now() - startTime) / 1000;
+  updateStudyTimer(elapsed);
+
+  if (elapsed < 1) {
+    studyStatus.innerHTML = '短すぎます。もう一度伏せてください';
+    studyResult.innerHTML = '1秒未満のため寿命は延びませんでした';
+    if (!isDead) startLifeDecrease();
+    return;
+  }
+
+  const addSeconds = Math.floor(elapsed);
+  currentLifeSeconds += addSeconds;
+  updatePet();
+
+  addRankingLocal(elapsed, currentChar, currentUser);
+  saveRankingOnline(currentUser, currentChar, elapsed);
+
+  const timeStr = formatTimeShort(elapsed);
+  
+  studyResult.innerHTML = `
+    勉強時間: <strong>${timeStr}</strong><br>
+    「${currentChar}」の寿命が <span class="result-life">${addSeconds}秒</span> 延びました<br>
+    現在の寿命: <strong>${formatLifeTime(currentLifeSeconds)}</strong>
+  `;
+  studyStatus.innerHTML = '待機中 — 開始ボタンを押してから伏せてください';
+
+  if (!isDead) startLifeDecrease();
+}
+
+function updateStudyTimer(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  studyTimer.textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// =============================================
+//  勉強ボタンイベント
+// =============================================
+studyStartBtn.addEventListener('click', () => {
+  if (isRunning) return;
+  if (isDead) {
+    alert('ペットが死亡しています。設定から新しいペットを始めてください。');
+    return;
+  }
+  if (!currentChar || currentChar.trim() === '') {
+    alert('ペットの名前を設定してください！');
+    return;
+  }
+  
+  isStudyMode = true;
+  studyStartBtn.disabled = true;
+  studyStatus.innerHTML = '待機中 — スマホを伏せてください';
+  studyResult.innerHTML = 'スマホを伏せると勉強が始まります...';
+  studyTimer.textContent = '00:00:00';
+});
+
+studyStopBtn.addEventListener('click', () => {
+  if (!isRunning) return;
+  stopStudyTimer();
+});
+
+studyResetBtn.addEventListener('click', () => {
+  if (isRunning) {
+    if (!confirm('勉強中です。リセットしますか？')) return;
+    isRunning = false;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    studyTimer.classList.remove('running');
+  }
+  isStudyMode = false;
+  studyStartBtn.disabled = false;
+  studyStopBtn.disabled = true;
+  studyTimer.textContent = '00:00:00';
+  studyStatus.innerHTML = '待機中 — 開始ボタンを押してから伏せてください';
+  studyResult.innerHTML = '勉強するとここに結果が表示されます';
+  if (!isDead) startLifeDecrease();
+});
+
+// =============================================
+//  ペットアニメーション
+// =============================================
+let animFrameId = null;
+let petX = 50, petY = 50;
+let petVx = 1.2, petVy = 0.8;
+
+function startPetAnimation() {
+  if (animFrameId) return;
+  const rect = petArea.getBoundingClientRect();
+  petX = rect.width / 2 - 30;
+  petY = rect.height / 2 - 30;
+
+  function movePet() {
+    const areaRect = petArea.getBoundingClientRect();
+    const w = areaRect.width;
+    const h = areaRect.height;
+
+    petX += petVx;
+    petY += petVy;
+
+    const charWidth = Math.min(petChar.scrollWidth || 60, w * 0.5);
+    const charHeight = Math.min(petChar.scrollHeight || 60, h * 0.5);
+
+    if (petX <= 0) { petX = 0; petVx = Math.abs(petVx); }
+    if (petX + charWidth >= w) { petX = w - charWidth; petVx = -Math.abs(petVx); }
+    if (petY <= 0) { petY = 0; petVy = Math.abs(petVy); }
+    if (petY + charHeight >= h) { petY = h - charHeight; petVy = -Math.abs(petVy); }
+
+    petChar.style.left = petX + 'px';
+    petChar.style.top = petY + 'px';
+
+    animFrameId = requestAnimationFrame(movePet);
+  }
+  movePet();
+}
+
+function resizePet() {
+  const rect = petArea.getBoundingClientRect();
+  const charWidth = petChar.scrollWidth || 60;
+  const charHeight = petChar.scrollHeight || 60;
+  if (petX + charWidth > rect.width) petX = rect.width - charWidth;
+  if (petY + charHeight > rect.height) petY = rect.height - charHeight;
+  if (petX < 0) petX = 0;
+  if (petY < 0) petY = 0;
+  petChar.style.left = petX + 'px';
+  petChar.style.top = petY + 'px';
+}
+window.addEventListener('resize', resizePet);
+
+// =============================================
+//  ペット成長
+// =============================================
+function checkGrowth() {
+  if (isDead) return;
+  const now = Date.now();
+  const elapsed = now - lastGrowthCheck;
+  const twelveHours = 12 * 60 * 60 * 1000;
+
+  if (elapsed >= twelveHours) {
+    const growthAmount = Math.floor(elapsed / twelveHours);
+    for (let i = 0; i < growthAmount; i++) {
+      petSize = Math.min(petSize + 4, 150);
+      growthLevel++;
+    }
+    lastGrowthCheck = now;
+    
+    localStorage.setItem('petSize', String(petSize));
+    localStorage.setItem('growthLevel', String(growthLevel));
+    localStorage.setItem('lastGrowthCheck', String(lastGrowthCheck));
+    
+    updatePet();
+    resizePet();
+  }
+}
+setInterval(checkGrowth, 60 * 1000);
+
+// =============================================
+//  Firebase 認証
+// =============================================
+auth.signInAnonymously().catch(error => {
+  console.error('ログインエラー:', error);
+  onlineRankBtn.textContent = 'ログインエラー';
+});
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    myUid = user.uid;
+    onlineRankBtn.disabled = false;
+    onlineRankBtn.textContent = 'ランキング更新';
+    console.log('✅ ログイン完了:', myUid);
+    loadOnlineRanking();
+  } else {
+    onlineRankBtn.disabled = true;
+    onlineRankBtn.textContent = 'ログイン中...';
+  }
+});
+
+// =============================================
+//  ユーザー名管理
+// =============================================
+async function checkUserNameUnique(name) {
+  if (!name || name === 'ゲスト') return true;
+  try {
+    const snapshot = await db.collection('users')
+      .where('userName', '==', name)
+      .get();
+    let isUnique = true;
+    snapshot.forEach(doc => {
+      if (doc.id !== myUid) isUnique = false;
+    });
+    return isUnique;
+  } catch (error) {
+    console.error('重複チェックエラー:', error);
+    return false;
+  }
+}
+
+async function saveUserNameToFirestore(name) {
+  if (!myUid) {
+    userStatus.textContent = 'ログインしていません';
+    return false;
+  }
+  try {
+    await db.collection('users').doc(myUid).set({
+      userName: name,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('保存エラー:', error);
+    userStatus.textContent = '保存失敗';
+    return false;
+  }
+}
+
+setUserNameBtn.addEventListener('click', async () => {
+  if (isDead) {
+    userStatus.textContent = '死亡中は変更できません';
+    return;
+  }
+  const newName = userNameInput.value.trim() || 'ゲスト';
+  if (newName === currentUser && newName !== 'ゲスト') {
+    userStatus.textContent = '同じ名前です';
+    return;
+  }
+  userStatus.textContent = '確認中...';
+  setUserNameBtn.disabled = true;
+
+  const isUnique = await checkUserNameUnique(newName);
+  if (!isUnique) {
+    userStatus.textContent = 'このユーザー名は既に使われています';
+    setUserNameBtn.disabled = false;
+    return;
+  }
+
+  const success = await saveUserNameToFirestore(newName);
+  if (success) {
+    currentUser = newName;
+    updatePet();
+    userNameInput.value = currentUser;
+    userStatus.textContent = 'ユーザー名を変更しました';
+    userStatus.className = 'status-msg success';
+    loadOnlineRanking();
+  } else {
+    userStatus.textContent = '保存に失敗しました';
+  }
+  setUserNameBtn.disabled = false;
+});
+
+userNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') setUserNameBtn.click();
+});
+
+// =============================================
+//  ランキング（Firestore）
+// =============================================
+async function saveRankingOnline(user, char, seconds) {
+  if (!myUid) {
+    console.log('未ログインのためオンライン保存スキップ');
+    return;
+  }
+  try {
+    const snapshot = await db.collection('rankings')
+      .where('userId', '==', myUid)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      await doc.ref.update({
+        totalSeconds: firebase.firestore.FieldValue.increment(seconds),
+        userName: user,
+        petChar: char,
+        isDead: isDead,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      console.log('✅ オンライン更新完了');
+    } else {
+      await db.collection('rankings').add({
+        userId: myUid,
+        userName: user,
+        petChar: char,
+        totalSeconds: seconds,
+        isDead: isDead,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      console.log('✅ オンライン新規保存完了');
+    }
+  } catch (error) {
+    console.error('保存エラー:', error);
+  }
+}
+
+async function loadOnlineRanking() {
+  try {
+    rankList.innerHTML = `<div class="rank-empty">読み込み中...</div>`;
+    const snapshot = await db.collection('rankings')
+      .orderBy('totalSeconds', 'desc')
+      .limit(50)
+      .get();
+
+    if (snapshot.empty) {
+      rankList.innerHTML = `<div class="rank-empty">まだ記録がありません</div>`;
+      return;
+    }
+
+    let html = '';
+    let rank = 0;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const totalSeconds = data.totalSeconds || 0;
+      const displayTime = formatLifeTime(totalSeconds);
+      const isDeadRank = data.isDead || false;
+      
+      const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
+      const medalClass = rank === 0 ? 'gold' : rank === 1 ? 'silver' : rank === 2 ? 'bronze' : '';
+      const topClass = rank < 3 ? `top${rank+1}` : '';
+      
+      const displayName = data.userName || 'ゲスト';
+      const petDisplay = data.petChar || '?';
+      const deadMark = isDeadRank ? ' †' : '';
+      
+      html += `<div class="rank-item ${topClass} ${isDeadRank ? 'dead-rank' : ''}">
+        <span class="rank-num ${medalClass}">${medal}</span>
+        <span class="rank-user">${displayName}${deadMark}</span>
+        <span class="rank-pet">（<span>${petDisplay}</span>）</span>
+        <span class="rank-time">${displayTime}</span>
+      </div>`;
+      rank++;
+    });
+    rankList.innerHTML = html;
+  } catch (error) {
+    console.error('読み込みエラー:', error);
+    rankList.innerHTML = `<div class="rank-empty">読み込みエラー</div>`;
+  }
+}
+
+// =============================================
+//  ペット更新
+// =============================================
+function updatePet() {
+  if (isDead) return;
+  
+  petChar.textContent = currentChar || 'たま';
+  lifeSpan.textContent = formatLifeTime(currentLifeSeconds);
+  headerUser.textContent = currentUser || 'ゲスト';
+  growthLevelEl.textContent = growthLevel;
+  
+  if (currentLifeSeconds < 600) {
+    lifeSpan.classList.add('danger');
+  } else {
+    lifeSpan.classList.remove('danger');
+  }
+  
+  const charCount = currentChar.length;
+  let adjustedSize = petSize;
+  if (charCount >= 5) adjustedSize = petSize * 0.55;
+  else if (charCount >= 4) adjustedSize = petSize * 0.65;
+  else if (charCount >= 3) adjustedSize = petSize * 0.75;
+  else if (charCount >= 2) adjustedSize = petSize * 0.85;
+  
+  petChar.style.fontSize = adjustedSize + 'px';
+  
+  const ratio = Math.min(currentLifeSeconds / (500 * 3600), 1);
+  const r = 255;
+  const g = Math.floor(150 + 80 * ratio);
+  const b = Math.floor(100 - 50 * ratio);
+  petChar.style.color = `rgb(${r}, ${g}, ${b})`;
+  petChar.style.textShadow = `0 4px 30px rgba(255, 107, 107, ${0.1 + 0.2 * ratio})`;
+}
+
+// =============================================
+//  ローカルランキング（バックアップ）
+// =============================================
+function getRankingLocal() {
+  try { return JSON.parse(localStorage.getItem('charPetRanking')) || []; }
+  catch { return []; }
+}
+function saveRankingLocal(rank) {
+  localStorage.setItem('charPetRanking', JSON.stringify(rank));
+}
+function addRankingLocal(seconds, char, user) {
+  if (seconds < 1) return;
+  let rank = getRankingLocal();
+  const existing = rank.find(r => r.user === user && r.char === char);
+  if (existing) {
+    existing.totalSeconds += seconds;
+  } else {
+    rank.push({ user: user || 'ゲスト', char: char || '?', totalSeconds: seconds });
+  }
+  rank.sort((a, b) => b.totalSeconds - a.totalSeconds);
+  if (rank.length > 50) rank = rank.slice(0, 50);
+  saveRankingLocal(rank);
+}
+
+// =============================================
+//  設定
+// =============================================
+setCharBtn.addEventListener('click', () => {
+  if (isDead) {
+    alert('ペットが死亡しています。新しいペットを始めてください。');
+    return;
+  }
+  const newChar = charInput.value.trim();
+  if (!newChar || newChar.length === 0) {
+    alert('ペットの名前を入力してください！');
+    return;
+  }
+  if (newChar.length > 6) {
+    alert('6文字以内で入力してください！');
+    return;
+  }
+  currentChar = newChar;
+  updatePet();
+  charInput.value = currentChar;
+  localStorage.setItem('charPetChar', currentChar);
+});
+charInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') setCharBtn.click();
+});
+
+resetRankBtn.addEventListener('click', () => {
+  if (confirm('ローカルランキングをリセットしますか？')) {
+    localStorage.removeItem('charPetRanking');
+    alert('ローカルランキングをリセットしました');
+  }
+});
+
+reviveBtn.addEventListener('click', () => {
+  if (!isDead) {
+    if (!confirm('現在のペットをリセットして新しいペットを始めますか？\n（現在の寿命データは失われます）')) return;
+  }
+  revivePet();
+});
+
+onlineRankBtn.addEventListener('click', () => {
+  onlineRankBtn.textContent = '更新中...';
+  onlineRankBtn.disabled = true;
+  loadOnlineRanking().then(() => {
+    onlineRankBtn.textContent = 'ランキング更新';
+    onlineRankBtn.disabled = false;
+  });
+});
+
+// =============================================
+//  初期化
+// =============================================
+const savedUser = localStorage.getItem('charPetUser');
+if (savedUser) {
+  currentUser = savedUser;
+  userNameInput.value = savedUser;
+}
+const savedChar = localStorage.getItem('charPetChar');
+if (savedChar && savedChar.length > 0 && savedChar.length <= 6) {
+  currentChar = savedChar;
+  charInput.value = savedChar;
+}
+const savedLife = localStorage.getItem('charPetLifeSeconds');
+if (savedLife) {
+  currentLifeSeconds = parseInt(savedLife) || 36 * 3600;
+}
+const savedSize = localStorage.getItem('petSize');
+if (savedSize) {
+  petSize = parseFloat(savedSize) || 40;
+}
+const savedGrowth = localStorage.getItem('growthLevel');
+if (savedGrowth) {
+  growthLevel = parseInt(savedGrowth) || 1;
+}
+const savedLastCheck = localStorage.getItem('lastGrowthCheck');
+if (savedLastCheck) {
+  lastGrowthCheck = parseInt(savedLastCheck) || Date.now();
+}
+const savedDead = localStorage.getItem('charPetDead');
+if (savedDead === 'true') {
+  setTimeout(() => { setDead(); }, 500);
+}
+
+// センサー初期化
+initOrientationSensor();
+
+checkGrowth();
+updatePet();
+
+if (!isDead) {
+  setTimeout(() => { startLifeDecrease(); }, 1000);
+}
+
+setTimeout(() => {
+  startPetAnimation();
+  resizePet();
+}, 100);
+
+setInterval(() => {
+  if (!isDead) {
+    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
+    localStorage.setItem('petSize', String(petSize));
+    localStorage.setItem('growthLevel', String(growthLevel));
+  }
+}, 5000);
+</script>
+</body>
+</html>
