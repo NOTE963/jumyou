@@ -364,6 +364,7 @@
     <button class="tab-btn" data-tab="rank">ランキング <span class="live-dot"></span></button>
   </div>
 
+  <!-- ペット画面 -->
   <div class="screen active" id="screen-pet">
     <div class="pet-screen">
       <div class="pet-header">
@@ -381,6 +382,7 @@
     </div>
   </div>
 
+  <!-- 勉強画面 -->
   <div class="screen" id="screen-study">
     <div class="study-screen">
       <h2>勉強タイマー</h2>
@@ -396,6 +398,7 @@
     </div>
   </div>
 
+  <!-- 設定画面 -->
   <div class="screen" id="screen-settings">
     <div class="settings-screen">
       <h2>設定</h2>
@@ -435,6 +438,7 @@
     </div>
   </div>
 
+  <!-- ランキング画面 -->
   <div class="screen" id="screen-rank">
     <div class="rank-screen">
       <h2>寿命ランキング</h2>
@@ -1107,7 +1111,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  リアルタイムランキング（ゲスト除外）
+//  ★ リアルタイムランキング（削除済みアカウント除外） ★
 // =============================================
 function startRealtimeRanking() {
   if (rankUnsubscribe) {
@@ -1120,16 +1124,49 @@ function startRealtimeRanking() {
   rankUnsubscribe = db.collection('rankings')
     .orderBy('currentLife', 'desc')
     .limit(50)
-    .onSnapshot((snapshot) => {
+    .onSnapshot(async (snapshot) => {
       let filteredData = [];
-      snapshot.forEach(doc => {
+      const deletePromises = [];
+
+      for (const doc of snapshot.docs) {
         const data = doc.data();
         const userName = data.userName || '';
-        if (userName !== 'ゲスト' && userName.trim() !== '') {
-          filteredData.push({ id: doc.id, ...data });
+        
+        // ゲストは除外
+        if (userName === 'ゲスト' || userName.trim() === '') {
+          continue;
         }
-      });
 
+        // ★ ユーザーが存在するかチェック
+        const userId = data.userId;
+        if (userId) {
+          try {
+            // ユーザーの存在確認（認証情報をチェック）
+            const userCheck = await auth.getUser(userId).catch(() => null);
+            if (!userCheck) {
+              // ユーザーが存在しない → 削除対象
+              console.log('🗑️ 削除済みユーザーのデータを検出:', userId, userName);
+              deletePromises.push(doc.ref.delete());
+              continue;
+            }
+          } catch (e) {
+            // ユーザーが存在しない場合
+            console.log('🗑️ 削除済みユーザーのデータを検出:', userId, userName);
+            deletePromises.push(doc.ref.delete());
+            continue;
+          }
+        }
+
+        filteredData.push({ id: doc.id, ...data });
+      }
+
+      // 削除済みユーザーのデータを削除
+      if (deletePromises.length > 0) {
+        await Promise.all(deletePromises);
+        console.log('✅ 削除済みユーザーのデータをクリーンアップしました');
+      }
+
+      // 上位30人に絞る
       filteredData = filteredData.slice(0, 30);
 
       if (filteredData.length === 0) {
@@ -1223,7 +1260,7 @@ async function saveRankingOnline(user, char, seconds) {
 }
 
 // =============================================
-//  ★ アカウント削除（完全版） ★
+//  アカウント削除処理
 // =============================================
 async function deleteAccount() {
   if (!myUid) {
@@ -1245,46 +1282,20 @@ async function deleteAccount() {
   deleteStatus.className = 'status-msg';
 
   try {
-    // ===== 1. Firestoreのデータを完全削除 =====
+    // 1. Firestoreデータ削除
     deleteStatus.textContent = '⏳ Firestoreデータ削除中...';
+    const checkSnapshot = await db.collection('rankings').where('userId', '==', myUid).get();
     
-    const checkSnapshot = await db.collection('rankings')
-      .where('userId', '==', myUid)
-      .get();
-    
-    console.log('🔍 削除前のデータ件数:', checkSnapshot.size);
-    
-    if (checkSnapshot.empty) {
-      console.log('⚠️ 削除するデータが見つかりませんでした');
-      deleteStatus.textContent = '⚠️ 削除するデータがありません';
-    } else {
-      // バッチ削除
+    if (!checkSnapshot.empty) {
       const batch = db.batch();
       checkSnapshot.forEach(doc => {
         batch.delete(doc.ref);
       });
       await batch.commit();
-      console.log('✅ Firestoreバッチ削除完了');
-
-      // 削除確認
-      const verifySnapshot = await db.collection('rankings')
-        .where('userId', '==', myUid)
-        .get();
-      
-      if (verifySnapshot.empty) {
-        console.log('✅ Firestore削除確認完了');
-        deleteStatus.textContent = '✅ Firestoreデータ削除完了';
-      } else {
-        console.warn('⚠️ まだデータが残っています。個別削除を試みます...');
-        for (const doc of verifySnapshot.docs) {
-          await doc.ref.delete();
-          console.log('🗑️ 個別削除:', doc.id);
-        }
-        deleteStatus.textContent = '✅ Firestoreデータ削除完了（個別削除）';
-      }
+      console.log('✅ Firestore削除完了');
     }
 
-    // ===== 2. localStorage =====
+    // 2. localStorage削除
     deleteStatus.textContent = '⏳ ローカルデータ削除中...';
     const keys = [
       'charPetUser', 'charPetChar', 'charPetLifeSeconds',
@@ -1293,32 +1304,22 @@ async function deleteAccount() {
       'petUserUid'
     ];
     keys.forEach(key => localStorage.removeItem(key));
-    console.log('✅ localStorage削除完了');
 
-    // ===== 3. Cookie =====
+    // 3. Cookie削除
     document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    console.log('✅ Cookie削除完了');
 
-    // ===== 4. Firebase認証削除 =====
+    // 4. Firebase認証削除
     deleteStatus.textContent = '⏳ 認証情報削除中...';
     const user = auth.currentUser;
     if (user) {
       try {
         await user.delete();
-        console.log('✅ Firebase認証削除完了');
       } catch (authError) {
-        console.warn('認証削除エラー:', authError.code);
         if (authError.code === 'auth/requires-recent-login') {
-          deleteStatus.textContent = '⏳ 再認証中...';
           await auth.signOut();
           await auth.signInAnonymously();
           const newUser = auth.currentUser;
-          if (newUser) {
-            await newUser.delete();
-            console.log('✅ 再認証後、削除完了');
-          }
-        } else {
-          throw authError;
+          if (newUser) await newUser.delete();
         }
       }
     }
