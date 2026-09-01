@@ -393,16 +393,22 @@
   }
   .password-modal-content input {
     width: 100%;
-    padding: 12px 16px;
+    padding: 14px 16px;
     border: 2px solid #ddd;
     border-radius: 30px;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     text-align: center;
     outline: none;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    transition: 0.2s;
   }
   .password-modal-content input:focus {
     border-color: #ff6b6b;
+    box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.1);
+  }
+  .password-modal-content input.error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
   }
   .password-modal-content .btn-group {
     display: flex;
@@ -410,19 +416,24 @@
   }
   .password-modal-content .btn-group button {
     flex: 1;
-    padding: 12px 0;
+    padding: 14px 0;
     border: none;
     border-radius: 30px;
     font-weight: 700;
     cursor: pointer;
     transition: 0.12s ease;
+    font-size: 1rem;
   }
   .password-modal-content .btn-group button:active { transform: scale(0.94); }
   .btn-modal-confirm {
     background: #dc3545;
     color: white;
   }
-  .btn-modal-confirm:hover { background: #c82333; }
+  .btn-modal-confirm:hover:not(:disabled) { background: #c82333; }
+  .btn-modal-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   .btn-modal-cancel {
     background: #e8e4e8;
     color: #666;
@@ -431,8 +442,12 @@
   .password-error {
     color: #dc3545;
     font-size: 0.8rem;
-    margin-top: 8px;
-    min-height: 20px;
+    margin-top: 6px;
+    min-height: 24px;
+    font-weight: 500;
+  }
+  .password-error.success {
+    color: #2ecc71;
   }
 
   ::-webkit-scrollbar { width: 5px; }
@@ -515,7 +530,7 @@
         </button>
         <div class="status-msg" id="forceDeleteStatus"></div>
         <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
-          パスワード入力後に全てのランキングデータを完全削除します
+          パスワードを入力して全てのランキングデータを完全削除します
         </div>
       </div>
 
@@ -549,7 +564,7 @@
   <div class="password-modal-content">
     <h3>🔒 パスワード認証</h3>
     <p>ランキングデータを完全に削除するには<br>管理者パスワードを入力してください</p>
-    <input type="password" id="passwordInput" placeholder="パスワードを入力" maxlength="20">
+    <input type="password" id="passwordInput" placeholder="パスワードを入力" maxlength="20" autocomplete="off">
     <div class="password-error" id="passwordError"></div>
     <div class="btn-group">
       <button class="btn-modal-cancel" id="modalCancel">キャンセル</button>
@@ -1237,6 +1252,8 @@ function showPasswordModal() {
   passwordModal.classList.add('show');
   passwordInput.value = '';
   passwordError.textContent = '';
+  passwordError.className = 'password-error';
+  passwordInput.className = '';
   passwordInput.focus();
 }
 
@@ -1244,26 +1261,35 @@ function hidePasswordModal() {
   passwordModal.classList.remove('show');
   passwordInput.value = '';
   passwordError.textContent = '';
+  passwordError.className = 'password-error';
+  passwordInput.className = '';
 }
 
 async function executeDeleteWithPassword() {
   const password = passwordInput.value.trim();
   
+  // パスワード空チェック
   if (!password) {
     passwordError.textContent = '⚠️ パスワードを入力してください';
+    passwordError.className = 'password-error';
+    passwordInput.className = 'error';
     return;
   }
 
+  // パスワードチェック
   if (password !== ADMIN_PASSWORD) {
     passwordError.textContent = '❌ パスワードが間違っています';
+    passwordError.className = 'password-error';
+    passwordInput.className = 'error';
     passwordInput.value = '';
     passwordInput.focus();
     return;
   }
 
-  // パスワードOK → 削除実行
+  // ✅ パスワード一致！削除実行
   passwordError.textContent = '✅ 認証成功。削除を実行します...';
-  passwordError.style.color = '#2ecc71';
+  passwordError.className = 'password-error success';
+  passwordInput.className = '';
   
   modalConfirm.disabled = true;
   modalConfirm.textContent = '⏳ 削除中...';
@@ -1309,12 +1335,17 @@ async function executeDeleteWithPassword() {
       startRealtimeRanking();
     }
 
-    hidePasswordModal();
+    // モーダルを閉じる（少し待ってから）
+    setTimeout(() => {
+      hidePasswordModal();
+    }, 1000);
 
   } catch (error) {
     console.error('❌ 削除エラー:', error);
     forceDeleteStatus.textContent = '❌ 削除エラー: ' + error.message;
     forceDeleteStatus.className = 'status-msg';
+    passwordError.textContent = '❌ 削除中にエラーが発生しました';
+    passwordError.className = 'password-error';
   }
 
   modalConfirm.disabled = false;
@@ -1332,12 +1363,20 @@ modalCancel.addEventListener('click', hidePasswordModal);
 
 modalConfirm.addEventListener('click', executeDeleteWithPassword);
 
+// Enterキーで実行
 passwordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
+    e.preventDefault();
     executeDeleteWithPassword();
   }
   if (e.key === 'Escape') {
     hidePasswordModal();
+  }
+  // 入力中にエラー状態をリセット
+  if (e.key !== 'Enter') {
+    passwordError.textContent = '';
+    passwordError.className = 'password-error';
+    passwordInput.className = '';
   }
 });
 
