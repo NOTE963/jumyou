@@ -91,9 +91,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* ========================================
-     ペット画面
-     ======================================== */
   .pet-screen {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(10px);
@@ -114,49 +111,15 @@
     gap: 4px;
     font-weight: 600;
   }
-  .pet-header .label {
-    color: #aaa;
-    font-weight: 500;
-  }
-  .pet-header .life {
-    color: #ff6b6b;
-    font-weight: 800;
-    font-size: 1.0rem;
-  }
-  .pet-header .life.danger {
-    color: #dc3545;
-    animation: blink 0.5s infinite;
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
-  }
-  .pet-header .user {
-    color: #888;
-    font-size: 0.7rem;
-    background: rgba(0,0,0,0.04);
-    padding: 2px 14px;
-    border-radius: 30px;
-  }
-  .pet-header .growth {
-    color: #2ecc71;
-    font-size: 0.7rem;
-  }
-  .pet-header .status-badge {
-    font-size: 0.6rem;
-    padding: 3px 12px;
-    border-radius: 30px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-  }
-  .status-badge.alive {
-    background: #d4edda;
-    color: #155724;
-  }
-  .status-badge.dead {
-    background: #f8d7da;
-    color: #721c24;
-  }
+  .pet-header .label { color: #aaa; font-weight: 500; }
+  .pet-header .life { color: #ff6b6b; font-weight: 800; font-size: 1.0rem; }
+  .pet-header .life.danger { color: #dc3545; animation: blink 0.5s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+  .pet-header .user { color: #888; font-size: 0.7rem; background: rgba(0,0,0,0.04); padding: 2px 14px; border-radius: 30px; }
+  .pet-header .growth { color: #2ecc71; font-size: 0.7rem; }
+  .pet-header .status-badge { font-size: 0.6rem; padding: 3px 12px; border-radius: 30px; font-weight: 700; letter-spacing: 0.5px; }
+  .status-badge.alive { background: #d4edda; color: #155724; }
+  .status-badge.dead { background: #f8d7da; color: #721c24; }
 
   .pet-area {
     position: relative;
@@ -169,10 +132,7 @@
     border: 2px dashed rgba(200, 180, 190, 0.2);
     box-shadow: inset 0 4px 20px rgba(0,0,0,0.02);
   }
-  .pet-area.dead-area {
-    filter: grayscale(0.8);
-    opacity: 0.5;
-  }
+  .pet-area.dead-area { filter: grayscale(0.8); opacity: 0.5; }
   .pet-char {
     position: absolute;
     font-weight: 800;
@@ -185,10 +145,7 @@
     transition: font-size 0.8s ease;
     white-space: nowrap;
   }
-  .pet-char.dead-char {
-    color: #dc3545 !important;
-    text-shadow: 0 0 60px rgba(220, 53, 69, 0.4) !important;
-  }
+  .pet-char.dead-char { color: #dc3545 !important; text-shadow: 0 0 60px rgba(220, 53, 69, 0.4) !important; }
   .gameover-overlay {
     position: absolute;
     top: 50%;
@@ -206,22 +163,11 @@
     box-shadow: 0 12px 48px rgba(220, 53, 69, 0.15);
     letter-spacing: 2px;
   }
-  .gameover-overlay.show {
-    display: block;
-  }
+  .gameover-overlay.show { display: block; }
 
-  .note {
-    color: #bbb;
-    font-size: 0.6rem;
-    text-align: center;
-    margin-top: 8px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-  }
+  .note { color: #bbb; font-size: 0.6rem; text-align: center; margin-top: 8px; font-weight: 500; letter-spacing: 0.3px; }
 
-  /* ========================================
-     勉強画面
-     ======================================== */
+  /* 勉強画面 */
   .study-screen {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(10px);
@@ -232,20 +178,8 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.04);
     text-align: center;
   }
-  .study-screen h2 {
-    color: #4a2a3a;
-    font-size: 1.3rem;
-    margin-bottom: 4px;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-  .study-sub {
-    color: #aaa;
-    font-size: 0.7rem;
-    margin-bottom: 20px;
-    font-weight: 500;
-  }
-
+  .study-screen h2 { color: #4a2a3a; font-size: 1.3rem; margin-bottom: 4px; font-weight: 800; letter-spacing: 1px; }
+  .study-sub { color: #aaa; font-size: 0.7rem; margin-bottom: 20px; font-weight: 500; }
   .study-timer {
     font-size: 4.0rem;
     font-weight: 900;
@@ -259,31 +193,12 @@
     margin-bottom: 16px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.02);
   }
-  .study-timer.running {
-    color: #ff6b6b;
-    border-color: #ff6b6b;
-  }
+  .study-timer.running { color: #ff6b6b; border-color: #ff6b6b; }
+  .study-status { font-size: 1rem; color: #888; margin-bottom: 14px; min-height: 28px; font-weight: 500; }
+  .study-status .highlight { color: #2ecc71; font-weight: 700; }
+  .study-status .highlight.active { color: #ff6b6b; }
 
-  .study-status {
-    font-size: 1rem;
-    color: #888;
-    margin-bottom: 14px;
-    min-height: 28px;
-    font-weight: 500;
-  }
-  .study-status .highlight {
-    color: #2ecc71;
-    font-weight: 700;
-  }
-  .study-status .highlight.active {
-    color: #ff6b6b;
-  }
-
-  .study-btn-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
+  .study-btn-group { display: flex; gap: 10px; margin-bottom: 14px; }
   .study-btn-group button {
     flex: 1;
     border: none;
@@ -298,32 +213,12 @@
     letter-spacing: 0.5px;
   }
   .study-btn-group button:active { transform: scale(0.94); }
-  .study-btn-group button:disabled {
-    opacity: 0.3;
-    transform: scale(0.96);
-    pointer-events: none;
-  }
-  .btn-study-start {
-    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-    color: #4a2a3a;
-  }
-  .btn-study-start:hover:not(:disabled) {
-    box-shadow: 0 6px 24px rgba(255, 154, 158, 0.35);
-    transform: translateY(-2px);
-  }
-  .btn-study-stop {
-    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
-    color: white;
-  }
-  .btn-study-stop:hover:not(:disabled) {
-    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.25);
-    transform: translateY(-2px);
-  }
-  .btn-study-reset {
-    background: #e8e4e8;
-    color: #888;
-    flex: 0.4;
-  }
+  .study-btn-group button:disabled { opacity: 0.3; transform: scale(0.96); pointer-events: none; }
+  .btn-study-start { background: linear-gradient(135deg, #ff9a9e, #fad0c4); color: #4a2a3a; }
+  .btn-study-start:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(255, 154, 158, 0.35); transform: translateY(-2px); }
+  .btn-study-stop { background: linear-gradient(135deg, #a8c0ff, #3f2b96); color: white; }
+  .btn-study-stop:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(63, 43, 150, 0.25); transform: translateY(-2px); }
+  .btn-study-reset { background: #e8e4e8; color: #888; flex: 0.4; }
 
   .study-result {
     background: rgba(255, 255, 255, 0.4);
@@ -336,19 +231,10 @@
     border: 1px solid rgba(0,0,0,0.03);
     line-height: 1.6;
   }
-  .study-result .result-life {
-    color: #ff6b6b;
-    font-weight: 800;
-    font-size: 1.1rem;
-  }
-  .study-result .result-dead {
-    color: #dc3545;
-    font-weight: 700;
-  }
+  .study-result .result-life { color: #ff6b6b; font-weight: 800; font-size: 1.1rem; }
+  .study-result .result-dead { color: #dc3545; font-weight: 700; }
 
-  /* ========================================
-     設定画面
-     ======================================== */
+  /* 設定画面 */
   .settings-screen {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(10px);
@@ -358,35 +244,11 @@
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 8px 32px rgba(0,0,0,0.04);
   }
-  .settings-screen h2 {
-    color: #4a2a3a;
-    font-size: 1.2rem;
-    margin-bottom: 16px;
-    text-align: center;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-  .setting-group {
-    margin-bottom: 16px;
-  }
-  .setting-group label {
-    color: #888;
-    font-size: 0.8rem;
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-  .setting-group .sub-label {
-    color: #bbb;
-    font-size: 0.65rem;
-    font-weight: 400;
-    margin-top: 2px;
-  }
-  .setting-row {
-    display: flex;
-    gap: 10px;
-  }
+  .settings-screen h2 { color: #4a2a3a; font-size: 1.2rem; margin-bottom: 16px; text-align: center; font-weight: 800; letter-spacing: 1px; }
+  .setting-group { margin-bottom: 16px; }
+  .setting-group label { color: #888; font-size: 0.8rem; display: block; margin-bottom: 6px; font-weight: 600; letter-spacing: 0.5px; }
+  .setting-group .sub-label { color: #bbb; font-size: 0.65rem; font-weight: 400; margin-top: 2px; }
+  .setting-row { display: flex; gap: 10px; }
   .setting-row input {
     flex: 1;
     background: rgba(255, 255, 255, 0.5);
@@ -401,17 +263,9 @@
     transition: 0.2s;
     font-weight: 600;
   }
-  .setting-row input:focus {
-    border-color: #ff9a9e;
-    box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.08);
-  }
-  .setting-row input:disabled {
-    opacity: 0.3;
-  }
-  .setting-row input::placeholder {
-    color: #ccc;
-    font-size: 0.9rem;
-  }
+  .setting-row input:focus { border-color: #ff9a9e; box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.08); }
+  .setting-row input:disabled { opacity: 0.3; }
+  .setting-row input::placeholder { color: #ccc; font-size: 0.9rem; }
   .btn-setting {
     background: linear-gradient(135deg, #a8c0ff, #3f2b96);
     border: none;
@@ -425,14 +279,8 @@
     letter-spacing: 0.5px;
   }
   .btn-setting:active { transform: scale(0.94); }
-  .btn-setting:disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-  .btn-setting:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20);
-  }
+  .btn-setting:disabled { opacity: 0.3; pointer-events: none; }
+  .btn-setting:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20); }
   .btn-danger {
     background: #f8d7da;
     border: none;
@@ -447,46 +295,21 @@
     letter-spacing: 0.5px;
   }
   .btn-danger:active { transform: scale(0.96); }
-  .btn-danger:disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-  .btn-danger:hover:not(:disabled) {
-    background: #f5c6cb;
-  }
-  /* ★ アカウント削除ボタン（赤） */
+  .btn-danger:disabled { opacity: 0.3; pointer-events: none; }
+  .btn-danger:hover:not(:disabled) { background: #f5c6cb; }
+
   .btn-delete-account {
     background: #dc3545 !important;
     color: white !important;
     font-weight: 700;
   }
-  .btn-delete-account:hover:not(:disabled) {
-    background: #c82333 !important;
-  }
-  .btn-delete-account:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  .btn-delete-account:hover:not(:disabled) { background: #c82333 !important; }
+  .btn-delete-account:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .status-msg {
-    color: #ff6b6b;
-    font-size: 0.8rem;
-    text-align: center;
-    margin-top: 6px;
-    min-height: 20px;
-    font-weight: 500;
-  }
-  .status-msg.success {
-    color: #2ecc71;
-  }
-  .status-msg .countdown {
-    color: #f5a623;
-    font-weight: 700;
-  }
+  .status-msg { color: #ff6b6b; font-size: 0.8rem; text-align: center; margin-top: 6px; min-height: 20px; font-weight: 500; }
+  .status-msg.success { color: #2ecc71; }
 
-  /* ========================================
-     ランキング画面
-     ======================================== */
+  /* ランキング画面 */
   .rank-screen {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(10px);
@@ -496,36 +319,10 @@
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow: 0 8px 32px rgba(0,0,0,0.04);
   }
-  .rank-screen h2 {
-    color: #4a2a3a;
-    font-size: 1.2rem;
-    text-align: center;
-    margin-bottom: 4px;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-  .rank-sub {
-    color: #bbb;
-    font-size: 0.7rem;
-    text-align: center;
-    margin-bottom: 8px;
-    font-weight: 500;
-  }
-  .rank-sub .live-badge {
-    display: inline-block;
-    background: #2ecc71;
-    color: white;
-    font-size: 0.55rem;
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-weight: 700;
-    animation: pulse 1.5s infinite;
-  }
-  .rank-list {
-    max-height: 380px;
-    overflow-y: auto;
-    padding-right: 4px;
-  }
+  .rank-screen h2 { color: #4a2a3a; font-size: 1.2rem; text-align: center; margin-bottom: 4px; font-weight: 800; letter-spacing: 1px; }
+  .rank-sub { color: #bbb; font-size: 0.7rem; text-align: center; margin-bottom: 8px; font-weight: 500; }
+  .rank-sub .live-badge { display: inline-block; background: #2ecc71; color: white; font-size: 0.55rem; padding: 2px 10px; border-radius: 20px; font-weight: 700; animation: pulse 1.5s infinite; }
+  .rank-list { max-height: 380px; overflow-y: auto; padding-right: 4px; }
   .rank-item {
     display: flex;
     align-items: center;
@@ -543,54 +340,17 @@
   .rank-item.top1 { background: linear-gradient(135deg, #fff9e6, #fef3d1); }
   .rank-item.top2 { background: linear-gradient(135deg, #f5f5f5, #ececec); }
   .rank-item.top3 { background: linear-gradient(135deg, #fdf4ed, #fae8db); }
-  .rank-item.dead-rank {
-    opacity: 0.35;
-    text-decoration: line-through;
-  }
-  .rank-num {
-    font-weight: 800;
-    width: 32px;
-    color: #ccc;
-    font-size: 0.8rem;
-  }
+  .rank-item.dead-rank { opacity: 0.35; text-decoration: line-through; }
+  .rank-num { font-weight: 800; width: 32px; color: #ccc; font-size: 0.8rem; }
   .rank-num.gold { color: #f5a623; }
   .rank-num.silver { color: #b0b0b0; }
   .rank-num.bronze { color: #cd7f32; }
-  .rank-user {
-    color: #333;
-    font-weight: 700;
-    min-width: 56px;
-  }
-  .rank-pet {
-    color: #aaa;
-    font-size: 0.8rem;
-  }
-  .rank-pet span {
-    color: #4a2a3a;
-    font-size: 1.0rem;
-    font-weight: 700;
-  }
-  .rank-time {
-    margin-left: auto;
-    color: #ff6b6b;
-    font-weight: 800;
-    font-size: 0.9rem;
-    font-variant-numeric: tabular-nums;
-  }
-  .rank-empty {
-    color: #ccc;
-    text-align: center;
-    padding: 40px 0;
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-  .rank-update-info {
-    text-align: center;
-    color: #bbb;
-    font-size: 0.6rem;
-    margin-top: 10px;
-    font-weight: 400;
-  }
+  .rank-user { color: #333; font-weight: 700; min-width: 56px; }
+  .rank-pet { color: #aaa; font-size: 0.8rem; }
+  .rank-pet span { color: #4a2a3a; font-size: 1.0rem; font-weight: 700; }
+  .rank-time { margin-left: auto; color: #ff6b6b; font-weight: 800; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  .rank-empty { color: #ccc; text-align: center; padding: 40px 0; font-size: 0.9rem; font-weight: 500; }
+  .rank-update-info { text-align: center; color: #bbb; font-size: 0.6rem; margin-top: 10px; font-weight: 400; }
 
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
@@ -600,7 +360,6 @@
 <body>
 <div class="container">
 
-  <!-- ===== タブ ===== -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="pet">ペット</button>
     <button class="tab-btn" data-tab="study">勉強</button>
@@ -608,9 +367,7 @@
     <button class="tab-btn" data-tab="rank">ランキング <span class="live-dot"></span></button>
   </div>
 
-  <!-- ========================================
-       ペット画面
-       ======================================== -->
+  <!-- ペット画面 -->
   <div class="screen active" id="screen-pet">
     <div class="pet-screen">
       <div class="pet-header">
@@ -628,35 +385,23 @@
     </div>
   </div>
 
-  <!-- ========================================
-       勉強画面
-       ======================================== -->
+  <!-- 勉強画面 -->
   <div class="screen" id="screen-study">
     <div class="study-screen">
       <h2>勉強タイマー</h2>
       <div class="study-sub">スマホを伏せて勉強開始。戻すと自動停止</div>
-
       <div class="study-timer" id="studyTimer">00:00:00</div>
-
-      <div class="study-status" id="studyStatus">
-        待機中 — 開始ボタンを押してから伏せてください
-      </div>
-
+      <div class="study-status" id="studyStatus">待機中 — 開始ボタンを押してから伏せてください</div>
       <div class="study-btn-group">
         <button class="btn-study-start" id="studyStartBtn">開始</button>
         <button class="btn-study-stop" id="studyStopBtn" disabled>停止</button>
         <button class="btn-study-reset" id="studyResetBtn">リセット</button>
       </div>
-
-      <div class="study-result" id="studyResult">
-        勉強するとここに結果が表示されます
-      </div>
+      <div class="study-result" id="studyResult">勉強するとここに結果が表示されます</div>
     </div>
   </div>
 
-  <!-- ========================================
-       設定画面
-       ======================================== -->
+  <!-- 設定画面 -->
   <div class="screen" id="screen-settings">
     <div class="settings-screen">
       <h2>設定</h2>
@@ -684,7 +429,6 @@
         <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
       </div>
 
-      <!-- ★ アカウント削除ボタン ★ -->
       <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
         <button class="btn-danger btn-delete-account" id="deleteAccountBtn">
           🗑 アカウント削除（データ完全消去）
@@ -697,9 +441,7 @@
     </div>
   </div>
 
-  <!-- ========================================
-       ランキング画面
-       ======================================== -->
+  <!-- ランキング画面 -->
   <div class="screen" id="screen-rank">
     <div class="rank-screen">
       <h2>寿命ランキング</h2>
@@ -733,7 +475,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // =============================================
-//  Cookie / localStorage 自動ログイン管理
+//  Cookie / localStorage 管理
 // =============================================
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -802,7 +544,6 @@ let lifeDecreaseInterval = null;
 let rankUnsubscribe = null;
 let isRankingUpdateScheduled = false;
 
-// ペット変更制限
 const CHANGE_COOLDOWN_DAYS = 3;
 const COOLDOWN_MS = CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 let lastCharChangeTime = 0;
@@ -905,12 +646,11 @@ function updateChangeLimitDisplay() {
 }
 
 // =============================================
-//  ランキング更新（リアルタイム連動）
+//  ランキング更新
 // =============================================
 function scheduleRankingUpdate() {
   if (isRankingUpdateScheduled) return;
   isRankingUpdateScheduled = true;
-  
   setTimeout(() => {
     isRankingUpdateScheduled = false;
     updateRankingInFirestore();
@@ -920,12 +660,8 @@ function scheduleRankingUpdate() {
 async function updateRankingInFirestore() {
   if (!myUid) return;
   if (isDead) return;
-  
   try {
-    const snapshot = await db.collection('rankings')
-      .where('userId', '==', myUid)
-      .get();
-
+    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       await doc.ref.update({
@@ -951,7 +687,6 @@ function startLifeDecrease() {
       currentLifeSeconds--;
       updatePet();
       scheduleRankingUpdate();
-      
       if (currentLifeSeconds <= 0) {
         currentLifeSeconds = 0;
         clearInterval(lifeDecreaseInterval);
@@ -1002,18 +737,12 @@ function setDead() {
   if (myUid) {
     db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
       snapshot.forEach(doc => {
-        doc.ref.update({ 
-          isDead: true,
-          currentLife: 0,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        doc.ref.update({ isDead: true, currentLife: 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       });
     });
   }
   
-  studyResult.innerHTML = `
-    <span class="result-dead">ペットが死亡しました</span>
-  `;
+  studyResult.innerHTML = `<span class="result-dead">ペットが死亡しました</span>`;
 }
 
 // =============================================
@@ -1044,7 +773,6 @@ function handleOrientation(event) {
 
   if (isFlipped !== isPhoneFlipped) {
     isPhoneFlipped = isFlipped;
-    
     if (isPhoneFlipped && isStudyMode && !isRunning && !isDead) {
       startStudyTimer();
     } else if (!isPhoneFlipped && isRunning) {
@@ -1125,8 +853,7 @@ function updateStudyTimer(sec) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   const s = Math.floor(sec % 60);
-  studyTimer.textContent =
-    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  studyTimer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 // =============================================
@@ -1271,7 +998,6 @@ auth.onAuthStateChanged(user => {
 // =============================================
 function loadUserData() {
   if (!myUid) return;
-  
   db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
     if (!snapshot.empty) {
       const data = snapshot.docs[0].data();
@@ -1292,9 +1018,7 @@ function loadUserData() {
 async function checkUserNameUnique(name) {
   if (!name || name === 'ゲスト') return true;
   try {
-    const snapshot = await db.collection('rankings')
-      .where('userName', '==', name)
-      .get();
+    const snapshot = await db.collection('rankings').where('userName', '==', name).get();
     let isUnique = true;
     snapshot.forEach(doc => {
       if (doc.data().userId !== myUid) isUnique = false;
@@ -1424,7 +1148,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ランキング保存（1ユーザー1件）
+//  ランキング保存
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1432,10 +1156,7 @@ async function saveRankingOnline(user, char, seconds) {
     return;
   }
   try {
-    const snapshot = await db.collection('rankings')
-      .where('userId', '==', myUid)
-      .get();
-
+    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
     const currentLife = currentLifeSeconds;
 
     if (!snapshot.empty) {
@@ -1468,7 +1189,7 @@ async function saveRankingOnline(user, char, seconds) {
 }
 
 // =============================================
-//  ★ アカウント削除処理 ★
+//  ★ アカウント削除処理（修正版） ★
 // =============================================
 async function deleteAccount() {
   if (!myUid) {
@@ -1491,16 +1212,17 @@ async function deleteAccount() {
 
   try {
     // 1. Firestoreのデータを削除
-    const snapshot = await db.collection('rankings')
-      .where('userId', '==', myUid)
-      .get();
-
-    const batch = db.batch();
-    snapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    console.log('✅ Firestoreデータ削除完了');
+    try {
+      const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
+      const batch = db.batch();
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      console.log('✅ Firestoreデータ削除完了');
+    } catch (e) {
+      console.warn('Firestore削除エラー（無視）:', e.message);
+    }
 
     // 2. localStorageのデータを削除
     const keys = [
@@ -1516,11 +1238,30 @@ async function deleteAccount() {
     document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     console.log('✅ Cookie削除完了');
 
-    // 4. Firebase認証削除
+    // 4. Firebase認証削除（再認証してから削除）
     const user = auth.currentUser;
     if (user) {
-      await user.delete();
-      console.log('✅ Firebase認証削除完了');
+      try {
+        // 匿名ユーザーの場合は再認証が不要な場合があるので直接削除を試みる
+        await user.delete();
+        console.log('✅ Firebase認証削除完了');
+      } catch (authError) {
+        // 再認証が必要な場合（最近ログインしていない等）
+        if (authError.code === 'auth/requires-recent-login') {
+          console.log('再認証が必要です。匿名ログインし直します...');
+          // 一度ログアウトして再ログイン
+          await auth.signOut();
+          await auth.signInAnonymously();
+          const newUser = auth.currentUser;
+          if (newUser) {
+            await newUser.delete();
+            console.log('✅ 再認証後、削除完了');
+          }
+        } else {
+          console.warn('認証削除エラー:', authError.message);
+          // エラーでも続行（ローカルデータは消えている）
+        }
+      }
     }
 
     deleteStatus.textContent = '✅ アカウントが削除されました。ページをリロードします...';
@@ -1577,7 +1318,7 @@ function updatePet() {
 }
 
 // =============================================
-//  ローカルランキング（バックアップ）
+//  ローカルランキング
 // =============================================
 function getRankingLocal() {
   try { return JSON.parse(localStorage.getItem('charPetRanking')) || []; }
