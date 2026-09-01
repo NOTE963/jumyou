@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ペットと勉強 - 寿命は1回</title>
+<title>ペットと勉強 - 寿命ランキング</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -34,7 +34,6 @@
     overflow: hidden;
   }
 
-  /* ===== タブ ===== */
   .tabs {
     display: flex;
     gap: 6px;
@@ -365,6 +364,12 @@
     font-weight: 600;
     letter-spacing: 0.5px;
   }
+  .setting-group .sub-label {
+    color: #bbb;
+    font-size: 0.65rem;
+    font-weight: 400;
+    margin-top: 2px;
+  }
   .setting-row {
     display: flex;
     gap: 10px;
@@ -436,15 +441,6 @@
   .btn-danger:hover:not(:disabled) {
     background: #f5c6cb;
   }
-  .btn-revive {
-    background: linear-gradient(135deg, #ffecd2, #fcb69f);
-    color: #4a2a3a;
-    box-shadow: 0 4px 16px rgba(252, 182, 159, 0.25);
-  }
-  .btn-revive:hover:not(:disabled) {
-    box-shadow: 0 6px 24px rgba(252, 182, 159, 0.40);
-    transform: translateY(-2px);
-  }
   .status-msg {
     color: #ff6b6b;
     font-size: 0.8rem;
@@ -455,6 +451,10 @@
   }
   .status-msg.success {
     color: #2ecc71;
+  }
+  .status-msg .countdown {
+    color: #f5a623;
+    font-weight: 700;
   }
 
   /* ========================================
@@ -650,19 +650,16 @@
 
       <div class="setting-group">
         <label>ペットの名前（6文字まで）</label>
+        <div class="sub-label" id="changeLimitLabel">変更可能です</div>
         <div class="setting-row">
           <input id="charInput" type="text" placeholder="ペットの名前" value="たま" maxlength="6">
           <button class="btn-setting" id="setCharBtn">変更</button>
         </div>
+        <div class="status-msg" id="charChangeStatus"></div>
       </div>
 
       <div class="setting-group">
         <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
-      </div>
-
-      <div class="setting-group">
-        <button class="btn-danger btn-revive" id="reviveBtn">新しいペットを始める</button>
-        <div class="status-msg" id="reviveStatus"></div>
       </div>
     </div>
   </div>
@@ -672,8 +669,8 @@
        ======================================== -->
   <div class="screen" id="screen-rank">
     <div class="rank-screen">
-      <h2>全世界ランキング</h2>
-      <div class="rank-sub">ユーザー名（ペットの名前）</div>
+      <h2>寿命ランキング</h2>
+      <div class="rank-sub">現在の寿命が多い順</div>
       <div class="rank-list" id="rankList">
         <div class="rank-empty">読み込み中...</div>
       </div>
@@ -707,6 +704,73 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // =============================================
+//  ★ Cookie / localStorage 自動ログイン管理 ★
+// =============================================
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function setCookie(name, value, days = 365) {
+  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+// ユーザーIDを保存・復元
+function getSavedUid() {
+  // まずCookieをチェック
+  const cookieUid = getCookie('petUserUid');
+  if (cookieUid) return cookieUid;
+  
+  // 次にlocalStorageをチェック
+  const localUid = localStorage.getItem('petUserUid');
+  if (localUid) {
+    // Cookieにも保存（次回のため）
+    setCookie('petUserUid', localUid);
+    return localUid;
+  }
+  return null;
+}
+
+function saveUid(uid) {
+  localStorage.setItem('petUserUid', uid);
+  setCookie('petUserUid', uid);
+}
+
+function clearSavedUid() {
+  localStorage.removeItem('petUserUid');
+  document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+}
+
+// =============================================
+//  ★ 自動ログイン処理 ★
+// =============================================
+function autoLogin() {
+  const savedUid = getSavedUid();
+  
+  if (savedUid) {
+    // 保存されたUIDでログイン状態を維持
+    console.log('🔑 保存されたUIDでログイン:', savedUid);
+    // Firebase匿名認証でログイン（既にログイン中ならそのまま）
+    if (!auth.currentUser) {
+      auth.signInAnonymously().catch(error => {
+        console.error('ログインエラー:', error);
+      });
+    }
+    return true;
+  } else {
+    // 新規ログイン
+    console.log('🆕 新規ログイン');
+    auth.signInAnonymously().catch(error => {
+      console.error('ログインエラー:', error);
+    });
+    return false;
+  }
+}
+
+// =============================================
 //  グローバル状態
 // =============================================
 let isRunning = false;
@@ -723,6 +787,11 @@ let isStudyMode = false;
 let isPhoneFlipped = false;
 let isDead = false;
 let lifeDecreaseInterval = null;
+
+// ペット変更制限
+const CHANGE_COOLDOWN_DAYS = 3;
+const COOLDOWN_MS = CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+let lastCharChangeTime = 0;
 
 // DOM
 const petChar = document.getElementById('petChar');
@@ -741,11 +810,11 @@ const studyStopBtn = document.getElementById('studyStopBtn');
 const studyResetBtn = document.getElementById('studyResetBtn');
 const charInput = document.getElementById('charInput');
 const setCharBtn = document.getElementById('setCharBtn');
+const charChangeStatus = document.getElementById('charChangeStatus');
+const changeLimitLabel = document.getElementById('changeLimitLabel');
 const userNameInput = document.getElementById('userNameInput');
 const setUserNameBtn = document.getElementById('setUserNameBtn');
 const resetRankBtn = document.getElementById('resetRankBtn');
-const reviveBtn = document.getElementById('reviveBtn');
-const reviveStatus = document.getElementById('reviveStatus');
 const onlineRankBtn = document.getElementById('onlineRankBtn');
 const rankList = document.getElementById('rankList');
 const userStatus = document.getElementById('userStatus');
@@ -780,6 +849,44 @@ function formatTimeShort(seconds) {
   if (h > 0) return `${h}時間${m}分${s}秒`;
   else if (m > 0) return `${m}分${s}秒`;
   else return `${s}秒`;
+}
+
+// =============================================
+//  ペット変更制限チェック
+// =============================================
+function getRemainingCooldown() {
+  const elapsed = Date.now() - lastCharChangeTime;
+  const remaining = COOLDOWN_MS - elapsed;
+  return Math.max(0, remaining);
+}
+
+function canChangePet() {
+  if (isDead) return false;
+  return getRemainingCooldown() <= 0;
+}
+
+function updateChangeLimitDisplay() {
+  if (isDead) {
+    changeLimitLabel.textContent = '死亡中は変更できません';
+    changeLimitLabel.style.color = '#dc3545';
+    setCharBtn.disabled = true;
+    charInput.disabled = true;
+    return;
+  }
+  const remaining = getRemainingCooldown();
+  if (remaining <= 0) {
+    changeLimitLabel.textContent = '✅ 変更可能です';
+    changeLimitLabel.style.color = '#2ecc71';
+    setCharBtn.disabled = false;
+    charInput.disabled = false;
+  } else {
+    const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    changeLimitLabel.textContent = `⏳ 変更可能まであと ${days}日 ${hours}時間`;
+    changeLimitLabel.style.color = '#f5a623';
+    setCharBtn.disabled = true;
+    charInput.disabled = true;
+  }
 }
 
 // =============================================
@@ -833,6 +940,7 @@ function setDead() {
   studyStartBtn.textContent = '死亡';
   charInput.disabled = true;
   setCharBtn.disabled = true;
+  updateChangeLimitDisplay();
   
   document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab !== 'rank' && btn.dataset.tab !== 'settings') {
@@ -853,51 +961,6 @@ function setDead() {
     <span class="result-dead">ペットが死亡しました</span><br>
     設定の「新しいペットを始める」で復活できます
   `;
-}
-
-// =============================================
-//  復活処理
-// =============================================
-function revivePet() {
-  isDead = false;
-  currentLifeSeconds = 36 * 3600;
-  currentChar = 'たま';
-  petSize = 40;
-  growthLevel = 1;
-  lastGrowthCheck = Date.now();
-  
-  petChar.textContent = currentChar;
-  petChar.classList.remove('dead-char');
-  petArea.classList.remove('dead-area');
-  gameoverOverlay.classList.remove('show');
-  lifeSpan.classList.remove('danger');
-  statusBadge.textContent = '生存中';
-  statusBadge.className = 'status-badge alive';
-  petNote.textContent = '寿命はリアルタイムで減ります。勉強して延ばしましょう。';
-  
-  studyStartBtn.disabled = false;
-  studyStartBtn.textContent = '開始';
-  charInput.disabled = false;
-  setCharBtn.disabled = false;
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('dead');
-  });
-  
-  localStorage.removeItem('charPetDead');
-  if (myUid) {
-    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
-      snapshot.forEach(doc => {
-        doc.ref.update({ isDead: false });
-      });
-    });
-  }
-  
-  updatePet();
-  setTimeout(() => { startLifeDecrease(); }, 1000);
-  
-  reviveStatus.textContent = '新しいペットを始めました';
-  reviveStatus.className = 'status-msg success';
-  setTimeout(() => { reviveStatus.textContent = ''; }, 3000);
 }
 
 // =============================================
@@ -1134,25 +1197,49 @@ function checkGrowth() {
 setInterval(checkGrowth, 60 * 1000);
 
 // =============================================
-//  Firebase 認証
+//  ★ Firebase 認証 + 自動ログイン ★
 // =============================================
-auth.signInAnonymously().catch(error => {
-  console.error('ログインエラー:', error);
-  onlineRankBtn.textContent = 'ログインエラー';
-});
+// 自動ログイン実行
+autoLogin();
 
 auth.onAuthStateChanged(user => {
   if (user) {
     myUid = user.uid;
+    // UIDを保存
+    saveUid(myUid);
     onlineRankBtn.disabled = false;
     onlineRankBtn.textContent = 'ランキング更新';
     console.log('✅ ログイン完了:', myUid);
     loadOnlineRanking();
+    
+    // 保存されたユーザーデータを読み込み
+    loadUserData();
   } else {
     onlineRankBtn.disabled = true;
     onlineRankBtn.textContent = 'ログイン中...';
   }
 });
+
+// =============================================
+//  ユーザーデータ読み込み（UID連携）
+// =============================================
+function loadUserData() {
+  if (!myUid) return;
+  
+  // Firebaseからユーザーデータを読み込む
+  db.collection('users').doc(myUid).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.userName) {
+        currentUser = data.userName;
+        userNameInput.value = currentUser;
+        updatePet();
+      }
+    }
+  }).catch(error => {
+    console.error('データ読み込みエラー:', error);
+  });
+}
 
 // =============================================
 //  ユーザー名管理
@@ -1231,7 +1318,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ランキング（Firestore）
+//  ランキング（Firestore）- 寿命が多い順
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1243,10 +1330,13 @@ async function saveRankingOnline(user, char, seconds) {
       .where('userId', '==', myUid)
       .get();
 
+    const currentLife = currentLifeSeconds;
+
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       await doc.ref.update({
         totalSeconds: firebase.firestore.FieldValue.increment(seconds),
+        currentLife: currentLife,
         userName: user,
         petChar: char,
         isDead: isDead,
@@ -1259,6 +1349,7 @@ async function saveRankingOnline(user, char, seconds) {
         userName: user,
         petChar: char,
         totalSeconds: seconds,
+        currentLife: currentLife,
         isDead: isDead,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1274,7 +1365,7 @@ async function loadOnlineRanking() {
   try {
     rankList.innerHTML = `<div class="rank-empty">読み込み中...</div>`;
     const snapshot = await db.collection('rankings')
-      .orderBy('totalSeconds', 'desc')
+      .orderBy('currentLife', 'desc')
       .limit(50)
       .get();
 
@@ -1287,8 +1378,8 @@ async function loadOnlineRanking() {
     let rank = 0;
     snapshot.forEach(doc => {
       const data = doc.data();
-      const totalSeconds = data.totalSeconds || 0;
-      const displayTime = formatLifeTime(totalSeconds);
+      const currentLife = data.currentLife || 0;
+      const displayTime = formatLifeTime(currentLife);
       const isDeadRank = data.isDead || false;
       
       const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
@@ -1364,10 +1455,16 @@ function addRankingLocal(seconds, char, user) {
   const existing = rank.find(r => r.user === user && r.char === char);
   if (existing) {
     existing.totalSeconds += seconds;
+    existing.currentLife = currentLifeSeconds;
   } else {
-    rank.push({ user: user || 'ゲスト', char: char || '?', totalSeconds: seconds });
+    rank.push({ 
+      user: user || 'ゲスト', 
+      char: char || '?', 
+      totalSeconds: seconds,
+      currentLife: currentLifeSeconds
+    });
   }
-  rank.sort((a, b) => b.totalSeconds - a.totalSeconds);
+  rank.sort((a, b) => (b.currentLife || 0) - (a.currentLife || 0));
   if (rank.length > 50) rank = rank.slice(0, 50);
   saveRankingLocal(rank);
 }
@@ -1377,23 +1474,46 @@ function addRankingLocal(seconds, char, user) {
 // =============================================
 setCharBtn.addEventListener('click', () => {
   if (isDead) {
-    alert('ペットが死亡しています。新しいペットを始めてください。');
+    charChangeStatus.textContent = '死亡中は変更できません';
+    charChangeStatus.className = 'status-msg';
     return;
   }
+  
+  if (!canChangePet()) {
+    const remaining = getRemainingCooldown();
+    const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    charChangeStatus.textContent = `変更できません。あと ${days}日 ${hours}時間待ってください`;
+    charChangeStatus.className = 'status-msg';
+    return;
+  }
+  
   const newChar = charInput.value.trim();
   if (!newChar || newChar.length === 0) {
-    alert('ペットの名前を入力してください！');
+    charChangeStatus.textContent = 'ペットの名前を入力してください！';
+    charChangeStatus.className = 'status-msg';
     return;
   }
   if (newChar.length > 6) {
-    alert('6文字以内で入力してください！');
+    charChangeStatus.textContent = '6文字以内で入力してください！';
+    charChangeStatus.className = 'status-msg';
     return;
   }
+  
   currentChar = newChar;
-  updatePet();
-  charInput.value = currentChar;
+  lastCharChangeTime = Date.now();
+  localStorage.setItem('lastCharChangeTime', String(lastCharChangeTime));
   localStorage.setItem('charPetChar', currentChar);
+  
+  updatePet();
+  updateChangeLimitDisplay();
+  charInput.value = currentChar;
+  
+  charChangeStatus.textContent = `「${currentChar}」に変更しました！ 次回は3日後から可能です`;
+  charChangeStatus.className = 'status-msg success';
+  setTimeout(() => { charChangeStatus.textContent = ''; }, 4000);
 });
+
 charInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') setCharBtn.click();
 });
@@ -1403,13 +1523,6 @@ resetRankBtn.addEventListener('click', () => {
     localStorage.removeItem('charPetRanking');
     alert('ローカルランキングをリセットしました');
   }
-});
-
-reviveBtn.addEventListener('click', () => {
-  if (!isDead) {
-    if (!confirm('現在のペットをリセットして新しいペットを始めますか？\n（現在の寿命データは失われます）')) return;
-  }
-  revivePet();
 });
 
 onlineRankBtn.addEventListener('click', () => {
@@ -1455,11 +1568,20 @@ if (savedDead === 'true') {
   setTimeout(() => { setDead(); }, 500);
 }
 
+// ペット変更制限の復元
+const savedLastChange = localStorage.getItem('lastCharChangeTime');
+if (savedLastChange) {
+  lastCharChangeTime = parseInt(savedLastChange) || 0;
+} else {
+  lastCharChangeTime = 0;
+}
+
 // センサー初期化
 initOrientationSensor();
 
 checkGrowth();
 updatePet();
+updateChangeLimitDisplay();
 
 if (!isDead) {
   setTimeout(() => { startLifeDecrease(); }, 1000);
@@ -1476,7 +1598,8 @@ setInterval(() => {
     localStorage.setItem('petSize', String(petSize));
     localStorage.setItem('growthLevel', String(growthLevel));
   }
-}, 5000);
+  updateChangeLimitDisplay();
+}, 60000);
 </script>
 </body>
 </html>
