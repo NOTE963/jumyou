@@ -304,6 +304,14 @@
   .btn-delete-account:hover:not(:disabled) { background: #c82333 !important; }
   .btn-delete-account:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .btn-force-delete {
+    background: #ff0000 !important;
+    color: white !important;
+    font-weight: 700;
+  }
+  .btn-force-delete:hover:not(:disabled) { background: #cc0000 !important; }
+  .btn-force-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
   .status-msg { color: #ff6b6b; font-size: 0.8rem; text-align: center; margin-top: 6px; min-height: 20px; font-weight: 500; }
   .status-msg.success { color: #2ecc71; }
 
@@ -421,6 +429,17 @@
 
       <div class="setting-group">
         <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
+      </div>
+
+      <!-- ★ 強制全削除ボタン ★ -->
+      <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
+        <button class="btn-danger btn-force-delete" id="forceDeleteBtn">
+          ⚠ ランキング全データ強制削除
+        </button>
+        <div class="status-msg" id="forceDeleteStatus"></div>
+        <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
+          全てのランキングデータを完全に削除します（Firestoreから消去）
+        </div>
       </div>
 
       <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
@@ -565,6 +584,8 @@ const setUserNameBtn = document.getElementById('setUserNameBtn');
 const resetRankBtn = document.getElementById('resetRankBtn');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const deleteStatus = document.getElementById('deleteStatus');
+const forceDeleteBtn = document.getElementById('forceDeleteBtn');
+const forceDeleteStatus = document.getElementById('forceDeleteStatus');
 const rankList = document.getElementById('rankList');
 const updateInfo = document.getElementById('updateInfo');
 const userStatus = document.getElementById('userStatus');
@@ -983,11 +1004,6 @@ auth.onAuthStateChanged(user => {
     console.log('✅ ログイン完了:', myUid);
     loadUserData();
     startRealtimeRanking();
-    
-    // ★ ログイン後に自動クリーンアップ実行
-    setTimeout(() => {
-      autoCleanup();
-    }, 3000);
   } else {
     console.log('⏳ 未ログイン');
   }
@@ -1112,99 +1128,75 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ 自動クリーンアップ（エラー修正版） ★
+//  ★ 強制全削除（全てのデータを消す） ★
 // =============================================
-async function autoCleanup() {
-  console.log('🧹 自動クリーンアップ開始...');
+async function forceDeleteAllRankings() {
+  if (!confirm('⚠️ ランキングの全データを削除しますか？\n\nこの操作は取り消せません！')) {
+    return;
+  }
   
+  if (!confirm('🔥 最終確認：本当に全て削除しますか？')) {
+    return;
+  }
+
+  forceDeleteBtn.disabled = true;
+  forceDeleteBtn.textContent = '⏳ 削除中...';
+  forceDeleteStatus.textContent = '処理中...';
+  forceDeleteStatus.className = 'status-msg';
+
   try {
     let deletedCount = 0;
-    let lastDoc = null;
     let hasMore = true;
 
     while (hasMore) {
-      try {
-        let query = db.collection('rankings')
-          .orderBy('__name__')
-          .limit(100);
-        
-        if (lastDoc) {
-          query = query.startAfter(lastDoc);
-        }
+      const snapshot = await db.collection('rankings')
+        .limit(300)
+        .get();
 
-        const snapshot = await query.get();
-
-        if (snapshot.empty) {
-          hasMore = false;
-          break;
-        }
-
-        const batch = db.batch();
-        let batchCount = 0;
-
-        for (const doc of snapshot.docs) {
-          const data = doc.data();
-          const userId = data.userId || '';
-          const userName = data.userName || '';
-
-          let shouldDelete = false;
-
-          // ★ 削除条件（1週間更新なしは削除しない）
-          if (!userId) {
-            // userIdがないデータは削除（古い形式）
-            shouldDelete = true;
-          } else if (userName === 'ゲスト' || userName.trim() === '') {
-            // ゲストユーザーのデータは削除
-            shouldDelete = true;
-          }
-          // ★ 1週間更新なしのデータは削除しない（維持）
-
-          if (shouldDelete) {
-            batch.delete(doc.ref);
-            deletedCount++;
-            batchCount++;
-          }
-        }
-
-        if (batchCount > 0) {
-          await batch.commit();
-          console.log(`🧹 ${batchCount}件削除しました (累計: ${deletedCount}件)`);
-        }
-
-        lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        
-        if (snapshot.docs.length < 100) {
-          hasMore = false;
-        }
-
-      } catch (batchError) {
-        console.warn('バッチ処理エラー（続行）:', batchError.message);
-        // エラーがあっても続行
+      if (snapshot.empty) {
+        hasMore = false;
         break;
+      }
+
+      const batch = db.batch();
+      snapshot.forEach(doc => {
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+
+      await batch.commit();
+      console.log(`✅ ${deletedCount}件削除しました`);
+      forceDeleteStatus.textContent = `⏳ ${deletedCount}件削除中...`;
+      
+      if (snapshot.docs.length < 300) {
+        hasMore = false;
       }
     }
 
-    console.log(`🧹 クリーンアップ完了: ${deletedCount}件削除`);
-    return deletedCount;
+    console.log(`✅ 全削除完了: ${deletedCount}件`);
+    forceDeleteStatus.textContent = `✅ ${deletedCount}件のデータを削除しました`;
+    forceDeleteStatus.className = 'status-msg success';
+    
+    // ランキング再読み込み
+    if (rankUnsubscribe) {
+      rankUnsubscribe();
+      startRealtimeRanking();
+    }
 
   } catch (error) {
-    console.error('❌ クリーンアップエラー:', error);
-    return 0;
+    console.error('❌ 削除エラー:', error);
+    forceDeleteStatus.textContent = '❌ 削除エラー: ' + error.message;
+    forceDeleteStatus.className = 'status-msg';
   }
+
+  forceDeleteBtn.disabled = false;
+  forceDeleteBtn.textContent = '⚠ ランキング全データ強制削除';
 }
 
-// ★ 1時間ごとに自動クリーンアップ
-setInterval(() => {
-  autoCleanup();
-}, 60 * 60 * 1000);
-
-// ★ 起動時にも実行（認証後に実行）
-setTimeout(() => {
-  autoCleanup();
-}, 5000);
+forceDeleteBtn.addEventListener('click', forceDeleteAllRankings);
 
 // =============================================
-//  リアルタイムランキング（ゲスト除外）
+//  リアルタイムランキング
 // =============================================
 function startRealtimeRanking() {
   if (rankUnsubscribe) {
@@ -1276,7 +1268,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ランキング保存（ゲストは保存しない）
+//  ランキング保存
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
