@@ -561,6 +561,7 @@
     color: #ff6b6b;
     font-weight: 800;
     font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
   }
   .rank-empty {
     color: #ccc;
@@ -774,6 +775,7 @@ let isPhoneFlipped = false;
 let isDead = false;
 let lifeDecreaseInterval = null;
 let rankUnsubscribe = null;
+let isRankingUpdateScheduled = false;  // 更新頻度制御
 
 // ペット変更制限
 const CHANGE_COOLDOWN_DAYS = 3;
@@ -819,7 +821,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // =============================================
-//  寿命表示
+//  寿命表示（時分秒）
 // =============================================
 function formatLifeTime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -835,11 +837,6 @@ function formatTimeShort(seconds) {
   if (h > 0) return `${h}時間${m}分${s}秒`;
   else if (m > 0) return `${m}分${s}秒`;
   else return `${s}秒`;
-}
-
-// ★ 秒数表示（カンマ区切り）
-function formatSeconds(seconds) {
-  return Math.floor(seconds).toLocaleString() + 's';
 }
 
 // =============================================
@@ -881,7 +878,43 @@ function updateChangeLimitDisplay() {
 }
 
 // =============================================
-//  寿命減少処理
+//  ★ リアルタイムランキング更新（寿命減少時にも連動） ★
+// =============================================
+function scheduleRankingUpdate() {
+  if (isRankingUpdateScheduled) return;
+  isRankingUpdateScheduled = true;
+  
+  // 3秒ごとにまとめて更新（負荷軽減）
+  setTimeout(() => {
+    isRankingUpdateScheduled = false;
+    updateRankingInFirestore();
+  }, 3000);
+}
+
+async function updateRankingInFirestore() {
+  if (!myUid) return;
+  if (isDead) return;
+  
+  try {
+    const snapshot = await db.collection('rankings')
+      .where('userId', '==', myUid)
+      .get();
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      await doc.ref.update({
+        currentLife: currentLifeSeconds,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      console.log('🔄 ランキング更新（寿命:', currentLifeSeconds, '秒）');
+    }
+  } catch (error) {
+    console.error('ランキング更新エラー:', error);
+  }
+}
+
+// =============================================
+//  寿命減少処理（ランキングも連動）
 // =============================================
 function startLifeDecrease() {
   if (lifeDecreaseInterval) return;
@@ -892,6 +925,9 @@ function startLifeDecrease() {
     if (currentLifeSeconds > 0 && !isRunning && !isDead) {
       currentLifeSeconds--;
       updatePet();
+      
+      // ★ 寿命が減ったらランキングを更新（3秒ごとにまとめて）
+      scheduleRankingUpdate();
       
       if (currentLifeSeconds <= 0) {
         currentLifeSeconds = 0;
@@ -925,7 +961,7 @@ function setDead() {
   lifeSpan.classList.add('danger');
   statusBadge.textContent = '死亡';
   statusBadge.className = 'status-badge dead';
-  petNote.textContent = 'ペットは死亡しました。設定から新しいペットを始められます。';
+  petNote.textContent = 'ペットは死亡しました。';
   
   studyStartBtn.disabled = true;
   studyStartBtn.textContent = '死亡';
@@ -940,13 +976,21 @@ function setDead() {
   });
   
   localStorage.setItem('charPetDead', 'true');
+  // 死亡をランキングに反映
   if (myUid) {
-    saveRankingOnline(currentUser, currentChar, 0);
+    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
+      snapshot.forEach(doc => {
+        doc.ref.update({ 
+          isDead: true,
+          currentLife: 0,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+    });
   }
   
   studyResult.innerHTML = `
-    <span class="result-dead">ペットが死亡しました</span><br>
-    設定の「新しいペットを始める」で復活できます
+    <span class="result-dead">ペットが死亡しました</span>
   `;
 }
 
@@ -993,7 +1037,7 @@ function handleOrientation(event) {
 function startStudyTimer() {
   if (isRunning) return;
   if (isDead) {
-    studyStatus.innerHTML = 'ペットが死亡しています。復活させてください';
+    studyStatus.innerHTML = 'ペットが死亡しています。';
     return;
   }
   if (!currentChar || currentChar.trim() === '') {
@@ -1040,6 +1084,7 @@ function stopStudyTimer() {
   currentLifeSeconds += addSeconds;
   updatePet();
 
+  // ランキング保存（勉強終了時は即時更新）
   addRankingLocal(elapsed, currentChar, currentUser);
   saveRankingOnline(currentUser, currentChar, elapsed);
 
@@ -1069,7 +1114,7 @@ function updateStudyTimer(sec) {
 studyStartBtn.addEventListener('click', () => {
   if (isRunning) return;
   if (isDead) {
-    alert('ペットが死亡しています。設定から新しいペットを始めてください。');
+    alert('ペットが死亡しています。');
     return;
   }
   if (!currentChar || currentChar.trim() === '') {
@@ -1299,7 +1344,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ リアルタイムランキング（30人・秒数表示） ★
+//  ★ リアルタイムランキング（時分秒表示） ★
 // =============================================
 function startRealtimeRanking() {
   if (rankUnsubscribe) {
@@ -1324,8 +1369,8 @@ function startRealtimeRanking() {
       snapshot.forEach(doc => {
         const data = doc.data();
         const currentLife = data.currentLife || 0;
-        // ★ 秒数表示（カンマ区切り）
-        const displayTime = formatSeconds(currentLife);
+        // ★ 時分秒表示
+        const displayTime = formatLifeTime(currentLife);
         const isDeadRank = data.isDead || false;
         
         const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
@@ -1359,7 +1404,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ★ ランキング保存（1ユーザー1件・上書き） ★
+//  ランキング保存（1ユーザー1件・上書き）
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1367,7 +1412,6 @@ async function saveRankingOnline(user, char, seconds) {
     return;
   }
   try {
-    // 自分の既存データを検索
     const snapshot = await db.collection('rankings')
       .where('userId', '==', myUid)
       .get();
@@ -1375,7 +1419,6 @@ async function saveRankingOnline(user, char, seconds) {
     const currentLife = currentLifeSeconds;
 
     if (!snapshot.empty) {
-      // 既存データを上書き更新
       const doc = snapshot.docs[0];
       await doc.ref.update({
         currentLife: currentLife,
@@ -1387,7 +1430,6 @@ async function saveRankingOnline(user, char, seconds) {
       });
       console.log('✅ ランキング更新完了');
     } else {
-      // 新規作成
       await db.collection('rankings').add({
         userId: myUid,
         userName: user,
