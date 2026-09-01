@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ペットと勉強 - 寿命ランキング</title>
+<title>ペットと勉強 - リアルタイムランキング</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -67,6 +67,19 @@
     pointer-events: none;
   }
   .tab-btn:active { transform: scale(0.94); }
+  .tab-btn .live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #2ecc71;
+    border-radius: 50%;
+    margin-left: 4px;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.8); }
+  }
 
   .screen {
     display: none;
@@ -458,7 +471,7 @@
   }
 
   /* ========================================
-     ランキング画面
+     ランキング画面（リアルタイム）
      ======================================== */
   .rank-screen {
     background: rgba(255, 255, 255, 0.65);
@@ -481,11 +494,21 @@
     color: #bbb;
     font-size: 0.7rem;
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     font-weight: 500;
   }
+  .rank-sub .live-badge {
+    display: inline-block;
+    background: #2ecc71;
+    color: white;
+    font-size: 0.55rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    animation: pulse 1.5s infinite;
+  }
   .rank-list {
-    max-height: 360px;
+    max-height: 380px;
     overflow-y: auto;
     padding-right: 4px;
   }
@@ -500,6 +523,7 @@
     background: rgba(255,255,255,0.2);
     border-radius: 14px;
     margin-bottom: 4px;
+    transition: background 0.3s;
   }
   .rank-item:last-child { border-bottom: none; }
   .rank-item.top1 { background: linear-gradient(135deg, #fff9e6, #fef3d1); }
@@ -509,6 +533,13 @@
     opacity: 0.35;
     text-decoration: line-through;
   }
+  .rank-item .rank-change {
+    font-size: 0.6rem;
+    margin-left: 2px;
+  }
+  .rank-item .rank-change.up { color: #2ecc71; }
+  .rank-item .rank-change.down { color: #ff6b6b; }
+  .rank-item .rank-change.same { color: #bbb; }
   .rank-num {
     font-weight: 800;
     width: 32px;
@@ -545,29 +576,12 @@
     font-size: 0.9rem;
     font-weight: 500;
   }
-  .rank-online-btn {
-    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
-    border: none;
-    color: white;
-    font-weight: 700;
-    padding: 14px;
-    border-radius: 30px;
-    cursor: pointer;
-    width: 100%;
-    margin-top: 14px;
-    transition: 0.12s ease;
-    font-size: 0.9rem;
-    box-shadow: 0 4px 16px rgba(63, 43, 150, 0.12);
-    letter-spacing: 0.5px;
-  }
-  .rank-online-btn:active { transform: scale(0.96); }
-  .rank-online-btn:disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-  .rank-online-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20);
+  .rank-update-info {
+    text-align: center;
+    color: #bbb;
+    font-size: 0.6rem;
+    margin-top: 10px;
+    font-weight: 400;
   }
 
   ::-webkit-scrollbar { width: 5px; }
@@ -583,7 +597,7 @@
     <button class="tab-btn active" data-tab="pet">ペット</button>
     <button class="tab-btn" data-tab="study">勉強</button>
     <button class="tab-btn" data-tab="settings">設定</button>
-    <button class="tab-btn" data-tab="rank">ランキング</button>
+    <button class="tab-btn" data-tab="rank">ランキング <span class="live-dot"></span></button>
   </div>
 
   <!-- ========================================
@@ -665,19 +679,16 @@
   </div>
 
   <!-- ========================================
-       ランキング画面
+       ランキング画面（リアルタイム）
        ======================================== -->
   <div class="screen" id="screen-rank">
     <div class="rank-screen">
       <h2>寿命ランキング</h2>
-      <div class="rank-sub">現在の寿命が多い順</div>
+      <div class="rank-sub"><span class="live-badge">● LIVE</span> リアルタイム更新（上位30人）</div>
       <div class="rank-list" id="rankList">
         <div class="rank-empty">読み込み中...</div>
       </div>
-      <button class="rank-online-btn" id="onlineRankBtn" disabled>
-        ログイン中...
-      </button>
-      <div class="note" style="margin-top:10px;">全世界のユーザーと競えます</div>
+      <div class="rank-update-info" id="updateInfo">更新中...</div>
     </div>
   </div>
 
@@ -704,7 +715,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // =============================================
-//  ★ Cookie / localStorage 自動ログイン管理 ★
+//  Cookie / localStorage 自動ログイン管理
 // =============================================
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -718,16 +729,11 @@ function setCookie(name, value, days = 365) {
   document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
 }
 
-// ユーザーIDを保存・復元
 function getSavedUid() {
-  // まずCookieをチェック
   const cookieUid = getCookie('petUserUid');
   if (cookieUid) return cookieUid;
-  
-  // 次にlocalStorageをチェック
   const localUid = localStorage.getItem('petUserUid');
   if (localUid) {
-    // Cookieにも保存（次回のため）
     setCookie('petUserUid', localUid);
     return localUid;
   }
@@ -739,21 +745,13 @@ function saveUid(uid) {
   setCookie('petUserUid', uid);
 }
 
-function clearSavedUid() {
-  localStorage.removeItem('petUserUid');
-  document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-}
-
 // =============================================
-//  ★ 自動ログイン処理 ★
+//  自動ログイン
 // =============================================
 function autoLogin() {
   const savedUid = getSavedUid();
-  
   if (savedUid) {
-    // 保存されたUIDでログイン状態を維持
     console.log('🔑 保存されたUIDでログイン:', savedUid);
-    // Firebase匿名認証でログイン（既にログイン中ならそのまま）
     if (!auth.currentUser) {
       auth.signInAnonymously().catch(error => {
         console.error('ログインエラー:', error);
@@ -761,7 +759,6 @@ function autoLogin() {
     }
     return true;
   } else {
-    // 新規ログイン
     console.log('🆕 新規ログイン');
     auth.signInAnonymously().catch(error => {
       console.error('ログインエラー:', error);
@@ -787,6 +784,7 @@ let isStudyMode = false;
 let isPhoneFlipped = false;
 let isDead = false;
 let lifeDecreaseInterval = null;
+let rankUnsubscribe = null;  // リアルタイムリスナー
 
 // ペット変更制限
 const CHANGE_COOLDOWN_DAYS = 3;
@@ -815,8 +813,8 @@ const changeLimitLabel = document.getElementById('changeLimitLabel');
 const userNameInput = document.getElementById('userNameInput');
 const setUserNameBtn = document.getElementById('setUserNameBtn');
 const resetRankBtn = document.getElementById('resetRankBtn');
-const onlineRankBtn = document.getElementById('onlineRankBtn');
 const rankList = document.getElementById('rankList');
+const updateInfo = document.getElementById('updateInfo');
 const userStatus = document.getElementById('userStatus');
 
 // =============================================
@@ -828,7 +826,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'rank') loadOnlineRanking();
   });
 });
 
@@ -852,7 +849,7 @@ function formatTimeShort(seconds) {
 }
 
 // =============================================
-//  ペット変更制限チェック
+//  ペット変更制限
 // =============================================
 function getRemainingCooldown() {
   const elapsed = Date.now() - lastCharChangeTime;
@@ -1197,36 +1194,29 @@ function checkGrowth() {
 setInterval(checkGrowth, 60 * 1000);
 
 // =============================================
-//  ★ Firebase 認証 + 自動ログイン ★
+//  Firebase 認証 + 自動ログイン
 // =============================================
-// 自動ログイン実行
 autoLogin();
 
 auth.onAuthStateChanged(user => {
   if (user) {
     myUid = user.uid;
-    // UIDを保存
     saveUid(myUid);
-    onlineRankBtn.disabled = false;
-    onlineRankBtn.textContent = 'ランキング更新';
     console.log('✅ ログイン完了:', myUid);
-    loadOnlineRanking();
-    
-    // 保存されたユーザーデータを読み込み
     loadUserData();
+    // リアルタイムランキング開始
+    startRealtimeRanking();
   } else {
-    onlineRankBtn.disabled = true;
-    onlineRankBtn.textContent = 'ログイン中...';
+    console.log('⏳ 未ログイン');
   }
 });
 
 // =============================================
-//  ユーザーデータ読み込み（UID連携）
+//  ユーザーデータ読み込み
 // =============================================
 function loadUserData() {
   if (!myUid) return;
   
-  // Firebaseからユーザーデータを読み込む
   db.collection('users').doc(myUid).get().then(doc => {
     if (doc.exists) {
       const data = doc.data();
@@ -1306,7 +1296,6 @@ setUserNameBtn.addEventListener('click', async () => {
     userNameInput.value = currentUser;
     userStatus.textContent = 'ユーザー名を変更しました';
     userStatus.className = 'status-msg success';
-    loadOnlineRanking();
   } else {
     userStatus.textContent = '保存に失敗しました';
   }
@@ -1318,7 +1307,69 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ランキング（Firestore）- 寿命が多い順
+//  ★ リアルタイムランキング（Firestore） ★
+// =============================================
+function startRealtimeRanking() {
+  // 既存のリスナーを解除
+  if (rankUnsubscribe) {
+    rankUnsubscribe();
+    rankUnsubscribe = null;
+  }
+
+  updateInfo.textContent = '🔄 リアルタイム接続中...';
+
+  // 30人まで、寿命が多い順にリアルタイム監視
+  rankUnsubscribe = db.collection('rankings')
+    .orderBy('currentLife', 'desc')
+    .limit(30)
+    .onSnapshot((snapshot) => {
+      if (snapshot.empty) {
+        rankList.innerHTML = `<div class="rank-empty">まだ記録がありません</div>`;
+        updateInfo.textContent = '📊 データなし';
+        return;
+      }
+
+      let html = '';
+      let rank = 0;
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const currentLife = data.currentLife || 0;
+        const displayTime = formatLifeTime(currentLife);
+        const isDeadRank = data.isDead || false;
+        
+        const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
+        const medalClass = rank === 0 ? 'gold' : rank === 1 ? 'silver' : rank === 2 ? 'bronze' : '';
+        const topClass = rank < 3 ? `top${rank+1}` : '';
+        
+        const displayName = data.userName || 'ゲスト';
+        const petDisplay = data.petChar || '?';
+        const deadMark = isDeadRank ? ' †' : '';
+        
+        html += `<div class="rank-item ${topClass} ${isDeadRank ? 'dead-rank' : ''}">
+          <span class="rank-num ${medalClass}">${medal}</span>
+          <span class="rank-user">${displayName}${deadMark}</span>
+          <span class="rank-pet">（<span>${petDisplay}</span>）</span>
+          <span class="rank-time">${displayTime}</span>
+        </div>`;
+        rank++;
+      });
+
+      rankList.innerHTML = html;
+      
+      // 最終更新時刻
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      updateInfo.textContent = `🟢 リアルタイム更新中（${rank}人） • ${timeStr}`;
+      
+    }, (error) => {
+      console.error('ランキング監視エラー:', error);
+      rankList.innerHTML = `<div class="rank-empty">⚠ 読み込みエラー</div>`;
+      updateInfo.textContent = '⚠ 接続エラー';
+    });
+}
+
+// =============================================
+//  ランキング保存（Firestore）
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1358,50 +1409,6 @@ async function saveRankingOnline(user, char, seconds) {
     }
   } catch (error) {
     console.error('保存エラー:', error);
-  }
-}
-
-async function loadOnlineRanking() {
-  try {
-    rankList.innerHTML = `<div class="rank-empty">読み込み中...</div>`;
-    const snapshot = await db.collection('rankings')
-      .orderBy('currentLife', 'desc')
-      .limit(50)
-      .get();
-
-    if (snapshot.empty) {
-      rankList.innerHTML = `<div class="rank-empty">まだ記録がありません</div>`;
-      return;
-    }
-
-    let html = '';
-    let rank = 0;
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const currentLife = data.currentLife || 0;
-      const displayTime = formatLifeTime(currentLife);
-      const isDeadRank = data.isDead || false;
-      
-      const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
-      const medalClass = rank === 0 ? 'gold' : rank === 1 ? 'silver' : rank === 2 ? 'bronze' : '';
-      const topClass = rank < 3 ? `top${rank+1}` : '';
-      
-      const displayName = data.userName || 'ゲスト';
-      const petDisplay = data.petChar || '?';
-      const deadMark = isDeadRank ? ' †' : '';
-      
-      html += `<div class="rank-item ${topClass} ${isDeadRank ? 'dead-rank' : ''}">
-        <span class="rank-num ${medalClass}">${medal}</span>
-        <span class="rank-user">${displayName}${deadMark}</span>
-        <span class="rank-pet">（<span>${petDisplay}</span>）</span>
-        <span class="rank-time">${displayTime}</span>
-      </div>`;
-      rank++;
-    });
-    rankList.innerHTML = html;
-  } catch (error) {
-    console.error('読み込みエラー:', error);
-    rankList.innerHTML = `<div class="rank-empty">読み込みエラー</div>`;
   }
 }
 
@@ -1525,15 +1532,6 @@ resetRankBtn.addEventListener('click', () => {
   }
 });
 
-onlineRankBtn.addEventListener('click', () => {
-  onlineRankBtn.textContent = '更新中...';
-  onlineRankBtn.disabled = true;
-  loadOnlineRanking().then(() => {
-    onlineRankBtn.textContent = 'ランキング更新';
-    onlineRankBtn.disabled = false;
-  });
-});
-
 // =============================================
 //  初期化
 // =============================================
@@ -1568,7 +1566,6 @@ if (savedDead === 'true') {
   setTimeout(() => { setDead(); }, 500);
 }
 
-// ペット変更制限の復元
 const savedLastChange = localStorage.getItem('lastCharChangeTime');
 if (savedLastChange) {
   lastCharChangeTime = parseInt(savedLastChange) || 0;
@@ -1576,9 +1573,7 @@ if (savedLastChange) {
   lastCharChangeTime = 0;
 }
 
-// センサー初期化
 initOrientationSensor();
-
 checkGrowth();
 updatePet();
 updateChangeLimitDisplay();
