@@ -304,14 +304,6 @@
   .btn-delete-account:hover:not(:disabled) { background: #c82333 !important; }
   .btn-delete-account:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .btn-cleanup {
-    background: #dc3545 !important;
-    color: white !important;
-    font-weight: 700;
-  }
-  .btn-cleanup:hover:not(:disabled) { background: #c82333 !important; }
-  .btn-cleanup:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .status-msg { color: #ff6b6b; font-size: 0.8rem; text-align: center; margin-top: 6px; min-height: 20px; font-weight: 500; }
   .status-msg.success { color: #2ecc71; }
 
@@ -429,17 +421,6 @@
 
       <div class="setting-group">
         <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
-      </div>
-
-      <!-- ★ 強制クリーンアップボタン ★ -->
-      <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
-        <button class="btn-danger btn-cleanup" id="forceCleanupBtn">
-          🧹 ランキングデータ完全クリーンアップ
-        </button>
-        <div class="status-msg" id="cleanupStatus"></div>
-        <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
-          古いデータや削除されたユーザーのデータを全て削除します
-        </div>
       </div>
 
       <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
@@ -584,8 +565,6 @@ const setUserNameBtn = document.getElementById('setUserNameBtn');
 const resetRankBtn = document.getElementById('resetRankBtn');
 const deleteAccountBtn = document.getElementById('deleteAccountBtn');
 const deleteStatus = document.getElementById('deleteStatus');
-const forceCleanupBtn = document.getElementById('forceCleanupBtn');
-const cleanupStatus = document.getElementById('cleanupStatus');
 const rankList = document.getElementById('rankList');
 const updateInfo = document.getElementById('updateInfo');
 const userStatus = document.getElementById('userStatus');
@@ -1004,6 +983,11 @@ auth.onAuthStateChanged(user => {
     console.log('✅ ログイン完了:', myUid);
     loadUserData();
     startRealtimeRanking();
+    
+    // ★ ログイン後に自動クリーンアップ実行
+    setTimeout(() => {
+      autoCleanup();
+    }, 3000);
   } else {
     console.log('⏳ 未ログイン');
   }
@@ -1128,115 +1112,96 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ 強制クリーンアップ（全データ掃除） ★
+//  ★ 自動クリーンアップ（エラー修正版） ★
 // =============================================
-async function forceCleanup() {
-  if (!confirm('⚠️ ランキングデータを完全にクリーンアップしますか？\n\n以下のデータが削除されます：\n・userIdがないデータ\n・ゲストユーザーのデータ\n・存在しないユーザーのデータ\n\nこの操作は取り消せません！')) {
-    return;
-  }
-
-  if (!confirm('🔥 最終確認：本当に実行しますか？')) {
-    return;
-  }
-
-  forceCleanupBtn.disabled = true;
-  forceCleanupBtn.textContent = '⏳ クリーンアップ中...';
-  cleanupStatus.textContent = '処理中...';
-  cleanupStatus.className = 'status-msg';
-
+async function autoCleanup() {
+  console.log('🧹 自動クリーンアップ開始...');
+  
   try {
     let deletedCount = 0;
     let lastDoc = null;
     let hasMore = true;
 
     while (hasMore) {
-      let query = db.collection('rankings')
-        .orderBy('__name__')
-        .limit(100);
-      
-      if (lastDoc) {
-        query = query.startAfter(lastDoc);
-      }
+      try {
+        let query = db.collection('rankings')
+          .orderBy('__name__')
+          .limit(100);
+        
+        if (lastDoc) {
+          query = query.startAfter(lastDoc);
+        }
 
-      const snapshot = await query.get();
+        const snapshot = await query.get();
 
-      if (snapshot.empty) {
-        hasMore = false;
-        break;
-      }
+        if (snapshot.empty) {
+          hasMore = false;
+          break;
+        }
 
-      const batch = db.batch();
-      let batchCount = 0;
+        const batch = db.batch();
+        let batchCount = 0;
 
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const userId = data.userId || '';
-        const userName = data.userName || '';
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const userId = data.userId || '';
+          const userName = data.userName || '';
 
-        let shouldDelete = false;
-        let reason = '';
+          let shouldDelete = false;
 
-        // 削除条件
-        if (!userId) {
-          shouldDelete = true;
-          reason = 'userIdなし';
-        } else if (userName === 'ゲスト' || userName.trim() === '') {
-          shouldDelete = true;
-          reason = 'ゲストユーザー';
-        } else {
-          // 1週間以上更新がないデータは孤児とみなす
-          const updatedAt = data.updatedAt;
-          if (updatedAt) {
-            const updatedTime = updatedAt.toMillis ? updatedAt.toMillis() : Date.now();
-            const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-            if (updatedTime < oneWeekAgo) {
-              shouldDelete = true;
-              reason = '1週間以上更新なし';
-            }
+          // ★ 削除条件（1週間更新なしは削除しない）
+          if (!userId) {
+            // userIdがないデータは削除（古い形式）
+            shouldDelete = true;
+          } else if (userName === 'ゲスト' || userName.trim() === '') {
+            // ゲストユーザーのデータは削除
+            shouldDelete = true;
+          }
+          // ★ 1週間更新なしのデータは削除しない（維持）
+
+          if (shouldDelete) {
+            batch.delete(doc.ref);
+            deletedCount++;
+            batchCount++;
           }
         }
 
-        if (shouldDelete) {
-          batch.delete(doc.ref);
-          deletedCount++;
-          batchCount++;
-          console.log(`🗑️ 削除: ${doc.id} (${reason})`);
+        if (batchCount > 0) {
+          await batch.commit();
+          console.log(`🧹 ${batchCount}件削除しました (累計: ${deletedCount}件)`);
         }
-      }
 
-      if (batchCount > 0) {
-        await batch.commit();
-        cleanupStatus.textContent = `⏳ ${deletedCount}件削除中...`;
-      }
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+        
+        if (snapshot.docs.length < 100) {
+          hasMore = false;
+        }
 
-      lastDoc = snapshot.docs[snapshot.docs.length - 1];
-      
-      if (snapshot.docs.length < 100) {
-        hasMore = false;
+      } catch (batchError) {
+        console.warn('バッチ処理エラー（続行）:', batchError.message);
+        // エラーがあっても続行
+        break;
       }
     }
 
-    cleanupStatus.textContent = `✅ ${deletedCount}件のデータを削除しました`;
-    cleanupStatus.className = 'status-msg success';
-    console.log(`🧹 強制クリーンアップ完了: ${deletedCount}件削除`);
-
-    // ランキング再読み込み
-    if (rankUnsubscribe) {
-      rankUnsubscribe();
-      startRealtimeRanking();
-    }
+    console.log(`🧹 クリーンアップ完了: ${deletedCount}件削除`);
+    return deletedCount;
 
   } catch (error) {
     console.error('❌ クリーンアップエラー:', error);
-    cleanupStatus.textContent = '❌ エラー: ' + error.message;
-    cleanupStatus.className = 'status-msg';
+    return 0;
   }
-
-  forceCleanupBtn.disabled = false;
-  forceCleanupBtn.textContent = '🧹 ランキングデータ完全クリーンアップ';
 }
 
-forceCleanupBtn.addEventListener('click', forceCleanup);
+// ★ 1時間ごとに自動クリーンアップ
+setInterval(() => {
+  autoCleanup();
+}, 60 * 60 * 1000);
+
+// ★ 起動時にも実行（認証後に実行）
+setTimeout(() => {
+  autoCleanup();
+}, 5000);
 
 // =============================================
 //  リアルタイムランキング（ゲスト除外）
