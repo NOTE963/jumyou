@@ -454,6 +454,20 @@
   .btn-danger:hover:not(:disabled) {
     background: #f5c6cb;
   }
+  /* ★ アカウント削除ボタン（赤） */
+  .btn-delete-account {
+    background: #dc3545 !important;
+    color: white !important;
+    font-weight: 700;
+  }
+  .btn-delete-account:hover:not(:disabled) {
+    background: #c82333 !important;
+  }
+  .btn-delete-account:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .status-msg {
     color: #ff6b6b;
     font-size: 0.8rem;
@@ -471,7 +485,7 @@
   }
 
   /* ========================================
-     ランキング画面（リアルタイム）
+     ランキング画面
      ======================================== */
   .rank-screen {
     background: rgba(255, 255, 255, 0.65);
@@ -669,11 +683,22 @@
       <div class="setting-group">
         <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
       </div>
+
+      <!-- ★ アカウント削除ボタン ★ -->
+      <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
+        <button class="btn-danger btn-delete-account" id="deleteAccountBtn">
+          🗑 アカウント削除（データ完全消去）
+        </button>
+        <div class="status-msg" id="deleteStatus"></div>
+        <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
+          削除すると全てのデータが完全に消去されます
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- ========================================
-       ランキング画面（リアルタイム）
+       ランキング画面
        ======================================== -->
   <div class="screen" id="screen-rank">
     <div class="rank-screen">
@@ -775,7 +800,7 @@ let isPhoneFlipped = false;
 let isDead = false;
 let lifeDecreaseInterval = null;
 let rankUnsubscribe = null;
-let isRankingUpdateScheduled = false;  // 更新頻度制御
+let isRankingUpdateScheduled = false;
 
 // ペット変更制限
 const CHANGE_COOLDOWN_DAYS = 3;
@@ -804,6 +829,8 @@ const changeLimitLabel = document.getElementById('changeLimitLabel');
 const userNameInput = document.getElementById('userNameInput');
 const setUserNameBtn = document.getElementById('setUserNameBtn');
 const resetRankBtn = document.getElementById('resetRankBtn');
+const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+const deleteStatus = document.getElementById('deleteStatus');
 const rankList = document.getElementById('rankList');
 const updateInfo = document.getElementById('updateInfo');
 const userStatus = document.getElementById('userStatus');
@@ -821,7 +848,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // =============================================
-//  寿命表示（時分秒）
+//  寿命表示
 // =============================================
 function formatLifeTime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -878,13 +905,12 @@ function updateChangeLimitDisplay() {
 }
 
 // =============================================
-//  ★ リアルタイムランキング更新（寿命減少時にも連動） ★
+//  ランキング更新（リアルタイム連動）
 // =============================================
 function scheduleRankingUpdate() {
   if (isRankingUpdateScheduled) return;
   isRankingUpdateScheduled = true;
   
-  // 3秒ごとにまとめて更新（負荷軽減）
   setTimeout(() => {
     isRankingUpdateScheduled = false;
     updateRankingInFirestore();
@@ -906,7 +932,6 @@ async function updateRankingInFirestore() {
         currentLife: currentLifeSeconds,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      console.log('🔄 ランキング更新（寿命:', currentLifeSeconds, '秒）');
     }
   } catch (error) {
     console.error('ランキング更新エラー:', error);
@@ -914,7 +939,7 @@ async function updateRankingInFirestore() {
 }
 
 // =============================================
-//  寿命減少処理（ランキングも連動）
+//  寿命減少処理
 // =============================================
 function startLifeDecrease() {
   if (lifeDecreaseInterval) return;
@@ -925,8 +950,6 @@ function startLifeDecrease() {
     if (currentLifeSeconds > 0 && !isRunning && !isDead) {
       currentLifeSeconds--;
       updatePet();
-      
-      // ★ 寿命が減ったらランキングを更新（3秒ごとにまとめて）
       scheduleRankingUpdate();
       
       if (currentLifeSeconds <= 0) {
@@ -976,7 +999,6 @@ function setDead() {
   });
   
   localStorage.setItem('charPetDead', 'true');
-  // 死亡をランキングに反映
   if (myUid) {
     db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
       snapshot.forEach(doc => {
@@ -1084,7 +1106,6 @@ function stopStudyTimer() {
   currentLifeSeconds += addSeconds;
   updatePet();
 
-  // ランキング保存（勉強終了時は即時更新）
   addRankingLocal(elapsed, currentChar, currentUser);
   saveRankingOnline(currentUser, currentChar, elapsed);
 
@@ -1344,7 +1365,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ リアルタイムランキング（時分秒表示） ★
+//  リアルタイムランキング
 // =============================================
 function startRealtimeRanking() {
   if (rankUnsubscribe) {
@@ -1369,7 +1390,6 @@ function startRealtimeRanking() {
       snapshot.forEach(doc => {
         const data = doc.data();
         const currentLife = data.currentLife || 0;
-        // ★ 時分秒表示
         const displayTime = formatLifeTime(currentLife);
         const isDeadRank = data.isDead || false;
         
@@ -1404,7 +1424,7 @@ function startRealtimeRanking() {
 }
 
 // =============================================
-//  ランキング保存（1ユーザー1件・上書き）
+//  ランキング保存（1ユーザー1件）
 // =============================================
 async function saveRankingOnline(user, char, seconds) {
   if (!myUid) {
@@ -1446,6 +1466,81 @@ async function saveRankingOnline(user, char, seconds) {
     console.error('保存エラー:', error);
   }
 }
+
+// =============================================
+//  ★ アカウント削除処理 ★
+// =============================================
+async function deleteAccount() {
+  if (!myUid) {
+    alert('ログインしていません');
+    return;
+  }
+
+  if (!confirm('⚠️ 本当にアカウントを削除しますか？\n\nこの操作は取り消せません！\n・すべてのデータが完全に削除されます\n・ランキングからも消去されます')) {
+    return;
+  }
+
+  if (!confirm('🔥 最終確認：アカウントを完全に削除しますか？\n\nペットのデータも全て失われます。')) {
+    return;
+  }
+
+  deleteAccountBtn.disabled = true;
+  deleteAccountBtn.textContent = '⏳ 削除中...';
+  deleteStatus.textContent = '処理中...';
+  deleteStatus.className = 'status-msg';
+
+  try {
+    // 1. Firestoreのデータを削除
+    const snapshot = await db.collection('rankings')
+      .where('userId', '==', myUid)
+      .get();
+
+    const batch = db.batch();
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log('✅ Firestoreデータ削除完了');
+
+    // 2. localStorageのデータを削除
+    const keys = [
+      'charPetUser', 'charPetChar', 'charPetLifeSeconds',
+      'petSize', 'growthLevel', 'lastGrowthCheck',
+      'charPetDead', 'lastCharChangeTime', 'charPetRanking',
+      'petUserUid'
+    ];
+    keys.forEach(key => localStorage.removeItem(key));
+    console.log('✅ localStorage削除完了');
+
+    // 3. Cookie削除
+    document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    console.log('✅ Cookie削除完了');
+
+    // 4. Firebase認証削除
+    const user = auth.currentUser;
+    if (user) {
+      await user.delete();
+      console.log('✅ Firebase認証削除完了');
+    }
+
+    deleteStatus.textContent = '✅ アカウントが削除されました。ページをリロードします...';
+    deleteStatus.className = 'status-msg success';
+
+    setTimeout(() => {
+      location.reload();
+    }, 2000);
+
+  } catch (error) {
+    console.error('削除エラー:', error);
+    deleteStatus.textContent = '❌ 削除エラー: ' + error.message;
+    deleteStatus.className = 'status-msg';
+    deleteAccountBtn.disabled = false;
+    deleteAccountBtn.textContent = '🗑 アカウント削除（データ完全消去）';
+  }
+}
+
+// 削除ボタンイベント
+deleteAccountBtn.addEventListener('click', deleteAccount);
 
 // =============================================
 //  ペット更新
