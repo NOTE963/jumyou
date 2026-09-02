@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>文字ペットと勉強 - リアルタイムランキング</title>
+<title>ペットと勉強 - バックグラウンド対応</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -478,7 +478,7 @@
         <div class="pet-char" id="petChar">たま</div>
         <div class="gameover-overlay" id="gameoverOverlay">GAME OVER</div>
       </div>
-      <div class="note" id="petNote">寿命はリアルタイムで減ります。勉強して延ばしましょう。</div>
+      <div class="note" id="petNote">寿命はリアルタイムで減ります。アプリを閉じても減り続けます。</div>
     </div>
   </div>
 
@@ -593,9 +593,9 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // =============================================
-//  ★ パスワード設定（自由に変更可能） ★
+//  ★ パスワード設定 ★
 // =============================================
-const ADMIN_PASSWORD = "admin123";  // ← ここを変更してください
+const ADMIN_PASSWORD = "admin123";
 
 // =============================================
 //  Cookie / localStorage 管理
@@ -709,6 +709,70 @@ const modalConfirm = document.getElementById('modalConfirm');
 const modalCancel = document.getElementById('modalCancel');
 
 // =============================================
+//  ★ バックグラウンド対応 ★
+// =============================================
+
+// 最終アクティブ時刻を保存するキー
+const LAST_ACTIVE_KEY = 'petLastActiveTime';
+
+// ページが閉じられる直前に最終時刻を保存
+window.addEventListener('beforeunload', () => {
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+  localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
+});
+
+// ページが非表示になった時（タブ切り替えやバックグラウンド移行）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // 非表示になった → 最終時刻を保存
+    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
+  } else {
+    // 表示に戻った → 経過時間を計算して反映
+    syncLifeOnResume();
+  }
+});
+
+// バックグラウンドから復帰した時の同期処理
+function syncLifeOnResume() {
+  if (isDead) return;
+  if (isRunning) return; // 勉強中は減らさない
+  
+  const lastTime = localStorage.getItem(LAST_ACTIVE_KEY);
+  if (lastTime) {
+    const elapsed = (Date.now() - parseInt(lastTime)) / 1000; // 経過秒数
+    if (elapsed > 1) {
+      const decreaseSeconds = Math.floor(elapsed);
+      currentLifeSeconds -= decreaseSeconds;
+      
+      // 0以下になったら死亡
+      if (currentLifeSeconds <= 0) {
+        currentLifeSeconds = 0;
+        updatePet();
+        setDead();
+        return;
+      }
+      
+      updatePet();
+      console.log(`⏳ バックグラウンドで ${decreaseSeconds}秒 減少しました`);
+      
+      // ランキングも更新（定期的に）
+      scheduleRankingUpdate();
+    }
+  }
+  // 最終時刻を現在に更新
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+}
+
+// 定期的に最終時刻を更新（5秒ごと）
+setInterval(() => {
+  if (!isDead) {
+    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
+  }
+}, 5000);
+
+// =============================================
 //  タブ切り替え
 // =============================================
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -809,12 +873,15 @@ async function updateRankingInFirestore() {
 }
 
 // =============================================
-//  寿命減少処理
+//  寿命減少処理（バックグラウンド対応版）
 // =============================================
 function startLifeDecrease() {
   if (lifeDecreaseInterval) return;
   if (isDead) return;
   if (isRunning) return;
+
+  // 復帰時の同期を先に行う
+  syncLifeOnResume();
 
   lifeDecreaseInterval = setInterval(() => {
     if (currentLifeSeconds > 0 && !isRunning && !isDead) {
@@ -1122,6 +1189,9 @@ auth.onAuthStateChanged(user => {
     console.log('✅ ログイン完了:', myUid);
     loadUserData();
     startRealtimeRanking();
+    
+    // 復帰時同期
+    syncLifeOnResume();
   } else {
     console.log('⏳ 未ログイン');
   }
@@ -1246,7 +1316,7 @@ userNameInput.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-//  ★ パスワード認証付き強制削除 ★
+//  パスワード認証付き強制削除
 // =============================================
 function showPasswordModal() {
   passwordModal.classList.add('show');
@@ -1268,7 +1338,6 @@ function hidePasswordModal() {
 async function executeDeleteWithPassword() {
   const password = passwordInput.value.trim();
   
-  // パスワード空チェック
   if (!password) {
     passwordError.textContent = '⚠️ パスワードを入力してください';
     passwordError.className = 'password-error';
@@ -1276,7 +1345,6 @@ async function executeDeleteWithPassword() {
     return;
   }
 
-  // パスワードチェック
   if (password !== ADMIN_PASSWORD) {
     passwordError.textContent = '❌ パスワードが間違っています';
     passwordError.className = 'password-error';
@@ -1286,7 +1354,6 @@ async function executeDeleteWithPassword() {
     return;
   }
 
-  // ✅ パスワード一致！削除実行
   passwordError.textContent = '✅ 認証成功。削除を実行します...';
   passwordError.className = 'password-error success';
   passwordInput.className = '';
@@ -1329,13 +1396,11 @@ async function executeDeleteWithPassword() {
     forceDeleteStatus.textContent = `✅ ${deletedCount}件のデータを削除しました`;
     forceDeleteStatus.className = 'status-msg success';
     
-    // ランキング再読み込み
     if (rankUnsubscribe) {
       rankUnsubscribe();
       startRealtimeRanking();
     }
 
-    // モーダルを閉じる（少し待ってから）
     setTimeout(() => {
       hidePasswordModal();
     }, 1000);
@@ -1354,16 +1419,10 @@ async function executeDeleteWithPassword() {
   forceDeleteBtn.textContent = '⚠ ランキング全データ強制削除';
 }
 
-// =============================================
-//  パスワードモーダルイベント
-// =============================================
 forceDeleteBtn.addEventListener('click', showPasswordModal);
-
 modalCancel.addEventListener('click', hidePasswordModal);
-
 modalConfirm.addEventListener('click', executeDeleteWithPassword);
 
-// Enterキーで実行
 passwordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -1372,7 +1431,6 @@ passwordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     hidePasswordModal();
   }
-  // 入力中にエラー状態をリセット
   if (e.key !== 'Enter') {
     passwordError.textContent = '';
     passwordError.className = 'password-error';
@@ -1380,7 +1438,6 @@ passwordInput.addEventListener('keydown', (e) => {
   }
 });
 
-// モーダル外クリックで閉じる
 passwordModal.addEventListener('click', (e) => {
   if (e.target === passwordModal) {
     hidePasswordModal();
@@ -1747,12 +1804,20 @@ if (savedLastChange) {
   lastCharChangeTime = 0;
 }
 
+// ★ 最終アクティブ時刻を復元
+const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+if (!lastActive) {
+  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
+}
+
 initOrientationSensor();
 checkGrowth();
 updatePet();
 updateChangeLimitDisplay();
 
 if (!isDead) {
+  // 起動時にバックグラウンド分を同期
+  syncLifeOnResume();
   setTimeout(() => { startLifeDecrease(); }, 1000);
 }
 
@@ -1764,8 +1829,7 @@ setTimeout(() => {
 setInterval(() => {
   if (!isDead) {
     localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
-    localStorage.setItem('petSize', String(petSize));
-    localStorage.setItem('growthLevel', String(growthLevel));
+    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
   }
   updateChangeLimitDisplay();
 }, 60000);
