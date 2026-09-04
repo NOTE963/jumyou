@@ -3,579 +3,264 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ペットと勉強 - バックグラウンド対応</title>
+<title>🎬 YouTube同時視聴</title>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
 
 <style>
-  * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
-    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    background: #0a0a1a;
+    font-family: 'Segoe UI', sans-serif;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
+    color: #fff;
   }
   .container {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(20px);
-    border-radius: 44px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.5);
-    width: 100%;
-    max-width: 460px;
-    min-height: 720px;
-    padding: 24px 22px 30px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 18px;
-  }
-  .tab-btn {
-    flex: 1;
-    background: #f0edf0;
-    border: none;
-    color: #888;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 12px 0;
+    background: #141428;
     border-radius: 30px;
-    cursor: pointer;
-    transition: 0.25s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    letter-spacing: 0.5px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    width: 100%;
+    max-width: 560px;
+    padding: 24px 20px 30px;
   }
-  .tab-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  h1 {
+    font-size: 1.4rem;
+    text-align: center;
+    color: #ff6b6b;
+    margin-bottom: 16px;
   }
-  .tab-btn.active {
+  .input-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 30px;
+    border: 2px solid #2a2a4a;
+    background: #0f0f26;
+    color: #fff;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .input-area input:focus {
+    border-color: #ff6b6b;
+  }
+  .input-area button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 30px;
     background: linear-gradient(135deg, #ff9a9e, #fad0c4);
     color: #4a2a3a;
-    box-shadow: 0 4px 16px rgba(255, 154, 158, 0.35);
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
   }
-  .tab-btn.dead {
-    opacity: 0.3;
+  .input-area button:hover {
+    transform: scale(1.03);
+  }
+  .input-area button:disabled {
+    opacity: 0.4;
     pointer-events: none;
   }
-  .tab-btn:active { transform: scale(0.94); }
-  .tab-btn .live-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    background: #2ecc71;
-    border-radius: 50%;
-    margin-left: 4px;
-    animation: pulse 1.5s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.3; transform: scale(0.8); }
+
+  #player {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 12px;
   }
 
-  .screen {
-    display: none;
-    animation: fadeIn 0.35s ease;
-  }
-  .screen.active { display: block; }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .pet-screen {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(10px);
-    border-radius: 32px;
-    padding: 20px 16px 18px;
-    min-height: 500px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
-  }
-  .pet-header {
+  .status {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    color: #666;
-    font-size: 0.75rem;
-    flex-wrap: wrap;
-    gap: 4px;
-    font-weight: 600;
-  }
-  .pet-header .label { color: #aaa; font-weight: 500; }
-  .pet-header .life { color: #ff6b6b; font-weight: 800; font-size: 1.0rem; }
-  .pet-header .life.danger { color: #dc3545; animation: blink 0.5s infinite; }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-  .pet-header .user { color: #888; font-size: 0.7rem; background: rgba(0,0,0,0.04); padding: 2px 14px; border-radius: 30px; }
-  .pet-header .growth { color: #2ecc71; font-size: 0.7rem; }
-  .pet-header .status-badge { font-size: 0.6rem; padding: 3px 12px; border-radius: 30px; font-weight: 700; letter-spacing: 0.5px; }
-  .status-badge.alive { background: #d4edda; color: #155724; }
-  .status-badge.dead { background: #f8d7da; color: #721c24; }
-
-  .pet-area {
-    position: relative;
-    width: 100%;
-    height: 320px;
-    background: linear-gradient(145deg, #faf5fa, #f0ecf0);
-    border-radius: 24px;
-    overflow: hidden;
-    margin-bottom: 14px;
-    border: 2px dashed rgba(200, 180, 190, 0.2);
-    box-shadow: inset 0 4px 20px rgba(0,0,0,0.02);
-  }
-  .pet-area.dead-area { filter: grayscale(0.8); opacity: 0.5; }
-  .pet-char {
-    position: absolute;
-    font-weight: 800;
-    color: #ff6b6b;
-    text-shadow: 0 4px 20px rgba(255, 107, 107, 0.20);
-    cursor: default;
-    pointer-events: none;
-    will-change: transform;
-    line-height: 1;
-    transition: font-size 0.8s ease;
-    white-space: nowrap;
-  }
-  .pet-char.dead-char { color: #dc3545 !important; text-shadow: 0 0 60px rgba(220, 53, 69, 0.4) !important; }
-  .gameover-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: #dc3545;
-    text-shadow: 0 4px 30px rgba(220, 53, 69, 0.3);
-    background: rgba(255,255,255,0.92);
-    padding: 18px 30px;
-    border-radius: 24px;
-    border: 3px solid #dc3545;
-    display: none;
-    box-shadow: 0 12px 48px rgba(220, 53, 69, 0.15);
-    letter-spacing: 2px;
-  }
-  .gameover-overlay.show { display: block; }
-
-  .note { color: #bbb; font-size: 0.6rem; text-align: center; margin-top: 8px; font-weight: 500; letter-spacing: 0.3px; }
-
-  .study-screen {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(10px);
-    border-radius: 32px;
-    padding: 28px 18px 22px;
-    min-height: 450px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
-    text-align: center;
-  }
-  .study-screen h2 { color: #4a2a3a; font-size: 1.3rem; margin-bottom: 4px; font-weight: 800; letter-spacing: 1px; }
-  .study-sub { color: #aaa; font-size: 0.7rem; margin-bottom: 20px; font-weight: 500; }
-  .study-timer {
-    font-size: 4.0rem;
-    font-weight: 900;
-    color: #4a2a3a;
-    background: rgba(255, 255, 255, 0.5);
-    padding: 16px 12px;
-    border-radius: 28px;
-    border: 2px solid rgba(200, 180, 190, 0.15);
-    letter-spacing: 4px;
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
-  }
-  .study-timer.running { color: #ff6b6b; border-color: #ff6b6b; }
-  .study-status { font-size: 1rem; color: #888; margin-bottom: 14px; min-height: 28px; font-weight: 500; }
-  .study-status .highlight { color: #2ecc71; font-weight: 700; }
-  .study-status .highlight.active { color: #ff6b6b; }
-
-  .study-btn-group { display: flex; gap: 10px; margin-bottom: 14px; }
-  .study-btn-group button {
-    flex: 1;
-    border: none;
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 700;
-    padding: 14px 0;
-    border-radius: 60px;
-    cursor: pointer;
-    transition: 0.12s ease;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    letter-spacing: 0.5px;
-  }
-  .study-btn-group button:active { transform: scale(0.94); }
-  .study-btn-group button:disabled { opacity: 0.3; transform: scale(0.96); pointer-events: none; }
-  .btn-study-start { background: linear-gradient(135deg, #ff9a9e, #fad0c4); color: #4a2a3a; }
-  .btn-study-start:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(255, 154, 158, 0.35); transform: translateY(-2px); }
-  .btn-study-stop { background: linear-gradient(135deg, #a8c0ff, #3f2b96); color: white; }
-  .btn-study-stop:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(63, 43, 150, 0.25); transform: translateY(-2px); }
-  .btn-study-reset { background: #e8e4e8; color: #888; flex: 0.4; }
-
-  .study-result {
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 20px;
-    padding: 14px 16px;
-    margin-top: 14px;
-    color: #666;
-    font-size: 0.85rem;
-    min-height: 50px;
-    border: 1px solid rgba(0,0,0,0.03);
-    line-height: 1.6;
-  }
-  .study-result .result-life { color: #ff6b6b; font-weight: 800; font-size: 1.1rem; }
-  .study-result .result-dead { color: #dc3545; font-weight: 700; }
-
-  .settings-screen {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(10px);
-    border-radius: 32px;
-    padding: 22px 18px;
-    min-height: 450px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
-  }
-  .settings-screen h2 { color: #4a2a3a; font-size: 1.2rem; margin-bottom: 16px; text-align: center; font-weight: 800; letter-spacing: 1px; }
-  .setting-group { margin-bottom: 16px; }
-  .setting-group label { color: #888; font-size: 0.8rem; display: block; margin-bottom: 6px; font-weight: 600; letter-spacing: 0.5px; }
-  .setting-group .sub-label { color: #bbb; font-size: 0.65rem; font-weight: 400; margin-top: 2px; }
-  .setting-row { display: flex; gap: 10px; }
-  .setting-row input {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.5);
-    border: 2px solid rgba(0,0,0,0.05);
-    border-radius: 30px;
-    padding: 12px 16px;
-    color: #333;
-    font-size: 1.2rem;
-    text-align: center;
-    outline: none;
-    min-width: 0;
-    transition: 0.2s;
-    font-weight: 600;
-  }
-  .setting-row input:focus { border-color: #ff9a9e; box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.08); }
-  .setting-row input:disabled { opacity: 0.3; }
-  .setting-row input::placeholder { color: #ccc; font-size: 0.9rem; }
-  .btn-setting {
-    background: linear-gradient(135deg, #a8c0ff, #3f2b96);
-    border: none;
-    color: white;
-    font-weight: 700;
-    padding: 12px 22px;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: 0.12s ease;
-    box-shadow: 0 4px 16px rgba(63, 43, 150, 0.12);
-    letter-spacing: 0.5px;
-  }
-  .btn-setting:active { transform: scale(0.94); }
-  .btn-setting:disabled { opacity: 0.3; pointer-events: none; }
-  .btn-setting:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(63, 43, 150, 0.20); }
-  .btn-danger {
-    background: #f8d7da;
-    border: none;
-    color: #721c24;
-    font-weight: 700;
-    padding: 12px 16px;
-    border-radius: 30px;
-    cursor: pointer;
-    transition: 0.12s ease;
-    width: 100%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    letter-spacing: 0.5px;
-  }
-  .btn-danger:active { transform: scale(0.96); }
-  .btn-danger:disabled { opacity: 0.3; pointer-events: none; }
-  .btn-danger:hover:not(:disabled) { background: #f5c6cb; }
-
-  .btn-delete-account {
-    background: #dc3545 !important;
-    color: white !important;
-    font-weight: 700;
-  }
-  .btn-delete-account:hover:not(:disabled) { background: #c82333 !important; }
-  .btn-delete-account:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .btn-force-delete {
-    background: #ff0000 !important;
-    color: white !important;
-    font-weight: 700;
-  }
-  .btn-force-delete:hover:not(:disabled) { background: #cc0000 !important; }
-  .btn-force-delete:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .status-msg { color: #ff6b6b; font-size: 0.8rem; text-align: center; margin-top: 6px; min-height: 20px; font-weight: 500; }
-  .status-msg.success { color: #2ecc71; }
-
-  .rank-screen {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(10px);
-    border-radius: 32px;
-    padding: 22px 18px;
-    min-height: 450px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.04);
-  }
-  .rank-screen h2 { color: #4a2a3a; font-size: 1.2rem; text-align: center; margin-bottom: 4px; font-weight: 800; letter-spacing: 1px; }
-  .rank-sub { color: #bbb; font-size: 0.7rem; text-align: center; margin-bottom: 8px; font-weight: 500; }
-  .rank-sub .live-badge { display: inline-block; background: #2ecc71; color: white; font-size: 0.55rem; padding: 2px 10px; border-radius: 20px; font-weight: 700; animation: pulse 1.5s infinite; }
-  .rank-list { max-height: 380px; overflow-y: auto; padding-right: 4px; }
-  .rank-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
-    color: #666;
-    font-size: 0.85rem;
-    background: rgba(255,255,255,0.2);
-    border-radius: 14px;
-    margin-bottom: 4px;
-    transition: background 0.3s;
-  }
-  .rank-item:last-child { border-bottom: none; }
-  .rank-item.top1 { background: linear-gradient(135deg, #fff9e6, #fef3d1); }
-  .rank-item.top2 { background: linear-gradient(135deg, #f5f5f5, #ececec); }
-  .rank-item.top3 { background: linear-gradient(135deg, #fdf4ed, #fae8db); }
-  .rank-item.dead-rank { opacity: 0.35; text-decoration: line-through; }
-  .rank-num { font-weight: 800; width: 32px; color: #ccc; font-size: 0.8rem; }
-  .rank-num.gold { color: #f5a623; }
-  .rank-num.silver { color: #b0b0b0; }
-  .rank-num.bronze { color: #cd7f32; }
-  .rank-user { color: #333; font-weight: 700; min-width: 56px; }
-  .rank-pet { color: #aaa; font-size: 0.8rem; }
-  .rank-pet span { color: #4a2a3a; font-size: 1.0rem; font-weight: 700; }
-  .rank-time { margin-left: auto; color: #ff6b6b; font-weight: 800; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-  .rank-empty { color: #ccc; text-align: center; padding: 40px 0; font-size: 0.9rem; font-weight: 500; }
-  .rank-update-info { text-align: center; color: #bbb; font-size: 0.6rem; margin-top: 10px; font-weight: 400; }
-
-  /* パスワードモーダル */
-  .password-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-  }
-  .password-modal.show {
-    display: flex;
-  }
-  .password-modal-content {
-    background: white;
-    padding: 30px 25px;
-    border-radius: 30px;
-    max-width: 360px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .password-modal-content h3 {
-    color: #333;
-    margin-bottom: 10px;
-  }
-  .password-modal-content p {
-    color: #888;
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-  }
-  .password-modal-content input {
-    width: 100%;
-    padding: 14px 16px;
-    border: 2px solid #ddd;
-    border-radius: 30px;
-    font-size: 1.2rem;
-    text-align: center;
-    outline: none;
-    margin-bottom: 10px;
-    transition: 0.2s;
-  }
-  .password-modal-content input:focus {
-    border-color: #ff6b6b;
-    box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.1);
-  }
-  .password-modal-content input.error {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.1);
-  }
-  .password-modal-content .btn-group {
-    display: flex;
-    gap: 10px;
-  }
-  .password-modal-content .btn-group button {
-    flex: 1;
-    padding: 14px 0;
-    border: none;
-    border-radius: 30px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.12s ease;
-    font-size: 1rem;
-  }
-  .password-modal-content .btn-group button:active { transform: scale(0.94); }
-  .btn-modal-confirm {
-    background: #dc3545;
-    color: white;
-  }
-  .btn-modal-confirm:hover:not(:disabled) { background: #c82333; }
-  .btn-modal-confirm:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .btn-modal-cancel {
-    background: #e8e4e8;
-    color: #666;
-  }
-  .btn-modal-cancel:hover { background: #ddd; }
-  .password-error {
-    color: #dc3545;
     font-size: 0.8rem;
-    margin-top: 6px;
-    min-height: 24px;
-    font-weight: 500;
+    color: #aaa;
+    margin-bottom: 12px;
+    padding: 0 4px;
   }
-  .password-error.success {
-    color: #2ecc71;
+  .status .badge {
+    background: #2ecc71;
+    color: #fff;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+  .status .badge.offline {
+    background: #666;
   }
 
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); border-radius: 10px; }
-  ::-webkit-scrollbar-thumb { background: #fad0c4; border-radius: 10px; }
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  .controls button {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 30px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.15s;
+    background: #2a2a4a;
+    color: #fff;
+    flex: 1;
+    max-width: 120px;
+  }
+  .controls button:hover {
+    background: #3a3a5a;
+  }
+  .controls button:active {
+    transform: scale(0.94);
+  }
+  .controls button.primary {
+    background: #ff6b6b;
+    color: #fff;
+  }
+  .controls button.primary:hover {
+    background: #e05555;
+  }
+
+  .chat-area {
+    background: #0f0f26;
+    border-radius: 16px;
+    padding: 12px 14px;
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    border: 1px solid #1a1a36;
+  }
+  .chat-area .msg {
+    font-size: 0.8rem;
+    color: #ccc;
+    padding: 3px 0;
+    border-bottom: 1px solid #1a1a36;
+  }
+  .chat-area .msg .name {
+    color: #ff9a9e;
+    font-weight: 700;
+  }
+  .chat-area .msg .time {
+    color: #666;
+    font-size: 0.6rem;
+    margin-left: 8px;
+  }
+  .chat-area .msg .system {
+    color: #ff6b6b;
+  }
+
+  .chat-input {
+    display: flex;
+    gap: 8px;
+  }
+  .chat-input input {
+    flex: 1;
+    padding: 8px 14px;
+    border-radius: 30px;
+    border: 1px solid #2a2a4a;
+    background: #0f0f26;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+  }
+  .chat-input input:focus {
+    border-color: #ff6b6b;
+  }
+  .chat-input button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 30px;
+    background: #ff6b6b;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .chat-input button:hover {
+    background: #e05555;
+  }
+
+  .room-info {
+    font-size: 0.65rem;
+    color: #666;
+    text-align: center;
+    margin-top: 10px;
+    word-break: break-all;
+  }
+  .room-info a {
+    color: #ff9a9e;
+    text-decoration: none;
+  }
+
+  .copy-btn {
+    background: #2a2a4a;
+    color: #aaa;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    margin-left: 6px;
+  }
+  .copy-btn:hover {
+    background: #3a3a5a;
+    color: #fff;
+  }
 </style>
 </head>
 <body>
+
 <div class="container">
+  <h1>🎬 YouTube同時視聴</h1>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="pet">ペット</button>
-    <button class="tab-btn" data-tab="study">勉強</button>
-    <button class="tab-btn" data-tab="settings">設定</button>
-    <button class="tab-btn" data-tab="rank">ランキング <span class="live-dot"></span></button>
+  <div class="input-area">
+    <input type="text" id="videoIdInput" placeholder="動画IDまたはURL" value="dQw4w9WgXcQ">
+    <button id="connectBtn">接続</button>
   </div>
 
-  <div class="screen active" id="screen-pet">
-    <div class="pet-screen">
-      <div class="pet-header">
-        <span class="label">ペット</span>
-        <span class="user" id="headerUser">ゲスト</span>
-        <span>寿命 <span class="life" id="lifeSpan">36:00:00</span></span>
-        <span class="growth">Lv.<span id="growthLevel">1</span></span>
-        <span class="status-badge alive" id="statusBadge">生存中</span>
-      </div>
-      <div class="pet-area" id="petArea">
-        <div class="pet-char" id="petChar">たま</div>
-        <div class="gameover-overlay" id="gameoverOverlay">GAME OVER</div>
-      </div>
-      <div class="note" id="petNote">寿命はリアルタイムで減ります。アプリを閉じても減り続けます。</div>
-    </div>
+  <div id="player"></div>
+
+  <div class="status">
+    <span id="roomStatus">🟢 接続中</span>
+    <span id="viewerCount">👤 1人</span>
+    <span class="badge" id="syncBadge">🔄 同期中</span>
   </div>
 
-  <div class="screen" id="screen-study">
-    <div class="study-screen">
-      <h2>勉強タイマー</h2>
-      <div class="study-sub">スマホを伏せて勉強開始。戻すと自動停止</div>
-      <div class="study-timer" id="studyTimer">00:00:00</div>
-      <div class="study-status" id="studyStatus">待機中 — 開始ボタンを押してから伏せてください</div>
-      <div class="study-btn-group">
-        <button class="btn-study-start" id="studyStartBtn">開始</button>
-        <button class="btn-study-stop" id="studyStopBtn" disabled>停止</button>
-        <button class="btn-study-reset" id="studyResetBtn">リセット</button>
-      </div>
-      <div class="study-result" id="studyResult">勉強するとここに結果が表示されます</div>
-    </div>
+  <div class="controls">
+    <button id="playBtn" class="primary">▶ 再生</button>
+    <button id="pauseBtn">⏸ 一時停止</button>
   </div>
 
-  <div class="screen" id="screen-settings">
-    <div class="settings-screen">
-      <h2>設定</h2>
-
-      <div class="setting-group">
-        <label>ユーザー名</label>
-        <div class="setting-row">
-          <input id="userNameInput" type="text" placeholder="名前を入力" value="ゲスト" maxlength="16">
-          <button class="btn-setting" id="setUserNameBtn">変更</button>
-        </div>
-        <div class="status-msg" id="userStatus"></div>
-      </div>
-
-      <div class="setting-group">
-        <label>ペットの名前（6文字まで）</label>
-        <div class="sub-label" id="changeLimitLabel">変更可能です</div>
-        <div class="setting-row">
-          <input id="charInput" type="text" placeholder="ペットの名前" value="たま" maxlength="6">
-          <button class="btn-setting" id="setCharBtn">変更</button>
-        </div>
-        <div class="status-msg" id="charChangeStatus"></div>
-      </div>
-
-      <div class="setting-group">
-        <button class="btn-danger" id="resetRankBtn">ローカルランキングをリセット</button>
-      </div>
-
-      <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
-        <button class="btn-danger btn-force-delete" id="forceDeleteBtn">
-          ⚠ ランキング全データ強制削除
-        </button>
-        <div class="status-msg" id="forceDeleteStatus"></div>
-        <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
-          パスワードを入力して全てのランキングデータを完全削除します
-        </div>
-      </div>
-
-      <div class="setting-group" style="border-top: 1px solid rgba(0,0,0,0.06); padding-top: 16px; margin-top: 8px;">
-        <button class="btn-danger btn-delete-account" id="deleteAccountBtn">
-          🗑 アカウント削除（データ完全消去）
-        </button>
-        <div class="status-msg" id="deleteStatus"></div>
-        <div style="font-size: 0.55rem; color: #999; text-align: center; margin-top: 4px;">
-          削除すると全てのデータが完全に消去されます
-        </div>
-      </div>
-    </div>
+  <div class="chat-area" id="chatArea">
+    <div class="msg"><span class="name system">システム</span> 動画を読み込んでいます...</div>
+  </div>
+  <div class="chat-input">
+    <input type="text" id="chatInput" placeholder="メッセージを入力..." maxlength="100">
+    <button id="chatSendBtn">送信</button>
   </div>
 
-  <div class="screen" id="screen-rank">
-    <div class="rank-screen">
-      <h2>寿命ランキング</h2>
-      <div class="rank-sub"><span class="live-badge">● LIVE</span> リアルタイム更新（上位30人）</div>
-      <div class="rank-list" id="rankList">
-        <div class="rank-empty">読み込み中...</div>
-      </div>
-      <div class="rank-update-info" id="updateInfo">更新中...</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ===== パスワードモーダル ===== -->
-<div class="password-modal" id="passwordModal">
-  <div class="password-modal-content">
-    <h3>🔒 パスワード認証</h3>
-    <p>ランキングデータを完全に削除するには<br>管理者パスワードを入力してください</p>
-    <input type="password" id="passwordInput" placeholder="パスワードを入力" maxlength="20" autocomplete="off">
-    <div class="password-error" id="passwordError"></div>
-    <div class="btn-group">
-      <button class="btn-modal-cancel" id="modalCancel">キャンセル</button>
-      <button class="btn-modal-confirm" id="modalConfirm">削除実行</button>
-    </div>
+  <div class="room-info" id="roomInfo">
+    🔗 このページを友達と共有してください
   </div>
 </div>
 
 <script>
 // =============================================
-//  Firebase設定
+//  Firebase設定（あなたのプロジェクト）
 // =============================================
 const firebaseConfig = {
   apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
@@ -589,1250 +274,303 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// =============================================
-//  ★ パスワード設定 ★
-// =============================================
-const ADMIN_PASSWORD = "admin123";
-
-// =============================================
-//  Cookie / localStorage 管理
-// =============================================
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
-function setCookie(name, value, days = 365) {
-  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
-}
-
-function getSavedUid() {
-  const cookieUid = getCookie('petUserUid');
-  if (cookieUid) return cookieUid;
-  const localUid = localStorage.getItem('petUserUid');
-  if (localUid) {
-    setCookie('petUserUid', localUid);
-    return localUid;
-  }
-  return null;
-}
-
-function saveUid(uid) {
-  localStorage.setItem('petUserUid', uid);
-  setCookie('petUserUid', uid);
-}
-
-function autoLogin() {
-  const savedUid = getSavedUid();
-  if (savedUid) {
-    console.log('🔑 保存されたUIDでログイン:', savedUid);
-    if (!auth.currentUser) {
-      auth.signInAnonymously().catch(error => {
-        console.error('ログインエラー:', error);
-      });
-    }
-    return true;
-  } else {
-    console.log('🆕 新規ログイン');
-    auth.signInAnonymously().catch(error => {
-      console.error('ログインエラー:', error);
-    });
-    return false;
-  }
-}
+const db = firebase.database();
 
 // =============================================
 //  グローバル状態
 // =============================================
-let isRunning = false;
-let startTime = 0;
-let timerInterval = null;
-let currentLifeSeconds = 36 * 3600;
-let currentChar = 'たま';
-let currentUser = 'ゲスト';
-let myUid = '';
-let petSize = 40;
-let growthLevel = 1;
-let lastGrowthCheck = Date.now();
-let isStudyMode = false;
-let isPhoneFlipped = false;
-let isDead = false;
-let lifeDecreaseInterval = null;
-let rankUnsubscribe = null;
-let isRankingUpdateScheduled = false;
-
-const CHANGE_COOLDOWN_DAYS = 3;
-const COOLDOWN_MS = CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
-let lastCharChangeTime = 0;
+let player = null;
+let roomId = 'default';
+let myName = 'ユーザー' + Math.floor(Math.random() * 1000);
+let isSyncing = false;
+let lastSyncTime = 0;
+let isReady = false;
 
 // DOM
-const petChar = document.getElementById('petChar');
-const petArea = document.getElementById('petArea');
-const lifeSpan = document.getElementById('lifeSpan');
-const headerUser = document.getElementById('headerUser');
-const growthLevelEl = document.getElementById('growthLevel');
-const statusBadge = document.getElementById('statusBadge');
-const gameoverOverlay = document.getElementById('gameoverOverlay');
-const petNote = document.getElementById('petNote');
-const studyTimer = document.getElementById('studyTimer');
-const studyStatus = document.getElementById('studyStatus');
-const studyResult = document.getElementById('studyResult');
-const studyStartBtn = document.getElementById('studyStartBtn');
-const studyStopBtn = document.getElementById('studyStopBtn');
-const studyResetBtn = document.getElementById('studyResetBtn');
-const charInput = document.getElementById('charInput');
-const setCharBtn = document.getElementById('setCharBtn');
-const charChangeStatus = document.getElementById('charChangeStatus');
-const changeLimitLabel = document.getElementById('changeLimitLabel');
-const userNameInput = document.getElementById('userNameInput');
-const setUserNameBtn = document.getElementById('setUserNameBtn');
-const resetRankBtn = document.getElementById('resetRankBtn');
-const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-const deleteStatus = document.getElementById('deleteStatus');
-const forceDeleteBtn = document.getElementById('forceDeleteBtn');
-const forceDeleteStatus = document.getElementById('forceDeleteStatus');
-const rankList = document.getElementById('rankList');
-const updateInfo = document.getElementById('updateInfo');
-const userStatus = document.getElementById('userStatus');
-
-// パスワードモーダルDOM
-const passwordModal = document.getElementById('passwordModal');
-const passwordInput = document.getElementById('passwordInput');
-const passwordError = document.getElementById('passwordError');
-const modalConfirm = document.getElementById('modalConfirm');
-const modalCancel = document.getElementById('modalCancel');
+const videoIdInput = document.getElementById('videoIdInput');
+const connectBtn = document.getElementById('connectBtn');
+const roomStatus = document.getElementById('roomStatus');
+const viewerCount = document.getElementById('viewerCount');
+const syncBadge = document.getElementById('syncBadge');
+const chatArea = document.getElementById('chatArea');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+const roomInfo = document.getElementById('roomInfo');
+const playBtn = document.getElementById('playBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 
 // =============================================
-//  ★ バックグラウンド対応 ★
+//  YouTube IFrame API
 // =============================================
-
-// 最終アクティブ時刻を保存するキー
-const LAST_ACTIVE_KEY = 'petLastActiveTime';
-
-// ページが閉じられる直前に最終時刻を保存
-window.addEventListener('beforeunload', () => {
-  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-  localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
-});
-
-// ページが非表示になった時（タブ切り替えやバックグラウンド移行）
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // 非表示になった → 最終時刻を保存
-    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
-  } else {
-    // 表示に戻った → 経過時間を計算して反映
-    syncLifeOnResume();
+function onYouTubeIframeAPIReady() {
+  console.log('✅ YouTube API Ready');
+  isReady = true;
+  const defaultId = videoIdInput.value.trim();
+  if (defaultId) {
+    loadVideo(defaultId);
   }
-});
+}
 
-// バックグラウンドから復帰した時の同期処理
-function syncLifeOnResume() {
-  if (isDead) return;
-  if (isRunning) return; // 勉強中は減らさない
-  
-  const lastTime = localStorage.getItem(LAST_ACTIVE_KEY);
-  if (lastTime) {
-    const elapsed = (Date.now() - parseInt(lastTime)) / 1000; // 経過秒数
-    if (elapsed > 1) {
-      const decreaseSeconds = Math.floor(elapsed);
-      currentLifeSeconds -= decreaseSeconds;
-      
-      // 0以下になったら死亡
-      if (currentLifeSeconds <= 0) {
-        currentLifeSeconds = 0;
-        updatePet();
-        setDead();
-        return;
-      }
-      
-      updatePet();
-      console.log(`⏳ バックグラウンドで ${decreaseSeconds}秒 減少しました`);
-      
-      // ランキングも更新（定期的に）
-      scheduleRankingUpdate();
+function createPlayer(videoId) {
+  if (player) {
+    player.destroy();
+    player = null;
+  }
+
+  player = new YT.Player('player', {
+    height: '100%',
+    width: '100%',
+    videoId: videoId,
+    playerVars: {
+      'autoplay': 0,
+      'rel': 0,
+      'controls': 0,
+      'disablekb': 1,
+      'fs': 0,
+      'modestbranding': 1,
+    },
+    events: {
+      'onReady': onPlayerReady,
+      'onStateChange': onPlayerStateChange,
+      'onError': onPlayerError
     }
-  }
-  // 最終時刻を現在に更新
-  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-}
-
-// 定期的に最終時刻を更新（5秒ごと）
-setInterval(() => {
-  if (!isDead) {
-    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
-  }
-}, 5000);
-
-// =============================================
-//  タブ切り替え
-// =============================================
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
   });
-});
-
-// =============================================
-//  寿命表示
-// =============================================
-function formatLifeTime(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
-function formatTimeShort(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}時間${m}分${s}秒`;
-  else if (m > 0) return `${m}分${s}秒`;
-  else return `${s}秒`;
+function onPlayerReady(event) {
+  console.log('🎬 プレイヤー準備完了');
+  addChatMessage('システム', '動画の準備ができました！', 'system');
+  syncRoomState();
+}
+
+function onPlayerStateChange(event) {
+  if (!player) return;
+  if (isSyncing) return;
+
+  const state = event.data;
+  const currentTime = player.getCurrentTime();
+
+  const roomRef = db.ref('rooms/' + roomId);
+  roomRef.update({
+    state: state,
+    time: currentTime,
+    updatedAt: Date.now()
+  });
+}
+
+function onPlayerError(event) {
+  console.error('YouTubeエラー:', event.data);
+  addChatMessage('システム', '⚠️ 動画の読み込みに失敗しました。IDを確認してください。', 'system');
 }
 
 // =============================================
-//  ペット変更制限
+//  Firebase リアルタイム同期
 // =============================================
-function getRemainingCooldown() {
-  const elapsed = Date.now() - lastCharChangeTime;
-  const remaining = COOLDOWN_MS - elapsed;
-  return Math.max(0, remaining);
+function syncRoomState() {
+  const roomRef = db.ref('rooms/' + roomId);
+
+  // 接続人数
+  roomRef.child('viewers').on('value', (snapshot) => {
+    const count = snapshot.val() || 0;
+    viewerCount.textContent = '👤 ' + count + '人';
+  });
+
+  // プレイヤー状態
+  roomRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data || !player) return;
+    if (!player.getCurrentTime) return;
+
+    if (data.updatedAt && data.updatedAt === lastSyncTime) return;
+
+    const state = data.state;
+    const time = data.time || 0;
+
+    const currentTime = player.getCurrentTime();
+    const diff = Math.abs(currentTime - time);
+
+    // 1秒以上ずれていたらシーク
+    if (diff > 1.0 && time > 0) {
+      isSyncing = true;
+      player.seekTo(time, true);
+      setTimeout(() => { isSyncing = false; }, 500);
+    }
+
+    const playerState = player.getPlayerState();
+    if (playerState !== state && state !== undefined) {
+      isSyncing = true;
+      if (state === YT.PlayerState.PLAYING) {
+        player.playVideo();
+      } else if (state === YT.PlayerState.PAUSED) {
+        player.pauseVideo();
+      }
+      setTimeout(() => { isSyncing = false; }, 500);
+    }
+  });
+
+  // オンライン人数管理
+  const viewerRef = roomRef.child('viewers');
+  viewerRef.transaction((current) => {
+    return (current || 0) + 1;
+  });
+
+  viewerRef.onDisconnect().transaction((current) => {
+    return Math.max(0, (current || 1) - 1);
+  });
+
+  // チャット
+  roomRef.child('chat').on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      addChatMessage(data.name, data.message, data.time);
+    }
+  });
 }
 
-function canChangePet() {
-  if (isDead) return false;
-  return getRemainingCooldown() <= 0;
+// =============================================
+//  チャット機能
+// =============================================
+function addChatMessage(name, message, time, type) {
+  const div = document.createElement('div');
+  div.className = 'msg';
+  const timeStr = time ? new Date(time).toLocaleTimeString() : new Date().toLocaleTimeString();
+  const nameClass = type === 'system' ? 'system' : '';
+  div.innerHTML = `<span class="name ${nameClass}">${name}</span> ${message} <span class="time">${timeStr}</span>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  while (chatArea.children.length > 100) {
+    chatArea.removeChild(chatArea.firstChild);
+  }
 }
 
-function updateChangeLimitDisplay() {
-  if (isDead) {
-    changeLimitLabel.textContent = '死亡中は変更できません';
-    changeLimitLabel.style.color = '#dc3545';
-    setCharBtn.disabled = true;
-    charInput.disabled = true;
+function sendChatMessage() {
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+
+  const roomRef = db.ref('rooms/' + roomId + '/chat');
+  roomRef.push({
+    name: myName,
+    message: msg,
+    time: Date.now()
+  });
+
+  chatInput.value = '';
+}
+
+// =============================================
+//  動画読み込み
+// =============================================
+function loadVideo(videoId) {
+  if (!videoId) {
+    alert('動画IDを入力してください');
     return;
   }
-  const remaining = getRemainingCooldown();
-  if (remaining <= 0) {
-    changeLimitLabel.textContent = '✅ 変更可能です';
-    changeLimitLabel.style.color = '#2ecc71';
-    setCharBtn.disabled = false;
-    charInput.disabled = false;
-  } else {
-    const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
-    const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-    changeLimitLabel.textContent = `⏳ 変更可能まであと ${days}日 ${hours}時間`;
-    changeLimitLabel.style.color = '#f5a623';
-    setCharBtn.disabled = true;
-    charInput.disabled = true;
-  }
-}
 
-// =============================================
-//  ランキング更新
-// =============================================
-function scheduleRankingUpdate() {
-  if (isRankingUpdateScheduled) return;
-  isRankingUpdateScheduled = true;
+  // URLからID抽出
+  let id = videoId;
+  if (videoId.includes('watch?v=')) {
+    id = videoId.split('watch?v=')[1].split('&')[0];
+  } else if (videoId.includes('youtu.be/')) {
+    id = videoId.split('youtu.be/')[1].split('?')[0];
+  } else if (videoId.includes('v=')) {
+    id = videoId.split('v=')[1].split('&')[0];
+  }
+
+  if (!isReady) {
+    alert('YouTube APIが読み込まれていません。少し待ってから再試行してください。');
+    return;
+  }
+
+  connectBtn.disabled = true;
+  connectBtn.textContent = '読み込み中...';
+
+  createPlayer(id);
+
+  const roomRef = db.ref('rooms/' + roomId);
+  roomRef.update({
+    videoId: id,
+    updatedAt: Date.now()
+  });
+
+  // 共有URL表示
+  const shareUrl = window.location.href.split('?')[0] + '?room=' + encodeURIComponent(roomId);
+  roomInfo.innerHTML = `
+    🔗 このページを友達と共有してください<br>
+    <a href="${shareUrl}" target="_blank">${shareUrl}</a>
+    <button class="copy-btn" onclick="copyUrl()">コピー</button>
+  `;
+
   setTimeout(() => {
-    isRankingUpdateScheduled = false;
-    updateRankingInFirestore();
+    connectBtn.disabled = false;
+    connectBtn.textContent = '接続';
   }, 3000);
 }
 
-async function updateRankingInFirestore() {
-  if (!myUid) return;
-  if (isDead) return;
-  if (currentUser === 'ゲスト' || !currentUser || currentUser.trim() === '') return;
-  
-  try {
-    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      await doc.ref.update({
-        currentLife: currentLifeSeconds,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-  } catch (error) {
-    console.error('ランキング更新エラー:', error);
-  }
-}
-
-// =============================================
-//  寿命減少処理（バックグラウンド対応版）
-// =============================================
-function startLifeDecrease() {
-  if (lifeDecreaseInterval) return;
-  if (isDead) return;
-  if (isRunning) return;
-
-  // 復帰時の同期を先に行う
-  syncLifeOnResume();
-
-  lifeDecreaseInterval = setInterval(() => {
-    if (currentLifeSeconds > 0 && !isRunning && !isDead) {
-      currentLifeSeconds--;
-      updatePet();
-      scheduleRankingUpdate();
-      if (currentLifeSeconds <= 0) {
-        currentLifeSeconds = 0;
-        clearInterval(lifeDecreaseInterval);
-        lifeDecreaseInterval = null;
-        setDead();
-      }
-    }
-  }, 1000);
-}
-
-function stopLifeDecrease() {
-  if (lifeDecreaseInterval) {
-    clearInterval(lifeDecreaseInterval);
-    lifeDecreaseInterval = null;
-  }
-}
-
-// =============================================
-//  死亡処理
-// =============================================
-function setDead() {
-  if (isDead) return;
-  isDead = true;
-  stopLifeDecrease();
-  
-  petChar.textContent = '✕';
-  petChar.classList.add('dead-char');
-  petArea.classList.add('dead-area');
-  gameoverOverlay.classList.add('show');
-  lifeSpan.classList.add('danger');
-  statusBadge.textContent = '死亡';
-  statusBadge.className = 'status-badge dead';
-  petNote.textContent = 'ペットは死亡しました。';
-  
-  studyStartBtn.disabled = true;
-  studyStartBtn.textContent = '死亡';
-  charInput.disabled = true;
-  setCharBtn.disabled = true;
-  updateChangeLimitDisplay();
-  
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    if (btn.dataset.tab !== 'rank' && btn.dataset.tab !== 'settings') {
-      btn.classList.add('dead');
-    }
-  });
-  
-  localStorage.setItem('charPetDead', 'true');
-  if (myUid && currentUser !== 'ゲスト' && currentUser.trim() !== '') {
-    db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
-      snapshot.forEach(doc => {
-        doc.ref.update({ isDead: true, currentLife: 0, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      });
-    });
-  }
-  
-  studyResult.innerHTML = `<span class="result-dead">ペットが死亡しました</span>`;
-}
-
-// =============================================
-//  スマホ裏返し検知
-// =============================================
-function initOrientationSensor() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && 
-      typeof DeviceOrientationEvent.requestPermission === 'function') {
-    document.addEventListener('click', function iOSPermission() {
-      DeviceOrientationEvent.requestPermission()
-        .then(response => {
-          if (response === 'granted') {
-            window.addEventListener('deviceorientation', handleOrientation);
-            document.removeEventListener('click', iOSPermission);
-          }
-        })
-        .catch(console.error);
+// URLコピー機能
+function copyUrl() {
+  const url = roomInfo.querySelector('a')?.href || window.location.href;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      alert('URLをコピーしました！');
     });
   } else {
-    window.addEventListener('deviceorientation', handleOrientation);
-  }
-}
-
-function handleOrientation(event) {
-  const gamma = event.gamma || 0;
-  const beta = event.beta || 0;
-  const isFlipped = Math.abs(gamma) > 50 || Math.abs(beta) > 120;
-
-  if (isFlipped !== isPhoneFlipped) {
-    isPhoneFlipped = isFlipped;
-    if (isPhoneFlipped && isStudyMode && !isRunning && !isDead) {
-      startStudyTimer();
-    } else if (!isPhoneFlipped && isRunning) {
-      stopStudyTimer();
-    }
+    // フォールバック
+    const input = document.createElement('input');
+    input.value = url;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    alert('URLをコピーしました！');
   }
 }
 
 // =============================================
-//  勉強タイマー制御
+//  イベントリスナー
 // =============================================
-function startStudyTimer() {
-  if (isRunning) return;
-  if (isDead) {
-    studyStatus.innerHTML = 'ペットが死亡しています。';
-    return;
-  }
-  if (!currentChar || currentChar.trim() === '') {
-    studyStatus.innerHTML = 'ペットの名前を設定してください';
-    return;
-  }
-
-  stopLifeDecrease();
-
-  isRunning = true;
-  startTime = Date.now();
-  studyStartBtn.disabled = true;
-  studyStopBtn.disabled = false;
-  studyTimer.classList.add('running');
-  studyStatus.innerHTML = '勉強中！ スマホを戻すと終了';
-
-  timerInterval = setInterval(() => {
-    const diff = (Date.now() - startTime) / 1000;
-    updateStudyTimer(diff);
-  }, 200);
-}
-
-function stopStudyTimer() {
-  if (!isRunning) return;
-
-  isRunning = false;
-  clearInterval(timerInterval);
-  timerInterval = null;
-  studyStartBtn.disabled = false;
-  studyStopBtn.disabled = true;
-  studyTimer.classList.remove('running');
-
-  const elapsed = (Date.now() - startTime) / 1000;
-  updateStudyTimer(elapsed);
-
-  if (elapsed < 1) {
-    studyStatus.innerHTML = '短すぎます。もう一度伏せてください';
-    studyResult.innerHTML = '1秒未満のため寿命は延びませんでした';
-    if (!isDead) startLifeDecrease();
-    return;
-  }
-
-  const addSeconds = Math.floor(elapsed);
-  currentLifeSeconds += addSeconds;
-  updatePet();
-
-  addRankingLocal(elapsed, currentChar, currentUser);
-  saveRankingOnline(currentUser, currentChar, elapsed);
-
-  const timeStr = formatTimeShort(elapsed);
-  
-  studyResult.innerHTML = `
-    勉強時間: <strong>${timeStr}</strong><br>
-    「${currentChar}」の寿命が <span class="result-life">${addSeconds}秒</span> 延びました<br>
-    現在の寿命: <strong>${formatLifeTime(currentLifeSeconds)}</strong>
-  `;
-  studyStatus.innerHTML = '待機中 — 開始ボタンを押してから伏せてください';
-
-  if (!isDead) startLifeDecrease();
-}
-
-function updateStudyTimer(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  studyTimer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-// =============================================
-//  勉強ボタンイベント
-// =============================================
-studyStartBtn.addEventListener('click', () => {
-  if (isRunning) return;
-  if (isDead) {
-    alert('ペットが死亡しています。');
-    return;
-  }
-  if (!currentChar || currentChar.trim() === '') {
-    alert('ペットの名前を設定してください！');
-    return;
-  }
-  
-  isStudyMode = true;
-  studyStartBtn.disabled = true;
-  studyStatus.innerHTML = '待機中 — スマホを伏せてください';
-  studyResult.innerHTML = 'スマホを伏せると勉強が始まります...';
-  studyTimer.textContent = '00:00:00';
+connectBtn.addEventListener('click', () => {
+  loadVideo(videoIdInput.value.trim());
 });
 
-studyStopBtn.addEventListener('click', () => {
-  if (!isRunning) return;
-  stopStudyTimer();
+videoIdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') connectBtn.click();
 });
 
-studyResetBtn.addEventListener('click', () => {
-  if (isRunning) {
-    if (!confirm('勉強中です。リセットしますか？')) return;
-    isRunning = false;
-    clearInterval(timerInterval);
-    timerInterval = null;
-    studyTimer.classList.remove('running');
-  }
-  isStudyMode = false;
-  studyStartBtn.disabled = false;
-  studyStopBtn.disabled = true;
-  studyTimer.textContent = '00:00:00';
-  studyStatus.innerHTML = '待機中 — 開始ボタンを押してから伏せてください';
-  studyResult.innerHTML = '勉強するとここに結果が表示されます';
-  if (!isDead) startLifeDecrease();
+chatSendBtn.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendChatMessage();
 });
 
-// =============================================
-//  ペットアニメーション
-// =============================================
-let animFrameId = null;
-let petX = 50, petY = 50;
-let petVx = 1.2, petVy = 0.8;
-
-function startPetAnimation() {
-  if (animFrameId) return;
-  const rect = petArea.getBoundingClientRect();
-  petX = rect.width / 2 - 30;
-  petY = rect.height / 2 - 30;
-
-  function movePet() {
-    const areaRect = petArea.getBoundingClientRect();
-    const w = areaRect.width;
-    const h = areaRect.height;
-
-    petX += petVx;
-    petY += petVy;
-
-    const charWidth = Math.min(petChar.scrollWidth || 60, w * 0.5);
-    const charHeight = Math.min(petChar.scrollHeight || 60, h * 0.5);
-
-    if (petX <= 0) { petX = 0; petVx = Math.abs(petVx); }
-    if (petX + charWidth >= w) { petX = w - charWidth; petVx = -Math.abs(petVx); }
-    if (petY <= 0) { petY = 0; petVy = Math.abs(petVy); }
-    if (petY + charHeight >= h) { petY = h - charHeight; petVy = -Math.abs(petVy); }
-
-    petChar.style.left = petX + 'px';
-    petChar.style.top = petY + 'px';
-
-    animFrameId = requestAnimationFrame(movePet);
-  }
-  movePet();
-}
-
-function resizePet() {
-  const rect = petArea.getBoundingClientRect();
-  const charWidth = petChar.scrollWidth || 60;
-  const charHeight = petChar.scrollHeight || 60;
-  if (petX + charWidth > rect.width) petX = rect.width - charWidth;
-  if (petY + charHeight > rect.height) petY = rect.height - charHeight;
-  if (petX < 0) petX = 0;
-  if (petY < 0) petY = 0;
-  petChar.style.left = petX + 'px';
-  petChar.style.top = petY + 'px';
-}
-window.addEventListener('resize', resizePet);
-
-// =============================================
-//  ペット成長
-// =============================================
-function checkGrowth() {
-  if (isDead) return;
-  const now = Date.now();
-  const elapsed = now - lastGrowthCheck;
-  const twelveHours = 12 * 60 * 60 * 1000;
-
-  if (elapsed >= twelveHours) {
-    const growthAmount = Math.floor(elapsed / twelveHours);
-    for (let i = 0; i < growthAmount; i++) {
-      petSize = Math.min(petSize + 4, 150);
-      growthLevel++;
-    }
-    lastGrowthCheck = now;
-    
-    localStorage.setItem('petSize', String(petSize));
-    localStorage.setItem('growthLevel', String(growthLevel));
-    localStorage.setItem('lastGrowthCheck', String(lastGrowthCheck));
-    
-    updatePet();
-    resizePet();
-  }
-}
-setInterval(checkGrowth, 60 * 1000);
-
-// =============================================
-//  Firebase 認証 + 自動ログイン
-// =============================================
-autoLogin();
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    myUid = user.uid;
-    saveUid(myUid);
-    console.log('✅ ログイン完了:', myUid);
-    loadUserData();
-    startRealtimeRanking();
-    
-    // 復帰時同期
-    syncLifeOnResume();
-  } else {
-    console.log('⏳ 未ログイン');
-  }
+playBtn.addEventListener('click', () => {
+  if (player && player.playVideo) player.playVideo();
 });
 
-// =============================================
-//  ユーザーデータ読み込み
-// =============================================
-function loadUserData() {
-  if (!myUid) return;
-  db.collection('rankings').where('userId', '==', myUid).get().then(snapshot => {
-    if (!snapshot.empty) {
-      const data = snapshot.docs[0].data();
-      if (data.userName && data.userName !== 'ゲスト') {
-        currentUser = data.userName;
-        userNameInput.value = currentUser;
-        updatePet();
-      }
-    }
-  }).catch(error => {
-    console.error('データ読み込みエラー:', error);
-  });
-}
-
-// =============================================
-//  ユーザー名管理
-// =============================================
-async function checkUserNameUnique(name) {
-  if (!name || name === 'ゲスト') return true;
-  try {
-    const snapshot = await db.collection('rankings').where('userName', '==', name).get();
-    let isUnique = true;
-    snapshot.forEach(doc => {
-      if (doc.data().userId !== myUid) isUnique = false;
-    });
-    return isUnique;
-  } catch (error) {
-    console.error('重複チェックエラー:', error);
-    return false;
-  }
-}
-
-async function saveUserNameToFirestore(name) {
-  if (!myUid) {
-    userStatus.textContent = 'ログインしていません';
-    return false;
-  }
-  if (name === 'ゲスト' || !name || name.trim() === '') {
-    userStatus.textContent = 'ゲストはランキングに表示されません';
-    userStatus.className = 'status-msg';
-    return true;
-  }
-  try {
-    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
-    if (!snapshot.empty) {
-      await snapshot.docs[0].ref.update({
-        userName: name,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      await db.collection('rankings').add({
-        userId: myUid,
-        userName: name,
-        petChar: currentChar || 'たま',
-        totalSeconds: 0,
-        currentLife: currentLifeSeconds,
-        isDead: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-    return true;
-  } catch (error) {
-    console.error('保存エラー:', error);
-    userStatus.textContent = '保存失敗';
-    return false;
-  }
-}
-
-setUserNameBtn.addEventListener('click', async () => {
-  if (isDead) {
-    userStatus.textContent = '死亡中は変更できません';
-    return;
-  }
-  const newName = userNameInput.value.trim() || 'ゲスト';
-  if (newName === currentUser && newName !== 'ゲスト') {
-    userStatus.textContent = '同じ名前です';
-    return;
-  }
-  userStatus.textContent = '確認中...';
-  setUserNameBtn.disabled = true;
-
-  if (newName !== 'ゲスト') {
-    const isUnique = await checkUserNameUnique(newName);
-    if (!isUnique) {
-      userStatus.textContent = 'このユーザー名は既に使われています';
-      setUserNameBtn.disabled = false;
-      return;
-    }
-  }
-
-  const success = await saveUserNameToFirestore(newName);
-  if (success) {
-    currentUser = newName;
-    updatePet();
-    userNameInput.value = currentUser;
-    if (newName === 'ゲスト') {
-      userStatus.textContent = 'ゲストに戻しました。ランキングには表示されません';
-      userStatus.className = 'status-msg';
-    } else {
-      userStatus.textContent = 'ユーザー名を変更しました';
-      userStatus.className = 'status-msg success';
-    }
-  } else {
-    userStatus.textContent = '保存に失敗しました';
-  }
-  setUserNameBtn.disabled = false;
-});
-
-userNameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') setUserNameBtn.click();
-});
-
-// =============================================
-//  パスワード認証付き強制削除
-// =============================================
-function showPasswordModal() {
-  passwordModal.classList.add('show');
-  passwordInput.value = '';
-  passwordError.textContent = '';
-  passwordError.className = 'password-error';
-  passwordInput.className = '';
-  passwordInput.focus();
-}
-
-function hidePasswordModal() {
-  passwordModal.classList.remove('show');
-  passwordInput.value = '';
-  passwordError.textContent = '';
-  passwordError.className = 'password-error';
-  passwordInput.className = '';
-}
-
-async function executeDeleteWithPassword() {
-  const password = passwordInput.value.trim();
-  
-  if (!password) {
-    passwordError.textContent = '⚠️ パスワードを入力してください';
-    passwordError.className = 'password-error';
-    passwordInput.className = 'error';
-    return;
-  }
-
-  if (password !== ADMIN_PASSWORD) {
-    passwordError.textContent = '❌ パスワードが間違っています';
-    passwordError.className = 'password-error';
-    passwordInput.className = 'error';
-    passwordInput.value = '';
-    passwordInput.focus();
-    return;
-  }
-
-  passwordError.textContent = '✅ 認証成功。削除を実行します...';
-  passwordError.className = 'password-error success';
-  passwordInput.className = '';
-  
-  modalConfirm.disabled = true;
-  modalConfirm.textContent = '⏳ 削除中...';
-  forceDeleteBtn.disabled = true;
-  forceDeleteBtn.textContent = '⏳ 削除中...';
-  forceDeleteStatus.textContent = '処理中...';
-  forceDeleteStatus.className = 'status-msg';
-
-  try {
-    let deletedCount = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const snapshot = await db.collection('rankings')
-        .limit(300)
-        .get();
-
-      if (snapshot.empty) {
-        hasMore = false;
-        break;
-      }
-
-      const batch = db.batch();
-      snapshot.forEach(doc => {
-        batch.delete(doc.ref);
-        deletedCount++;
-      });
-
-      await batch.commit();
-      forceDeleteStatus.textContent = `⏳ ${deletedCount}件削除中...`;
-      
-      if (snapshot.docs.length < 300) {
-        hasMore = false;
-      }
-    }
-
-    forceDeleteStatus.textContent = `✅ ${deletedCount}件のデータを削除しました`;
-    forceDeleteStatus.className = 'status-msg success';
-    
-    if (rankUnsubscribe) {
-      rankUnsubscribe();
-      startRealtimeRanking();
-    }
-
-    setTimeout(() => {
-      hidePasswordModal();
-    }, 1000);
-
-  } catch (error) {
-    console.error('❌ 削除エラー:', error);
-    forceDeleteStatus.textContent = '❌ 削除エラー: ' + error.message;
-    forceDeleteStatus.className = 'status-msg';
-    passwordError.textContent = '❌ 削除中にエラーが発生しました';
-    passwordError.className = 'password-error';
-  }
-
-  modalConfirm.disabled = false;
-  modalConfirm.textContent = '削除実行';
-  forceDeleteBtn.disabled = false;
-  forceDeleteBtn.textContent = '⚠ ランキング全データ強制削除';
-}
-
-forceDeleteBtn.addEventListener('click', showPasswordModal);
-modalCancel.addEventListener('click', hidePasswordModal);
-modalConfirm.addEventListener('click', executeDeleteWithPassword);
-
-passwordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    executeDeleteWithPassword();
-  }
-  if (e.key === 'Escape') {
-    hidePasswordModal();
-  }
-  if (e.key !== 'Enter') {
-    passwordError.textContent = '';
-    passwordError.className = 'password-error';
-    passwordInput.className = '';
-  }
-});
-
-passwordModal.addEventListener('click', (e) => {
-  if (e.target === passwordModal) {
-    hidePasswordModal();
-  }
-});
-
-// =============================================
-//  リアルタイムランキング
-// =============================================
-function startRealtimeRanking() {
-  if (rankUnsubscribe) {
-    rankUnsubscribe();
-    rankUnsubscribe = null;
-  }
-
-  updateInfo.textContent = '🔄 リアルタイム接続中...';
-
-  rankUnsubscribe = db.collection('rankings')
-    .orderBy('currentLife', 'desc')
-    .limit(50)
-    .onSnapshot((snapshot) => {
-      let filteredData = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const userName = data.userName || '';
-        const userId = data.userId || '';
-        
-        if (userName === 'ゲスト' || userName.trim() === '') return;
-        if (!userId) return;
-        
-        filteredData.push({ id: doc.id, ...data });
-      });
-
-      filteredData = filteredData.slice(0, 30);
-
-      if (filteredData.length === 0) {
-        rankList.innerHTML = `<div class="rank-empty">まだ記録がありません<br>名前を設定してランキングに挑戦！</div>`;
-        updateInfo.textContent = '📊 データなし（ゲストは非表示）';
-        return;
-      }
-
-      let html = '';
-      let rank = 0;
-      filteredData.forEach(item => {
-        const currentLife = item.currentLife || 0;
-        const displayTime = formatLifeTime(currentLife);
-        const isDeadRank = item.isDead || false;
-        
-        const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
-        const medalClass = rank === 0 ? 'gold' : rank === 1 ? 'silver' : rank === 2 ? 'bronze' : '';
-        const topClass = rank < 3 ? `top${rank+1}` : '';
-        
-        const displayName = item.userName || 'ゲスト';
-        const petDisplay = item.petChar || '?';
-        const deadMark = isDeadRank ? ' †' : '';
-        
-        html += `<div class="rank-item ${topClass} ${isDeadRank ? 'dead-rank' : ''}">
-          <span class="rank-num ${medalClass}">${medal}</span>
-          <span class="rank-user">${displayName}${deadMark}</span>
-          <span class="rank-pet">（<span>${petDisplay}</span>）</span>
-          <span class="rank-time">${displayTime}</span>
-        </div>`;
-        rank++;
-      });
-
-      rankList.innerHTML = html;
-      
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      updateInfo.textContent = `🟢 リアルタイム更新中（${filteredData.length}人） • ${timeStr}`;
-      
-    }, (error) => {
-      console.error('ランキング監視エラー:', error);
-      rankList.innerHTML = `<div class="rank-empty">⚠ 読み込みエラー</div>`;
-      updateInfo.textContent = '⚠ 接続エラー';
-    });
-}
-
-// =============================================
-//  ランキング保存
-// =============================================
-async function saveRankingOnline(user, char, seconds) {
-  if (!myUid) {
-    console.log('未ログインのためオンライン保存スキップ');
-    return;
-  }
-  
-  if (user === 'ゲスト' || !user || user.trim() === '') {
-    console.log('ゲストはランキングに保存しません');
-    return;
-  }
-
-  try {
-    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
-    const currentLife = currentLifeSeconds;
-
-    if (!snapshot.empty) {
-      const doc = snapshot.docs[0];
-      await doc.ref.update({
-        currentLife: currentLife,
-        userName: user,
-        petChar: char,
-        isDead: isDead,
-        totalSeconds: firebase.firestore.FieldValue.increment(seconds),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      console.log('✅ ランキング更新完了');
-    } else {
-      await db.collection('rankings').add({
-        userId: myUid,
-        userName: user,
-        petChar: char,
-        totalSeconds: seconds,
-        currentLife: currentLife,
-        isDead: isDead,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      console.log('✅ ランキング新規保存完了');
-    }
-  } catch (error) {
-    console.error('保存エラー:', error);
-  }
-}
-
-// =============================================
-//  アカウント削除
-// =============================================
-async function deleteAccount() {
-  if (!myUid) {
-    alert('ログインしていません');
-    return;
-  }
-
-  if (!confirm('⚠️ 本当にアカウントを削除しますか？\n\nこの操作は取り消せません！\n・すべてのデータが完全に削除されます\n・ランキングからも消去されます')) {
-    return;
-  }
-
-  if (!confirm('🔥 最終確認：アカウントを完全に削除しますか？\n\nペットのデータも全て失われます。')) {
-    return;
-  }
-
-  deleteAccountBtn.disabled = true;
-  deleteAccountBtn.textContent = '⏳ 削除中...';
-  deleteStatus.textContent = '処理中...';
-  deleteStatus.className = 'status-msg';
-
-  try {
-    const snapshot = await db.collection('rankings').where('userId', '==', myUid).get();
-    const batch = db.batch();
-    snapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-    console.log('✅ Firestoreデータ削除完了');
-
-    const keys = [
-      'charPetUser', 'charPetChar', 'charPetLifeSeconds',
-      'petSize', 'growthLevel', 'lastGrowthCheck',
-      'charPetDead', 'lastCharChangeTime', 'charPetRanking',
-      'petUserUid'
-    ];
-    keys.forEach(key => localStorage.removeItem(key));
-    console.log('✅ localStorage削除完了');
-
-    document.cookie = 'petUserUid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    console.log('✅ Cookie削除完了');
-
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        await user.delete();
-        console.log('✅ Firebase認証削除完了');
-      } catch (authError) {
-        if (authError.code === 'auth/requires-recent-login') {
-          await auth.signOut();
-          await auth.signInAnonymously();
-          const newUser = auth.currentUser;
-          if (newUser) await newUser.delete();
-        } else {
-          throw authError;
-        }
-      }
-    }
-
-    deleteStatus.textContent = '✅ 全てのデータが削除されました。ページをリロードします...';
-    deleteStatus.className = 'status-msg success';
-
-    setTimeout(() => {
-      location.reload();
-    }, 2500);
-
-  } catch (error) {
-    console.error('❌ 削除エラー:', error);
-    deleteStatus.textContent = '❌ 削除エラー: ' + error.message;
-    deleteStatus.className = 'status-msg';
-    deleteAccountBtn.disabled = false;
-    deleteAccountBtn.textContent = '🗑 アカウント削除（データ完全消去）';
-  }
-}
-
-deleteAccountBtn.addEventListener('click', deleteAccount);
-
-// =============================================
-//  ペット更新
-// =============================================
-function updatePet() {
-  if (isDead) return;
-  
-  petChar.textContent = currentChar || 'たま';
-  lifeSpan.textContent = formatLifeTime(currentLifeSeconds);
-  headerUser.textContent = currentUser || 'ゲスト';
-  growthLevelEl.textContent = growthLevel;
-  
-  if (currentLifeSeconds < 600) {
-    lifeSpan.classList.add('danger');
-  } else {
-    lifeSpan.classList.remove('danger');
-  }
-  
-  const charCount = currentChar.length;
-  let adjustedSize = petSize;
-  if (charCount >= 5) adjustedSize = petSize * 0.55;
-  else if (charCount >= 4) adjustedSize = petSize * 0.65;
-  else if (charCount >= 3) adjustedSize = petSize * 0.75;
-  else if (charCount >= 2) adjustedSize = petSize * 0.85;
-  
-  petChar.style.fontSize = adjustedSize + 'px';
-  
-  const ratio = Math.min(currentLifeSeconds / (500 * 3600), 1);
-  const r = 255;
-  const g = Math.floor(150 + 80 * ratio);
-  const b = Math.floor(100 - 50 * ratio);
-  petChar.style.color = `rgb(${r}, ${g}, ${b})`;
-  petChar.style.textShadow = `0 4px 30px rgba(255, 107, 107, ${0.1 + 0.2 * ratio})`;
-}
-
-// =============================================
-//  ローカルランキング
-// =============================================
-function getRankingLocal() {
-  try { return JSON.parse(localStorage.getItem('charPetRanking')) || []; }
-  catch { return []; }
-}
-function saveRankingLocal(rank) {
-  localStorage.setItem('charPetRanking', JSON.stringify(rank));
-}
-function addRankingLocal(seconds, char, user) {
-  if (seconds < 1) return;
-  if (user === 'ゲスト' || !user || user.trim() === '') return;
-  
-  let rank = getRankingLocal();
-  const existing = rank.find(r => r.user === user && r.char === char);
-  if (existing) {
-    existing.totalSeconds += seconds;
-    existing.currentLife = currentLifeSeconds;
-  } else {
-    rank.push({ 
-      user: user || 'ゲスト', 
-      char: char || '?', 
-      totalSeconds: seconds,
-      currentLife: currentLifeSeconds
-    });
-  }
-  rank.sort((a, b) => (b.currentLife || 0) - (a.currentLife || 0));
-  if (rank.length > 50) rank = rank.slice(0, 50);
-  saveRankingLocal(rank);
-}
-
-// =============================================
-//  設定
-// =============================================
-setCharBtn.addEventListener('click', () => {
-  if (isDead) {
-    charChangeStatus.textContent = '死亡中は変更できません';
-    charChangeStatus.className = 'status-msg';
-    return;
-  }
-  
-  if (!canChangePet()) {
-    const remaining = getRemainingCooldown();
-    const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
-    const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-    charChangeStatus.textContent = `変更できません。あと ${days}日 ${hours}時間待ってください`;
-    charChangeStatus.className = 'status-msg';
-    return;
-  }
-  
-  const newChar = charInput.value.trim();
-  if (!newChar || newChar.length === 0) {
-    charChangeStatus.textContent = 'ペットの名前を入力してください！';
-    charChangeStatus.className = 'status-msg';
-    return;
-  }
-  if (newChar.length > 6) {
-    charChangeStatus.textContent = '6文字以内で入力してください！';
-    charChangeStatus.className = 'status-msg';
-    return;
-  }
-  
-  currentChar = newChar;
-  lastCharChangeTime = Date.now();
-  localStorage.setItem('lastCharChangeTime', String(lastCharChangeTime));
-  localStorage.setItem('charPetChar', currentChar);
-  
-  updatePet();
-  updateChangeLimitDisplay();
-  charInput.value = currentChar;
-  
-  charChangeStatus.textContent = `「${currentChar}」に変更しました！ 次回は3日後から可能です`;
-  charChangeStatus.className = 'status-msg success';
-  setTimeout(() => { charChangeStatus.textContent = ''; }, 4000);
-});
-
-charInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') setCharBtn.click();
-});
-
-resetRankBtn.addEventListener('click', () => {
-  if (confirm('ローカルランキングをリセットしますか？')) {
-    localStorage.removeItem('charPetRanking');
-    alert('ローカルランキングをリセットしました');
-  }
+pauseBtn.addEventListener('click', () => {
+  if (player && player.pauseVideo) player.pauseVideo();
 });
 
 // =============================================
 //  初期化
 // =============================================
-const savedUser = localStorage.getItem('charPetUser');
-if (savedUser) {
-  currentUser = savedUser;
-  userNameInput.value = savedUser;
-}
-const savedChar = localStorage.getItem('charPetChar');
-if (savedChar && savedChar.length > 0 && savedChar.length <= 6) {
-  currentChar = savedChar;
-  charInput.value = savedChar;
-}
-const savedLife = localStorage.getItem('charPetLifeSeconds');
-if (savedLife) {
-  currentLifeSeconds = parseInt(savedLife) || 36 * 3600;
-}
-const savedSize = localStorage.getItem('petSize');
-if (savedSize) {
-  petSize = parseFloat(savedSize) || 40;
-}
-const savedGrowth = localStorage.getItem('growthLevel');
-if (savedGrowth) {
-  growthLevel = parseInt(savedGrowth) || 1;
-}
-const savedLastCheck = localStorage.getItem('lastGrowthCheck');
-if (savedLastCheck) {
-  lastGrowthCheck = parseInt(savedLastCheck) || Date.now();
-}
-const savedDead = localStorage.getItem('charPetDead');
-if (savedDead === 'true') {
-  setTimeout(() => { setDead(); }, 500);
+const urlParams = new URLSearchParams(window.location.search);
+const roomParam = urlParams.get('room');
+if (roomParam) {
+  roomId = roomParam;
 }
 
-const savedLastChange = localStorage.getItem('lastCharChangeTime');
-if (savedLastChange) {
-  lastCharChangeTime = parseInt(savedLastChange) || 0;
-} else {
-  lastCharChangeTime = 0;
+myName = 'ユーザー' + Math.floor(Math.random() * 1000);
+
+console.log('🎬 同時視聴ブラウザ起動');
+console.log('👤 ユーザー名:', myName);
+console.log('🏠 部屋ID:', roomId);
+
+// APIが既に読み込まれている場合
+if (typeof YT !== 'undefined' && YT.loaded) {
+  isReady = true;
+  const defaultId = videoIdInput.value.trim();
+  if (defaultId) loadVideo(defaultId);
 }
-
-// ★ 最終アクティブ時刻を復元
-const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
-if (!lastActive) {
-  localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-}
-
-initOrientationSensor();
-checkGrowth();
-updatePet();
-updateChangeLimitDisplay();
-
-if (!isDead) {
-  // 起動時にバックグラウンド分を同期
-  syncLifeOnResume();
-  setTimeout(() => { startLifeDecrease(); }, 1000);
-}
-
-setTimeout(() => {
-  startPetAnimation();
-  resizePet();
-}, 100);
-
-setInterval(() => {
-  if (!isDead) {
-    localStorage.setItem('charPetLifeSeconds', String(currentLifeSeconds));
-    localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
-  }
-  updateChangeLimitDisplay();
-}, 60000);
 </script>
 </body>
 </html>
