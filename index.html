@@ -103,6 +103,9 @@
   .status .badge.offline {
     background: #ff6b6b;
   }
+  .status .badge.syncing {
+    background: #f5a623;
+  }
 
   .controls {
     display: flex;
@@ -266,6 +269,22 @@
     border-radius: 20px;
     font-size: 0.7rem;
   }
+
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #2a2a4a;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    background: #ff6b6b;
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.5s;
+  }
 </style>
 </head>
 <body>
@@ -284,6 +303,10 @@
   </div>
 
   <div id="player"></div>
+
+  <div class="progress-bar">
+    <div class="fill" id="progressFill"></div>
+  </div>
 
   <div class="status">
     <span id="roomStatus">🟢 接続中</span>
@@ -371,6 +394,8 @@ function checkFirebaseConnection() {
       });
       
       syncRoomState();
+      // 参加時に現在の状態を取得して同期
+      syncOnJoin();
       
       if (!isFirstConnection) {
         addChatMessage('システム', '🔄 再接続しました！');
@@ -426,6 +451,7 @@ let lastSyncTime = 0;
 let isReady = false;
 let isPlayerReady = false;
 let currentVideoId = '';
+let isInitialSyncDone = false;
 
 // DOM
 const videoIdInput = document.getElementById('videoIdInput');
@@ -439,6 +465,7 @@ const chatSendBtn = document.getElementById('chatSendBtn');
 const roomInfo = document.getElementById('roomInfo');
 const playBtn = document.getElementById('playBtn');
 const pauseBtn = document.getElementById('pauseBtn');
+const progressFill = document.getElementById('progressFill');
 
 // =============================================
 //  YouTube IFrame API
@@ -490,6 +517,10 @@ function onPlayerReady(event) {
   
   if (isFirebaseConnected) {
     syncRoomState();
+    // 参加時に同期
+    setTimeout(() => {
+      syncOnJoin();
+    }, 500);
   }
 }
 
@@ -501,6 +532,9 @@ function onPlayerStateChange(event) {
 
   const state = event.data;
   const currentTime = player.getCurrentTime();
+
+  // プログレスバー更新
+  updateProgress();
 
   const roomRef = db.ref('rooms/' + roomId);
   roomRef.update({
@@ -515,6 +549,87 @@ function onPlayerStateChange(event) {
 function onPlayerError(event) {
   console.error('YouTubeエラー:', event.data);
   addChatMessage('システム', '⚠️ 動画の読み込みに失敗しました。IDを確認してください。');
+}
+
+// プログレスバー更新
+function updateProgress() {
+  if (!player || !player.getCurrentTime || !player.getDuration) return;
+  try {
+    const current = player.getCurrentTime();
+    const duration = player.getDuration();
+    if (duration > 0) {
+      const percent = (current / duration) * 100;
+      progressFill.style.width = Math.min(percent, 100) + '%';
+    }
+  } catch (e) {}
+}
+
+// =============================================
+//  ★ 途中参加時に現在の状態に同期 ★
+// =============================================
+function syncOnJoin() {
+  if (!db || !isFirebaseConnected) return;
+  if (!isPlayerReady) return;
+  
+  console.log('🔄 途中参加同期開始...');
+  syncBadge.textContent = '⏳ 同期中...';
+  syncBadge.className = 'badge syncing';
+
+  const roomRef = db.ref('rooms/' + roomId);
+  roomRef.once('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      syncBadge.textContent = '🔄 同期中';
+      syncBadge.className = 'badge';
+      return;
+    }
+
+    try {
+      // 動画IDを同期
+      if (data.videoId && data.videoId !== currentVideoId) {
+        currentVideoId = data.videoId;
+        player.loadVideoById(currentVideoId);
+        addChatMessage('システム', '🎬 現在の動画に合わせました');
+      }
+
+      // 再生位置を同期
+      const syncTime = data.playerTime || 0;
+      if (syncTime > 0) {
+        isSyncing = true;
+        player.seekTo(syncTime, true);
+        setTimeout(() => { isSyncing = false; }, 500);
+        console.log('⏱️ 再生位置を同期:', syncTime);
+      }
+
+      // 再生状態を同期
+      const syncState = data.playerState;
+      if (syncState === YT.PlayerState.PLAYING) {
+        isSyncing = true;
+        player.playVideo();
+        setTimeout(() => { isSyncing = false; }, 500);
+        console.log('▶️ 再生状態を同期: PLAYING');
+      } else if (syncState === YT.PlayerState.PAUSED) {
+        isSyncing = true;
+        player.pauseVideo();
+        setTimeout(() => { isSyncing = false; }, 500);
+        console.log('⏸️ 再生状態を同期: PAUSED');
+      }
+
+      isInitialSyncDone = true;
+      syncBadge.textContent = '🔄 同期中';
+      syncBadge.className = 'badge';
+      
+      // 少し遅れてプログレスバー更新
+      setTimeout(updateProgress, 1000);
+      
+      addChatMessage('システム', '✅ 同期が完了しました！');
+
+    } catch (e) {
+      console.warn('参加時同期エラー:', e);
+      syncBadge.textContent = '🔄 同期中';
+      syncBadge.className = 'badge';
+    }
+  });
 }
 
 // =============================================
@@ -535,7 +650,7 @@ function syncRoomState() {
     viewerCount.textContent = '👤 ' + count + '人';
   });
 
-  // ★ 動画IDを監視（全員で動画を切り替え）
+  // 動画ID監視
   roomRef.child('videoId').on('value', (snapshot) => {
     const newVideoId = snapshot.val();
     if (!newVideoId) return;
@@ -545,7 +660,6 @@ function syncRoomState() {
     console.log('🔄 動画切り替え検知:', newVideoId);
     currentVideoId = newVideoId;
     
-    // 動画を切り替える（全員同期）
     isSyncing = true;
     player.loadVideoById(newVideoId);
     setTimeout(() => { isSyncing = false; }, 500);
@@ -559,6 +673,7 @@ function syncRoomState() {
     if (!data || !player) return;
     if (!player.getCurrentTime) return;
     if (!isPlayerReady) return;
+    if (!isInitialSyncDone) return; // 初回同期が終わるまで待つ
 
     if (data.updatedAt && data.updatedAt === lastSyncTime) return;
 
@@ -569,10 +684,12 @@ function syncRoomState() {
       const currentTime = player.getCurrentTime();
       const diff = Math.abs(currentTime - time);
 
-      if (diff > 1.0 && time > 0) {
+      // 時間がずれていたらシーク（1.5秒以上ずれている場合）
+      if (diff > 1.5 && time > 0) {
         isSyncing = true;
         player.seekTo(time, true);
         setTimeout(() => { isSyncing = false; }, 500);
+        console.log('⏱️ 時間同期:', time);
       }
 
       const playerState = player.getPlayerState();
@@ -588,6 +705,9 @@ function syncRoomState() {
         }
         setTimeout(() => { isSyncing = false; }, 500);
       }
+      
+      // プログレスバー更新
+      updateProgress();
     } catch (e) {
       console.warn('同期エラー:', e);
     }
@@ -648,7 +768,7 @@ function sendChatMessage() {
 }
 
 // =============================================
-//  ★ 動画読み込み（全員切り替え対応） ★
+//  動画読み込み
 // =============================================
 function loadVideo(videoId, syncToAll = true) {
   if (!videoId) {
@@ -671,16 +791,17 @@ function loadVideo(videoId, syncToAll = true) {
   }
 
   currentVideoId = id;
+  isInitialSyncDone = false; // 新しく読み込んだら同期待ち状態に
 
-  // 自分は読み込む
   createPlayer(id);
   addChatMessage('システム', '🎬 動画を読み込み中...');
 
-  // ★ 全員に動画切り替えを通知（Firebaseに保存）
   if (syncToAll && isFirebaseConnected) {
     const roomRef = db.ref('rooms/' + roomId);
     roomRef.update({
       videoId: id,
+      playerTime: 0,
+      playerState: YT.PlayerState.PAUSED,
       updatedAt: Date.now()
     }).then(() => {
       addChatMessage('システム', '📢 全員の動画を切り替えました');
@@ -761,7 +882,6 @@ connectBtn.addEventListener('click', () => {
     alert('動画IDを入力してください');
     return;
   }
-  // 動画切り替えを全員に通知
   loadVideo(videoId, true);
 });
 
@@ -821,6 +941,13 @@ setInterval(() => {
     retryConnection();
   }
 }, 30000);
+
+// プログレスバー定期更新
+setInterval(() => {
+  if (player && isPlayerReady) {
+    updateProgress();
+  }
+}, 1000);
 </script>
 </body>
 </html>
