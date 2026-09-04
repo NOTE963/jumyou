@@ -69,6 +69,10 @@
   .input-area button:hover {
     transform: scale(1.03);
   }
+  .input-area button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   #player {
     width: 100%;
@@ -276,7 +280,7 @@
 
   <div class="input-area">
     <input type="text" id="videoIdInput" placeholder="動画IDまたはURL" value="dQw4w9WgXcQ">
-    <button id="connectBtn">接続</button>
+    <button id="connectBtn">動画切り替え</button>
   </div>
 
   <div id="player"></div>
@@ -336,7 +340,7 @@ try {
 }
 
 // =============================================
-//  接続状態監視（切断時もカウント維持）
+//  接続状態監視
 // =============================================
 let isFirstConnection = true;
 
@@ -348,7 +352,6 @@ function checkFirebaseConnection() {
     const isConnected = snap.val() === true;
     
     if (isConnected && !isFirebaseConnected) {
-      // 再接続成功
       console.log('✅ Firebase再接続成功');
       isFirebaseConnected = true;
       document.getElementById('roomStatus').textContent = '🟢 接続中';
@@ -356,20 +359,17 @@ function checkFirebaseConnection() {
       document.getElementById('syncBadge').className = 'badge';
       document.getElementById('errorMsg').classList.remove('show');
       
-      // コントロール有効化
       document.getElementById('playBtn').disabled = false;
       document.getElementById('pauseBtn').disabled = false;
       document.getElementById('chatInput').disabled = false;
       document.getElementById('chatSendBtn').disabled = false;
       
-      // 再接続時に人数を再登録
       const roomRef = db.ref('rooms/' + roomId);
       const viewerRef = roomRef.child('viewers');
       viewerRef.transaction((current) => {
         return (current || 0) + 1;
       });
       
-      // 動画状態を再同期
       syncRoomState();
       
       if (!isFirstConnection) {
@@ -378,7 +378,6 @@ function checkFirebaseConnection() {
       isFirstConnection = false;
       
     } else if (!isConnected && isFirebaseConnected) {
-      // 切断された
       console.log('⏳ Firebase切断（カウント維持中...）');
       isFirebaseConnected = false;
       document.getElementById('roomStatus').textContent = '⏳ 切断中...';
@@ -390,14 +389,10 @@ function checkFirebaseConnection() {
       document.getElementById('pauseBtn').disabled = true;
       document.getElementById('chatInput').disabled = true;
       document.getElementById('chatSendBtn').disabled = true;
-      
-      // 切断時はカウントを減らさない（再接続で復帰）
-      // viewerRefはonDisconnectで自動処理される
     }
   });
 }
 
-// 再接続関数
 function retryConnection() {
   console.log('🔄 再接続試行...');
   document.getElementById('errorMsg').classList.remove('show');
@@ -430,6 +425,7 @@ let isSyncing = false;
 let lastSyncTime = 0;
 let isReady = false;
 let isPlayerReady = false;
+let currentVideoId = '';
 
 // DOM
 const videoIdInput = document.getElementById('videoIdInput');
@@ -452,7 +448,7 @@ function onYouTubeIframeAPIReady() {
   isReady = true;
   const defaultId = videoIdInput.value.trim();
   if (defaultId) {
-    loadVideo(defaultId);
+    loadVideo(defaultId, false);
   }
 }
 
@@ -487,7 +483,6 @@ function onPlayerReady(event) {
   isPlayerReady = true;
   addChatMessage('システム', '動画の準備ができました！');
   
-  // コントロール有効化
   if (isFirebaseConnected) {
     document.getElementById('playBtn').disabled = false;
     document.getElementById('pauseBtn').disabled = false;
@@ -507,7 +502,6 @@ function onPlayerStateChange(event) {
   const state = event.data;
   const currentTime = player.getCurrentTime();
 
-  // 再生/一時停止の状態をFirebaseに送信（全員同期用）
   const roomRef = db.ref('rooms/' + roomId);
   roomRef.update({
     playerState: state,
@@ -524,10 +518,8 @@ function onPlayerError(event) {
 }
 
 // =============================================
-//  Firebase リアルタイム同期（全員で同期）
+//  Firebase リアルタイム同期
 // =============================================
-let isFirstSync = true;
-
 function syncRoomState() {
   if (!db) return;
   if (!isFirebaseConnected) {
@@ -537,20 +529,37 @@ function syncRoomState() {
 
   const roomRef = db.ref('rooms/' + roomId);
 
-  // 視聴者人数（切断時もカウント維持）
+  // 視聴者人数
   roomRef.child('viewers').on('value', (snapshot) => {
     const count = snapshot.val() || 0;
     viewerCount.textContent = '👤 ' + count + '人';
   });
 
-  // ★ プレイヤー状態を監視（全員で同期）
+  // ★ 動画IDを監視（全員で動画を切り替え）
+  roomRef.child('videoId').on('value', (snapshot) => {
+    const newVideoId = snapshot.val();
+    if (!newVideoId) return;
+    if (newVideoId === currentVideoId) return;
+    if (!isPlayerReady) return;
+    
+    console.log('🔄 動画切り替え検知:', newVideoId);
+    currentVideoId = newVideoId;
+    
+    // 動画を切り替える（全員同期）
+    isSyncing = true;
+    player.loadVideoById(newVideoId);
+    setTimeout(() => { isSyncing = false; }, 500);
+    
+    addChatMessage('システム', '🎬 動画が切り替わりました');
+  });
+
+  // プレイヤー状態を監視
   roomRef.on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data || !player) return;
     if (!player.getCurrentTime) return;
     if (!isPlayerReady) return;
 
-    // 自分が送信したデータは無視
     if (data.updatedAt && data.updatedAt === lastSyncTime) return;
 
     const state = data.playerState;
@@ -560,14 +569,12 @@ function syncRoomState() {
       const currentTime = player.getCurrentTime();
       const diff = Math.abs(currentTime - time);
 
-      // 時間がずれていたらシーク（1秒以上ずれている場合）
       if (diff > 1.0 && time > 0) {
         isSyncing = true;
         player.seekTo(time, true);
         setTimeout(() => { isSyncing = false; }, 500);
       }
 
-      // 再生状態を同期
       const playerState = player.getPlayerState();
       if (playerState !== state && state !== undefined && state !== -1) {
         isSyncing = true;
@@ -586,13 +593,12 @@ function syncRoomState() {
     }
   });
 
-  // オンライン人数管理（切断時は自動で減る）
+  // オンライン人数管理
   const viewerRef = roomRef.child('viewers');
   viewerRef.transaction((current) => {
     return (current || 0) + 1;
   });
 
-  // 切断時に人数を減らす（しかし再接続で戻る）
   viewerRef.onDisconnect().transaction((current) => {
     return Math.max(0, (current || 1) - 1);
   });
@@ -642,9 +648,9 @@ function sendChatMessage() {
 }
 
 // =============================================
-//  動画読み込み
+//  ★ 動画読み込み（全員切り替え対応） ★
 // =============================================
-function loadVideo(videoId) {
+function loadVideo(videoId, syncToAll = true) {
   if (!videoId) {
     alert('動画IDを入力してください');
     return;
@@ -664,29 +670,31 @@ function loadVideo(videoId) {
     return;
   }
 
-  connectBtn.disabled = true;
-  connectBtn.textContent = '読み込み中...';
+  currentVideoId = id;
 
+  // 自分は読み込む
   createPlayer(id);
+  addChatMessage('システム', '🎬 動画を読み込み中...');
 
-  if (isFirebaseConnected) {
+  // ★ 全員に動画切り替えを通知（Firebaseに保存）
+  if (syncToAll && isFirebaseConnected) {
     const roomRef = db.ref('rooms/' + roomId);
     roomRef.update({
       videoId: id,
       updatedAt: Date.now()
+    }).then(() => {
+      addChatMessage('システム', '📢 全員の動画を切り替えました');
+    }).catch(e => {
+      console.warn('動画切り替え通知エラー:', e);
     });
   }
 
-  const shareUrl = window.location.href.split('?')[0] + '?room=' + encodeURIComponent(roomId);
-  roomInfo.innerHTML = `
-    🔗 このページを友達と共有してください<br>
-    <a href="${shareUrl}" target="_blank">${shareUrl}</a>
-    <button class="copy-btn" onclick="copyUrl()">コピー</button>
-  `;
+  connectBtn.disabled = true;
+  connectBtn.textContent = '読み込み中...';
 
   setTimeout(() => {
     connectBtn.disabled = false;
-    connectBtn.textContent = '接続';
+    connectBtn.textContent = '動画切り替え';
   }, 3000);
 }
 
@@ -708,7 +716,7 @@ function copyUrl() {
 }
 
 // =============================================
-//  再生/一時停止（全員同期）
+//  再生/一時停止
 // =============================================
 function playVideo() {
   if (!player || !player.playVideo) return;
@@ -717,11 +725,8 @@ function playVideo() {
     return;
   }
   
-  // 自分が再生
   player.playVideo();
   
-  // 全員に再生を通知（onPlayerStateChangeで自動送信）
-  // ただし、念のため直接送信もする
   const roomRef = db.ref('rooms/' + roomId);
   roomRef.update({
     playerState: YT.PlayerState.PLAYING,
@@ -751,7 +756,13 @@ function pauseVideo() {
 //  イベントリスナー
 // =============================================
 connectBtn.addEventListener('click', () => {
-  loadVideo(videoIdInput.value.trim());
+  const videoId = videoIdInput.value.trim();
+  if (!videoId) {
+    alert('動画IDを入力してください');
+    return;
+  }
+  // 動画切り替えを全員に通知
+  loadVideo(videoId, true);
 });
 
 videoIdInput.addEventListener('keydown', (e) => {
@@ -781,17 +792,22 @@ console.log('🎬 同時視聴ブラウザ起動');
 console.log('👤 ユーザー名:', myName);
 console.log('🏠 部屋ID:', roomId);
 
-// 接続チェック開始
 checkFirebaseConnection();
 
-// APIが既に読み込まれている場合
+// 共有URL表示
+const shareUrl = window.location.href.split('?')[0] + '?room=' + encodeURIComponent(roomId);
+roomInfo.innerHTML = `
+  🔗 このページを友達と共有してください<br>
+  <a href="${shareUrl}" target="_blank">${shareUrl}</a>
+  <button class="copy-btn" onclick="copyUrl()">コピー</button>
+`;
+
 if (typeof YT !== 'undefined' && YT.loaded) {
   isReady = true;
   const defaultId = videoIdInput.value.trim();
-  if (defaultId) loadVideo(defaultId);
+  if (defaultId) loadVideo(defaultId, false);
 }
 
-// 5秒後に再接続試行
 setTimeout(() => {
   if (!isFirebaseConnected) {
     console.log('🔄 自動再接続試行...');
@@ -799,7 +815,6 @@ setTimeout(() => {
   }
 }, 5000);
 
-// 30秒ごとに接続状態チェック
 setInterval(() => {
   if (!isFirebaseConnected) {
     console.log('🔄 定期再接続試行...');
