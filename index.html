@@ -57,7 +57,6 @@
       border: 1px solid #2f5066;
     }
 
-    /* 名前設定 */
     .name-area {
       display: flex;
       flex-wrap: wrap;
@@ -95,7 +94,6 @@
       font-size: 0.8rem;
     }
 
-    /* 動画プレーヤー */
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -115,7 +113,6 @@
       border: none;
     }
 
-    /* コントロール */
     .controls {
       display: flex;
       flex-wrap: wrap;
@@ -281,6 +278,19 @@
       font-size: 0.85rem;
     }
 
+    .delete-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 4px 0;
+      justify-content: flex-end;
+    }
+    .delete-area .btn {
+      padding: 6px 18px;
+      font-size: 0.78rem;
+    }
+
     .footer {
       text-align: right;
       color: #5a7d93;
@@ -374,6 +384,11 @@
       <span id="playerStatus">未読み込み</span>
     </div>
 
+    <!-- ルーム全削除 -->
+    <div class="delete-area">
+      <button class="btn btn-danger" id="deleteAllRoomsBtn">🗑️ ルーム全削除</button>
+    </div>
+
     <div class="toast" id="toastMessage">名前を設定してルームを作成または参加してください</div>
     <div class="footer">Firebase Realtime DB · 同時視聴</div>
   </div>
@@ -412,6 +427,7 @@
     const roomIdInput = document.getElementById('roomIdInput');
     const createRoomBtn = document.getElementById('createRoomBtn');
     const joinRoomBtn = document.getElementById('joinRoomBtn');
+    const deleteAllRoomsBtn = document.getElementById('deleteAllRoomsBtn');
     const roomStatus = document.getElementById('roomStatus');
     const roomInfo = document.getElementById('roomInfo');
     const playerList = document.getElementById('playerList');
@@ -469,20 +485,10 @@
       username = name;
       setCookie('watch_username', name);
       toastMessage(`名前を "${name}" に設定しました`);
-      // ルームに参加中の場合は名前を更新
       if (roomId && roomRef) {
         const updates = {};
         updates[`players/${username}`] = { joined: true };
-        // 古い名前を削除（以前の名前が残っている場合）
-        roomRef.once('value', (snap) => {
-          const data = snap.val();
-          if (data && data.players) {
-            const oldName = Object.keys(data.players).find(n => n !== username && data.players[n]?.joined === true);
-            // 簡易的に: 名前変更時は古いエントリを削除（安全のため）
-          }
-        });
         roomRef.update(updates).catch(() => {});
-        // プレイヤーリスト再描画
         roomRef.once('value', (snap) => {
           const data = snap.val();
           if (data) renderPlayerList(data.players || {});
@@ -777,6 +783,48 @@
     }
 
     // ============================================================
+    //  ルーム全削除
+    // ============================================================
+    function deleteAllRooms() {
+      if (!db) {
+        toastMessage('Firebaseに接続されていません');
+        return;
+      }
+      if (!confirm('⚠️ 全てのルームを削除しますか？\nこの操作は取り消せません！')) {
+        return;
+      }
+
+      toastMessage('⏳ ルームを削除中...');
+      const ref = db.ref('watch_rooms');
+      ref.once('value', (snap) => {
+        const data = snap.val();
+        if (!data) {
+          toastMessage('✅ 削除するルームはありませんでした');
+          return;
+        }
+        const keys = Object.keys(data);
+        const promises = keys.map(key => ref.child(key).remove());
+        Promise.all(promises).then(() => {
+          toastMessage(`✅ ${keys.length}件のルームを全て削除しました`);
+          // 現在のルーム状態をリセット
+          if (roomId) {
+            roomId = null;
+            roomRef = null;
+            if (roomListener) { roomListener.off();
+              roomListener = null; }
+            roomStatus.textContent = '-';
+            roomInfo.textContent = 'ルーム: -';
+            playerList.innerHTML = '';
+          }
+        }).catch((err) => {
+          toastMessage('❌ 削除に失敗しました: ' + err.message);
+        });
+      }).catch((err) => {
+        toastMessage('❌ 削除に失敗しました: ' + err.message);
+      });
+    }
+
+    // ============================================================
     //  動画操作
     // ============================================================
     function loadVideo(videoId, seekTime = 0) {
@@ -911,6 +959,7 @@
 
     createRoomBtn.addEventListener('click', createRoom);
     joinRoomBtn.addEventListener('click', joinRoom);
+    deleteAllRoomsBtn.addEventListener('click', deleteAllRooms);
     loadVideoBtn.addEventListener('click', loadVideoFromUrl);
     syncBtn.addEventListener('click', syncVideo);
     playBtn.addEventListener('click', playVideo);
