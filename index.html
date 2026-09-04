@@ -101,7 +101,7 @@
     font-weight: 700;
   }
   .status .badge.offline {
-    background: #666;
+    background: #ff6b6b;
   }
 
   .controls {
@@ -220,12 +220,28 @@
     background: #3a3a5a;
     color: #fff;
   }
+
+  .error-msg {
+    background: #ff6b6b22;
+    border: 1px solid #ff6b6b;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    display: none;
+  }
+  .error-msg.show {
+    display: block;
+  }
 </style>
 </head>
 <body>
 
 <div class="container">
   <h1>🎬 YouTube同時視聴</h1>
+
+  <div class="error-msg" id="errorMsg">⚠️ 接続エラーが発生しました。Firebase設定を確認してください。</div>
 
   <div class="input-area">
     <input type="text" id="videoIdInput" placeholder="動画IDまたはURL" value="dQw4w9WgXcQ">
@@ -235,9 +251,9 @@
   <div id="player"></div>
 
   <div class="status">
-    <span id="roomStatus">🟢 接続中</span>
-    <span id="viewerCount">👤 1人</span>
-    <span class="badge" id="syncBadge">🔄 同期中</span>
+    <span id="roomStatus">⏳ 接続中...</span>
+    <span id="viewerCount">👤 0人</span>
+    <span class="badge offline" id="syncBadge">⛔ 未接続</span>
   </div>
 
   <div class="controls">
@@ -273,8 +289,35 @@ const firebaseConfig = {
   measurementId: "G-FBZF2NHEC9"
 };
 
-firebase.initializeApp(firebaseConfig);
+// Firebase初期化
+let app;
+try {
+  app = firebase.initializeApp(firebaseConfig);
+  console.log('✅ Firebase初期化成功');
+} catch (e) {
+  console.error('❌ Firebase初期化エラー:', e);
+  document.getElementById('errorMsg').textContent = '❌ Firebase初期化エラー: ' + e.message;
+  document.getElementById('errorMsg').classList.add('show');
+}
+
 const db = firebase.database();
+
+// 接続テスト
+const connectedRef = db.ref('.info/connected');
+connectedRef.on('value', (snap) => {
+  if (snap.val() === true) {
+    console.log('✅ Firebase接続成功');
+    document.getElementById('roomStatus').textContent = '🟢 接続中';
+    document.getElementById('syncBadge').textContent = '🔄 同期中';
+    document.getElementById('syncBadge').className = 'badge';
+    document.getElementById('errorMsg').classList.remove('show');
+  } else {
+    console.log('⏳ Firebase接続待機中...');
+    document.getElementById('roomStatus').textContent = '⏳ 接続待機中...';
+    document.getElementById('syncBadge').textContent = '⛔ 未接続';
+    document.getElementById('syncBadge').className = 'badge offline';
+  }
+});
 
 // =============================================
 //  グローバル状態
@@ -283,8 +326,8 @@ let player = null;
 let roomId = 'default';
 let myName = 'ユーザー' + Math.floor(Math.random() * 1000);
 let isSyncing = false;
-let lastSyncTime = 0;
 let isReady = false;
+let isFirebaseReady = false;
 
 // DOM
 const videoIdInput = document.getElementById('videoIdInput');
@@ -298,6 +341,7 @@ const chatSendBtn = document.getElementById('chatSendBtn');
 const roomInfo = document.getElementById('roomInfo');
 const playBtn = document.getElementById('playBtn');
 const pauseBtn = document.getElementById('pauseBtn');
+const errorMsg = document.getElementById('errorMsg');
 
 // =============================================
 //  YouTube IFrame API
@@ -346,6 +390,7 @@ function onPlayerReady(event) {
 function onPlayerStateChange(event) {
   if (!player) return;
   if (isSyncing) return;
+  if (!isFirebaseReady) return;
 
   const state = event.data;
   const currentTime = player.getCurrentTime();
@@ -355,6 +400,8 @@ function onPlayerStateChange(event) {
     state: state,
     time: currentTime,
     updatedAt: Date.now()
+  }).catch(e => {
+    console.warn('状態更新エラー:', e);
   });
 }
 
@@ -367,6 +414,8 @@ function onPlayerError(event) {
 //  Firebase リアルタイム同期
 // =============================================
 function syncRoomState() {
+  if (!db) return;
+
   const roomRef = db.ref('rooms/' + roomId);
 
   // 接続人数
@@ -386,25 +435,28 @@ function syncRoomState() {
     const state = data.state;
     const time = data.time || 0;
 
-    const currentTime = player.getCurrentTime();
-    const diff = Math.abs(currentTime - time);
+    try {
+      const currentTime = player.getCurrentTime();
+      const diff = Math.abs(currentTime - time);
 
-    // 1秒以上ずれていたらシーク
-    if (diff > 1.0 && time > 0) {
-      isSyncing = true;
-      player.seekTo(time, true);
-      setTimeout(() => { isSyncing = false; }, 500);
-    }
-
-    const playerState = player.getPlayerState();
-    if (playerState !== state && state !== undefined) {
-      isSyncing = true;
-      if (state === YT.PlayerState.PLAYING) {
-        player.playVideo();
-      } else if (state === YT.PlayerState.PAUSED) {
-        player.pauseVideo();
+      if (diff > 1.0 && time > 0) {
+        isSyncing = true;
+        player.seekTo(time, true);
+        setTimeout(() => { isSyncing = false; }, 500);
       }
-      setTimeout(() => { isSyncing = false; }, 500);
+
+      const playerState = player.getPlayerState();
+      if (playerState !== state && state !== undefined) {
+        isSyncing = true;
+        if (state === YT.PlayerState.PLAYING) {
+          player.playVideo();
+        } else if (state === YT.PlayerState.PAUSED) {
+          player.pauseVideo();
+        }
+        setTimeout(() => { isSyncing = false; }, 500);
+      }
+    } catch (e) {
+      console.warn('同期エラー:', e);
     }
   });
 
@@ -425,6 +477,8 @@ function syncRoomState() {
       addChatMessage(data.name, data.message, data.time);
     }
   });
+
+  isFirebaseReady = true;
 }
 
 // =============================================
@@ -447,6 +501,10 @@ function addChatMessage(name, message, time, type) {
 function sendChatMessage() {
   const msg = chatInput.value.trim();
   if (!msg) return;
+  if (!isFirebaseReady) {
+    alert('Firebaseに接続されていません。ページをリロードしてください。');
+    return;
+  }
 
   const roomRef = db.ref('rooms/' + roomId + '/chat');
   roomRef.push({
@@ -487,11 +545,13 @@ function loadVideo(videoId) {
 
   createPlayer(id);
 
-  const roomRef = db.ref('rooms/' + roomId);
-  roomRef.update({
-    videoId: id,
-    updatedAt: Date.now()
-  });
+  if (isFirebaseReady) {
+    const roomRef = db.ref('rooms/' + roomId);
+    roomRef.update({
+      videoId: id,
+      updatedAt: Date.now()
+    });
+  }
 
   // 共有URL表示
   const shareUrl = window.location.href.split('?')[0] + '?room=' + encodeURIComponent(roomId);
@@ -515,7 +575,6 @@ function copyUrl() {
       alert('URLをコピーしました！');
     });
   } else {
-    // フォールバック
     const input = document.createElement('input');
     input.value = url;
     document.body.appendChild(input);
@@ -571,6 +630,13 @@ if (typeof YT !== 'undefined' && YT.loaded) {
   const defaultId = videoIdInput.value.trim();
   if (defaultId) loadVideo(defaultId);
 }
+
+// 1秒後にAPIチェック
+setTimeout(() => {
+  if (!isReady) {
+    console.log('⏳ YouTube API読み込み待機中...');
+  }
+}, 2000);
 </script>
 </body>
 </html>
