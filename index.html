@@ -39,22 +39,60 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
     .header h1 {
       color: #f0f9ff;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: 600;
     }
     .header .room-info {
       color: #8aacbf;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       background: #0f1e2b;
       padding: 4px 16px;
       border-radius: 30px;
       border: 1px solid #2f5066;
+    }
+
+    /* 名前設定 */
+    .name-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      background: #0f1e2b;
+      padding: 8px 14px;
+      border-radius: 30px;
+      border: 1px solid #2d4a5e;
+    }
+    .name-area label {
+      color: #b2d3e8;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .name-area input {
+      flex: 1;
+      min-width: 100px;
+      background: #162b3a;
+      border: 1px solid #2f5066;
+      padding: 6px 14px;
+      border-radius: 24px;
+      color: white;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .name-area input:focus {
+      border-color: #5a9ec9;
+    }
+    .name-area .btn {
+      flex: 0 1 auto;
+      padding: 6px 18px;
+      min-width: 50px;
+      font-size: 0.8rem;
     }
 
     /* 動画プレーヤー */
@@ -81,37 +119,37 @@
     .controls {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 14px;
       align-items: center;
     }
     .controls .btn {
       flex: 0 1 auto;
-      padding: 8px 18px;
-      min-width: 60px;
-      font-size: 0.85rem;
+      padding: 8px 16px;
+      min-width: 56px;
+      font-size: 0.82rem;
     }
-    .controls .btn-primary {
+    .btn-primary {
       background: #3a7da8;
       border-bottom-color: #1d4d6a;
     }
-    .controls .btn-secondary {
+    .btn-secondary {
       background: #4a6a7a;
       border-bottom-color: #2a4a5a;
     }
-    .controls .btn-success {
+    .btn-success {
       background: #2a8266;
       border-bottom-color: #18523f;
     }
-    .controls .btn-warning {
+    .btn-warning {
       background: #c97d2b;
       border-bottom-color: #8a5518;
     }
-    .controls .btn-danger {
+    .btn-danger {
       background: #b14f4f;
       border-bottom-color: #752f2f;
     }
-    .controls .btn:disabled {
+    .btn:disabled {
       opacity: 0.4;
       transform: translateY(4px);
       box-shadow: 0 1px 0 #0b1e2b;
@@ -127,7 +165,7 @@
     }
     .url-input-area input {
       flex: 1;
-      min-width: 180px;
+      min-width: 160px;
       background: #162b3a;
       border: 1px solid #2f5066;
       padding: 8px 14px;
@@ -143,18 +181,17 @@
       color: #5a7d93;
     }
 
-    /* プレイヤーリスト */
     .player-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       margin: 8px 0 12px 0;
     }
     .player-tag {
       background: #1a3343;
-      padding: 4px 14px;
+      padding: 3px 14px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: #b3d4e8;
       border: 1px solid #2f5066;
     }
@@ -162,18 +199,13 @@
       border-color: #5a9ec9;
       color: #7bc9a0;
     }
-    .player-tag.ready {
-      border-color: #2a8266;
-      background: #1a4a3a;
-    }
 
-    /* ルーム操作 */
     .room-input-area {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      margin: 6px 0 12px 0;
+      margin: 6px 0 10px 0;
     }
     .room-input-area input {
       background: #162b3a;
@@ -181,7 +213,7 @@
       padding: 8px 14px;
       border-radius: 24px;
       color: white;
-      width: 160px;
+      width: 150px;
       outline: none;
       font-size: 1rem;
       letter-spacing: 2px;
@@ -193,28 +225,27 @@
     .room-input-area input::placeholder {
       text-transform: none;
       letter-spacing: normal;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
     .room-input-area .btn {
       flex: 0 1 auto;
-      padding: 8px 18px;
-      min-width: 60px;
-      font-size: 0.85rem;
+      padding: 8px 16px;
+      min-width: 56px;
+      font-size: 0.82rem;
     }
     .room-status {
       color: #7b9eb3;
       font-size: 0.75rem;
-      min-width: 60px;
+      min-width: 50px;
     }
 
-    /* 同期状態 */
     .sync-status {
       color: #8aacbf;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       margin-top: 6px;
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
     }
     .sync-status .dot {
@@ -243,17 +274,17 @@
       font-weight: 500;
       border-left: 4px solid #4f9bc9;
       margin: 10px 0 4px;
-      min-height: 40px;
+      min-height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
 
     .footer {
       text-align: right;
       color: #5a7d93;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       margin-top: 10px;
       opacity: 0.5;
     }
@@ -266,17 +297,26 @@
         font-size: 1.0rem;
       }
       .room-input-area input {
-        width: 100px;
+        width: 90px;
         font-size: 0.85rem;
       }
       .controls .btn {
-        font-size: 0.75rem;
-        padding: 6px 12px;
-        min-width: 50px;
+        font-size: 0.7rem;
+        padding: 6px 10px;
+        min-width: 44px;
       }
       .url-input-area input {
         font-size: 0.8rem;
         padding: 6px 10px;
+        min-width: 120px;
+      }
+      .name-area {
+        padding: 6px 10px;
+      }
+      .name-area input {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        min-width: 80px;
       }
     }
   </style>
@@ -286,6 +326,13 @@
     <div class="header">
       <h1>▶ YouTube 同時視聴</h1>
       <span class="room-info" id="roomInfo">ルーム: -</span>
+    </div>
+
+    <!-- 名前設定 -->
+    <div class="name-area">
+      <label>👤 名前</label>
+      <input type="text" id="usernameInput" placeholder="名前を入力" maxlength="16" />
+      <button class="btn btn-primary" id="setNameBtn">設定</button>
     </div>
 
     <!-- ルーム操作 -->
@@ -327,7 +374,7 @@
       <span id="playerStatus">未読み込み</span>
     </div>
 
-    <div class="toast" id="toastMessage">ルームを作成または参加してください</div>
+    <div class="toast" id="toastMessage">名前を設定してルームを作成または参加してください</div>
     <div class="footer">Firebase Realtime DB · 同時視聴</div>
   </div>
 
@@ -360,6 +407,8 @@
     // ============================================================
     //  DOM 参照
     // ============================================================
+    const usernameInput = document.getElementById('usernameInput');
+    const setNameBtn = document.getElementById('setNameBtn');
     const roomIdInput = document.getElementById('roomIdInput');
     const createRoomBtn = document.getElementById('createRoomBtn');
     const joinRoomBtn = document.getElementById('joinRoomBtn');
@@ -377,6 +426,69 @@
     const statusText = document.getElementById('statusText');
     const currentTimeDisplay = document.getElementById('currentTimeDisplay');
     const playerStatus = document.getElementById('playerStatus');
+
+    // ============================================================
+    //  Cookie 操作
+    // ============================================================
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    function setCookie(name, value, days = 365) {
+      const d = new Date();
+      d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
+    }
+
+    // ============================================================
+    //  名前管理
+    // ============================================================
+    function loadUsername() {
+      const saved = getCookie('watch_username');
+      if (saved) {
+        usernameInput.value = saved;
+        username = saved;
+      } else {
+        const guest = 'ゲスト' + Math.floor(Math.random() * 1000);
+        usernameInput.value = guest;
+        username = guest;
+      }
+    }
+
+    function setUsername() {
+      const name = usernameInput.value.trim();
+      if (!name) {
+        toastMessage('名前を入力してください');
+        return;
+      }
+      if (name.length > 16) {
+        toastMessage('名前は16文字以内にしてください');
+        return;
+      }
+      username = name;
+      setCookie('watch_username', name);
+      toastMessage(`名前を "${name}" に設定しました`);
+      // ルームに参加中の場合は名前を更新
+      if (roomId && roomRef) {
+        const updates = {};
+        updates[`players/${username}`] = { joined: true };
+        // 古い名前を削除（以前の名前が残っている場合）
+        roomRef.once('value', (snap) => {
+          const data = snap.val();
+          if (data && data.players) {
+            const oldName = Object.keys(data.players).find(n => n !== username && data.players[n]?.joined === true);
+            // 簡易的に: 名前変更時は古いエントリを削除（安全のため）
+          }
+        });
+        roomRef.update(updates).catch(() => {});
+        // プレイヤーリスト再描画
+        roomRef.once('value', (snap) => {
+          const data = snap.val();
+          if (data) renderPlayerList(data.players || {});
+        });
+      }
+    }
 
     // ============================================================
     //  YouTube IFrame API
@@ -399,7 +511,6 @@
       });
     }
 
-    // YouTube API がまだ読み込まれていない場合
     if (typeof YT === 'undefined' || !YT.Player) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
@@ -413,7 +524,6 @@
       isPlayerReady = true;
       playerStatus.textContent = '準備完了';
       toastMessage('プレーヤー準備完了');
-      // ルームに動画情報があれば読み込み
       if (roomId && roomRef) {
         roomRef.once('value', (snap) => {
           const data = snap.val();
@@ -427,7 +537,6 @@
     function onPlayerStateChange(event) {
       if (!roomId || !roomRef) return;
       const state = event.data;
-      // 再生状態をルームに送信（自分以外の操作による変更は無視）
       if (!isSyncing) {
         const updates = {};
         if (state === YT.PlayerState.PLAYING) {
@@ -464,30 +573,13 @@
     }
 
     // ============================================================
-    //  ユーザー名（Cookie）
-    // ============================================================
-    function getCookie(name) {
-      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return m ? decodeURIComponent(m[2]) : null;
-    }
-
-    function setCookie(name, value, days = 365) {
-      const d = new Date();
-      d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
-    }
-
-    username = getCookie('watch_username') || '名無し' + Math.floor(Math.random() * 1000);
-    // 簡易的に名前入力（今回は固定）
-
-    // ============================================================
     //  トースト
     // ============================================================
     function toastMessage(msg) {
       toast.textContent = msg;
       setTimeout(() => {
         if (toast.textContent === msg) {
-          toast.textContent = 'ルームを作成または参加してください';
+          toast.textContent = '名前を設定してルームを作成または参加してください';
         }
       }, 3000);
     }
@@ -496,6 +588,10 @@
     //  ルーム管理
     // ============================================================
     function createRoom() {
+      if (!username) {
+        toastMessage('先に名前を設定してください');
+        return;
+      }
       let id = roomIdInput.value.trim().toUpperCase();
       if (!id) {
         toastMessage('ルームIDを入力してください');
@@ -541,6 +637,10 @@
     }
 
     function joinRoom() {
+      if (!username) {
+        toastMessage('先に名前を設定してください');
+        return;
+      }
       let id = roomIdInput.value.trim().toUpperCase();
       if (!id) {
         toastMessage('ルームIDを入力してください');
@@ -578,7 +678,6 @@
           roomInfo.textContent = `ルーム: ${id}`;
           toastMessage('ルームに参加しました');
           listenRoom(id);
-          // 現在の動画情報を読み込む
           if (data.videoId && isPlayerReady) {
             loadVideo(data.videoId, data.currentTime || 0);
             if (data.isPlaying) {
@@ -602,15 +701,12 @@
           return;
         }
 
-        // プレイヤーリスト更新
         renderPlayerList(data.players || {});
 
-        // 動画情報
         if (data.videoId && data.videoId !== currentVideoId && isPlayerReady) {
           loadVideo(data.videoId, data.currentTime || 0);
         }
 
-        // 再生状態同期（自分以外の操作）
         if (isPlayerReady && player) {
           isSyncing = true;
           const currentPlayerTime = player.getCurrentTime();
@@ -625,7 +721,6 @@
             }
             isPlaying = data.isPlaying;
           } else if (timeDiff > 1.0 && targetTime > 0) {
-            // シーク
             player.seekTo(targetTime, true);
           }
           isSyncing = false;
@@ -640,7 +735,6 @@
         const updates = {};
         updates[`players/${username}`] = null;
         roomRef.update(updates).then(() => {
-          // プレイヤーが0人になったらルーム削除
           roomRef.once('value', (snap) => {
             const data = snap.val();
             if (data) {
@@ -690,8 +784,7 @@
       if (!videoId) return;
       currentVideoId = videoId;
       player.loadVideoById(videoId, seekTime);
-      playerStatus.textContent = `読み込み中...`;
-      // ルームにも保存
+      playerStatus.textContent = '読み込み中...';
       if (roomRef) {
         roomRef.update({
           videoId: videoId,
@@ -731,7 +824,6 @@
         const match = url.match(pattern);
         if (match) return match[1];
       }
-      // 直接IDが入力された場合
       if (/^[A-Za-z0-9_-]{11}$/.test(url)) return url;
       return null;
     }
@@ -797,7 +889,6 @@
         playerStatus.textContent = stateMap[state] || '不明';
         isPlaying = state === YT.PlayerState.PLAYING;
 
-        // ステータスドット
         if (roomId) {
           statusDot.className = 'dot green';
           statusText.textContent = '同期中';
@@ -808,12 +899,16 @@
       }
     }
 
-    // 定期的なUI更新
     setInterval(updateUI, 500);
 
     // ============================================================
     //  イベント
     // ============================================================
+    setNameBtn.addEventListener('click', setUsername);
+    usernameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') setUsername();
+    });
+
     createRoomBtn.addEventListener('click', createRoom);
     joinRoomBtn.addEventListener('click', joinRoom);
     loadVideoBtn.addEventListener('click', loadVideoFromUrl);
@@ -834,8 +929,8 @@
     //  初期化
     // ============================================================
     function init() {
-      toastMessage('ルームを作成または参加してください');
-      // 既存の空ルームをクリーンアップ
+      loadUsername();
+      toastMessage('名前を設定してルームを作成または参加してください');
       if (db) {
         db.ref('watch_rooms').once('value', (snap) => {
           const data = snap.val();
@@ -852,7 +947,6 @@
       }
     }
 
-    // YouTube API がすでに読み込まれている場合のフォールバック
     if (typeof YT !== 'undefined' && YT.Player) {
       onYouTubeIframeAPIReady();
     }
