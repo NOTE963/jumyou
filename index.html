@@ -1,953 +1,863 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎬 YouTube同時視聴</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>YouTube 同時視聴</title>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+  </script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js">
+  </script>
 
-<!-- YouTube IFrame API -->
-<script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    }
+    body {
+      background: #0d1a26;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .app {
+      max-width: 820px;
+      width: 100%;
+      background: #162b3b;
+      border-radius: 28px;
+      padding: 24px 20px 28px;
+      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.8);
+      border: 1px solid #2f4a5e;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .header h1 {
+      color: #f0f9ff;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .header .room-info {
+      color: #8aacbf;
+      font-size: 0.85rem;
+      background: #0f1e2b;
+      padding: 4px 16px;
+      border-radius: 30px;
+      border: 1px solid #2f5066;
+    }
 
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: #0a0a1a;
-    font-family: 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    color: #fff;
-  }
-  .container {
-    background: #141428;
-    border-radius: 30px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-    width: 100%;
-    max-width: 560px;
-    padding: 24px 20px 30px;
-  }
-  h1 {
-    font-size: 1.4rem;
-    text-align: center;
-    color: #ff6b6b;
-    margin-bottom: 16px;
-  }
-  .input-area {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .input-area input {
-    flex: 1;
-    padding: 10px 14px;
-    border-radius: 30px;
-    border: 2px solid #2a2a4a;
-    background: #0f0f26;
-    color: #fff;
-    font-size: 0.95rem;
-    outline: none;
-  }
-  .input-area input:focus {
-    border-color: #ff6b6b;
-  }
-  .input-area button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 30px;
-    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
-    color: #4a2a3a;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .input-area button:hover {
-    transform: scale(1.03);
-  }
-  .input-area button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
+    /* 動画プレーヤー */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      background: #0a1520;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      border: 1px solid #2d4a5e;
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
 
-  #player {
-    width: 100%;
-    aspect-ratio: 16/9;
-    background: #000;
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
+    /* コントロール */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .controls .btn {
+      flex: 0 1 auto;
+      padding: 8px 18px;
+      min-width: 60px;
+      font-size: 0.85rem;
+    }
+    .controls .btn-primary {
+      background: #3a7da8;
+      border-bottom-color: #1d4d6a;
+    }
+    .controls .btn-secondary {
+      background: #4a6a7a;
+      border-bottom-color: #2a4a5a;
+    }
+    .controls .btn-success {
+      background: #2a8266;
+      border-bottom-color: #18523f;
+    }
+    .controls .btn-warning {
+      background: #c97d2b;
+      border-bottom-color: #8a5518;
+    }
+    .controls .btn-danger {
+      background: #b14f4f;
+      border-bottom-color: #752f2f;
+    }
+    .controls .btn:disabled {
+      opacity: 0.4;
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #0b1e2b;
+      pointer-events: none;
+    }
 
-  .status {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.8rem;
-    color: #aaa;
-    margin-bottom: 12px;
-    padding: 0 4px;
-  }
-  .status .badge {
-    background: #2ecc71;
-    color: #fff;
-    padding: 2px 12px;
-    border-radius: 20px;
-    font-size: 0.65rem;
-    font-weight: 700;
-  }
-  .status .badge.offline {
-    background: #ff6b6b;
-  }
-  .status .badge.syncing {
-    background: #f5a623;
-  }
+    .url-input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    .url-input-area input {
+      flex: 1;
+      min-width: 180px;
+      background: #162b3a;
+      border: 1px solid #2f5066;
+      padding: 8px 14px;
+      border-radius: 24px;
+      color: white;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .url-input-area input:focus {
+      border-color: #5a9ec9;
+    }
+    .url-input-area input::placeholder {
+      color: #5a7d93;
+    }
 
-  .controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 14px;
-  }
-  .controls button {
-    padding: 10px 24px;
-    border: none;
-    border-radius: 30px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 0.15s;
-    background: #2a2a4a;
-    color: #fff;
-    flex: 1;
-    max-width: 120px;
-  }
-  .controls button:hover:not(:disabled) {
-    background: #3a3a5a;
-  }
-  .controls button:active:not(:disabled) {
-    transform: scale(0.94);
-  }
-  .controls button.primary {
-    background: #ff6b6b;
-    color: #fff;
-  }
-  .controls button.primary:hover:not(:disabled) {
-    background: #e05555;
-  }
-  .controls button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
+    /* プレイヤーリスト */
+    .player-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 12px 0;
+    }
+    .player-tag {
+      background: #1a3343;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: #b3d4e8;
+      border: 1px solid #2f5066;
+    }
+    .player-tag.you {
+      border-color: #5a9ec9;
+      color: #7bc9a0;
+    }
+    .player-tag.ready {
+      border-color: #2a8266;
+      background: #1a4a3a;
+    }
 
-  .chat-area {
-    background: #0f0f26;
-    border-radius: 16px;
-    padding: 12px 14px;
-    max-height: 150px;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    border: 1px solid #1a1a36;
-  }
-  .chat-area .msg {
-    font-size: 0.8rem;
-    color: #ccc;
-    padding: 3px 0;
-    border-bottom: 1px solid #1a1a36;
-  }
-  .chat-area .msg .name {
-    color: #ff9a9e;
-    font-weight: 700;
-  }
-  .chat-area .msg .time {
-    color: #666;
-    font-size: 0.6rem;
-    margin-left: 8px;
-  }
-  .chat-area .msg .system {
-    color: #ff6b6b;
-  }
+    /* ルーム操作 */
+    .room-input-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 6px 0 12px 0;
+    }
+    .room-input-area input {
+      background: #162b3a;
+      border: 1px solid #2f5066;
+      padding: 8px 14px;
+      border-radius: 24px;
+      color: white;
+      width: 160px;
+      outline: none;
+      font-size: 1rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .room-input-area input:focus {
+      border-color: #5a9ec9;
+    }
+    .room-input-area input::placeholder {
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 0.9rem;
+    }
+    .room-input-area .btn {
+      flex: 0 1 auto;
+      padding: 8px 18px;
+      min-width: 60px;
+      font-size: 0.85rem;
+    }
+    .room-status {
+      color: #7b9eb3;
+      font-size: 0.75rem;
+      min-width: 60px;
+    }
 
-  .chat-input {
-    display: flex;
-    gap: 8px;
-  }
-  .chat-input input {
-    flex: 1;
-    padding: 8px 14px;
-    border-radius: 30px;
-    border: 1px solid #2a2a4a;
-    background: #0f0f26;
-    color: #fff;
-    font-size: 0.85rem;
-    outline: none;
-  }
-  .chat-input input:focus {
-    border-color: #ff6b6b;
-  }
-  .chat-input input:disabled {
-    opacity: 0.3;
-  }
-  .chat-input button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 30px;
-    background: #ff6b6b;
-    color: #fff;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .chat-input button:hover:not(:disabled) {
-    background: #e05555;
-  }
-  .chat-input button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
+    /* 同期状態 */
+    .sync-status {
+      color: #8aacbf;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .sync-status .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .sync-status .dot.green {
+      background: #2a8266;
+    }
+    .sync-status .dot.yellow {
+      background: #c97d2b;
+    }
+    .sync-status .dot.red {
+      background: #b14f4f;
+    }
 
-  .room-info {
-    font-size: 0.65rem;
-    color: #666;
-    text-align: center;
-    margin-top: 10px;
-    word-break: break-all;
-  }
-  .room-info a {
-    color: #ff9a9e;
-    text-decoration: none;
-  }
+    .toast {
+      background: #1a3343;
+      padding: 8px 16px;
+      border-radius: 30px;
+      color: #c7e4f5;
+      text-align: center;
+      font-weight: 500;
+      border-left: 4px solid #4f9bc9;
+      margin: 10px 0 4px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
 
-  .copy-btn {
-    background: #2a2a4a;
-    color: #aaa;
-    border: none;
-    padding: 4px 12px;
-    border-radius: 16px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    margin-left: 6px;
-  }
-  .copy-btn:hover {
-    background: #3a3a5a;
-    color: #fff;
-  }
+    .footer {
+      text-align: right;
+      color: #5a7d93;
+      font-size: 0.65rem;
+      margin-top: 10px;
+      opacity: 0.5;
+    }
 
-  .error-msg {
-    background: #ff6b6b22;
-    border: 1px solid #ff6b6b;
-    border-radius: 12px;
-    padding: 10px 14px;
-    margin-bottom: 12px;
-    color: #ff6b6b;
-    font-size: 0.85rem;
-    display: none;
-  }
-  .error-msg.show {
-    display: block;
-  }
-
-  .retry-btn {
-    background: #ff6b6b;
-    border: none;
-    color: #fff;
-    padding: 4px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    margin-left: 8px;
-  }
-  .retry-btn:hover {
-    background: #e05555;
-  }
-
-  .viewer-count-badge {
-    background: #2a2a4a;
-    padding: 2px 12px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-  }
-
-  .progress-bar {
-    width: 100%;
-    height: 4px;
-    background: #2a2a4a;
-    border-radius: 4px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .progress-bar .fill {
-    height: 100%;
-    background: #ff6b6b;
-    border-radius: 4px;
-    width: 0%;
-    transition: width 0.5s;
-  }
-</style>
+    @media (max-width: 500px) {
+      .app {
+        padding: 14px 10px;
+      }
+      .header h1 {
+        font-size: 1.0rem;
+      }
+      .room-input-area input {
+        width: 100px;
+        font-size: 0.85rem;
+      }
+      .controls .btn {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        min-width: 50px;
+      }
+      .url-input-area input {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="app">
+    <div class="header">
+      <h1>▶ YouTube 同時視聴</h1>
+      <span class="room-info" id="roomInfo">ルーム: -</span>
+    </div>
 
-<div class="container">
-  <h1>🎬 YouTube同時視聴</h1>
+    <!-- ルーム操作 -->
+    <div class="room-input-area">
+      <span style="color:#8aacbf; font-size:0.85rem;">ルームID:</span>
+      <input type="text" id="roomIdInput" placeholder="自由に設定" maxlength="20" />
+      <button class="btn btn-primary" id="createRoomBtn">作成</button>
+      <button class="btn btn-secondary" id="joinRoomBtn">参加</button>
+      <span class="room-status" id="roomStatus">-</span>
+    </div>
 
-  <div class="error-msg" id="errorMsg">
-    ⚠️ 接続エラー
-    <button class="retry-btn" onclick="retryConnection()">再接続</button>
+    <!-- プレイヤーリスト -->
+    <div class="player-list" id="playerList"></div>
+
+    <!-- URL入力 -->
+    <div class="url-input-area">
+      <input type="text" id="videoUrlInput" placeholder="YouTube URL を入力" />
+      <button class="btn btn-success" id="loadVideoBtn">読み込み</button>
+      <button class="btn btn-warning" id="syncBtn">同期</button>
+    </div>
+
+    <!-- 動画プレーヤー -->
+    <div class="video-wrapper">
+      <div id="player"></div>
+    </div>
+
+    <!-- コントロール -->
+    <div class="controls">
+      <button class="btn btn-primary" id="playBtn">▶ 再生</button>
+      <button class="btn btn-warning" id="pauseBtn">⏸ 一時停止</button>
+      <button class="btn btn-secondary" id="stopBtn">⏹ 停止</button>
+    </div>
+
+    <!-- 同期状態 -->
+    <div class="sync-status">
+      <span><span class="dot green" id="statusDot"></span><span id="statusText">待機中</span></span>
+      <span id="currentTimeDisplay">0:00</span>
+      <span style="color:#5a7d93;">|</span>
+      <span id="playerStatus">未読み込み</span>
+    </div>
+
+    <div class="toast" id="toastMessage">ルームを作成または参加してください</div>
+    <div class="footer">Firebase Realtime DB · 同時視聴</div>
   </div>
 
-  <div class="input-area">
-    <input type="text" id="videoIdInput" placeholder="動画IDまたはURL" value="dQw4w9WgXcQ">
-    <button id="connectBtn">動画切り替え</button>
-  </div>
+  <script>
+    // ============================================================
+    //  Firebase 設定
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
+      authDomain: "jumyou.firebaseapp.com",
+      databaseURL: "https://jumyou-default-rtdb.firebaseio.com",
+      projectId: "jumyou",
+      storageBucket: "jumyou.firebasestorage.app",
+      messagingSenderId: "441346887929",
+      appId: "1:441346887929:web:0ca3115f8d1f806df49228",
+      measurementId: "G-FBZF2NHEC9"
+    };
 
-  <div id="player"></div>
+    let db = null;
+    let roomRef = null;
+    let roomListener = null;
+    let roomId = null;
+    let username = '';
+    let player = null;
+    let isSyncing = false;
+    let isPlaying = false;
+    let currentVideoId = '';
+    let isPlayerReady = false;
 
-  <div class="progress-bar">
-    <div class="fill" id="progressFill"></div>
-  </div>
+    // ============================================================
+    //  DOM 参照
+    // ============================================================
+    const roomIdInput = document.getElementById('roomIdInput');
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const joinRoomBtn = document.getElementById('joinRoomBtn');
+    const roomStatus = document.getElementById('roomStatus');
+    const roomInfo = document.getElementById('roomInfo');
+    const playerList = document.getElementById('playerList');
+    const videoUrlInput = document.getElementById('videoUrlInput');
+    const loadVideoBtn = document.getElementById('loadVideoBtn');
+    const syncBtn = document.getElementById('syncBtn');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const toast = document.getElementById('toastMessage');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+    const playerStatus = document.getElementById('playerStatus');
 
-  <div class="status">
-    <span id="roomStatus">🟢 接続中</span>
-    <span id="viewerCount" class="viewer-count-badge">👤 0人</span>
-    <span class="badge" id="syncBadge">🔄 同期中</span>
-  </div>
-
-  <div class="controls">
-    <button id="playBtn" class="primary">▶ 再生</button>
-    <button id="pauseBtn">⏸ 一時停止</button>
-  </div>
-
-  <div class="chat-area" id="chatArea">
-    <div class="msg"><span class="name system">システム</span> 動画を読み込んでいます...</div>
-  </div>
-  <div class="chat-input">
-    <input type="text" id="chatInput" placeholder="メッセージを入力..." maxlength="100">
-    <button id="chatSendBtn">送信</button>
-  </div>
-
-  <div class="room-info" id="roomInfo">
-    🔗 このページを友達と共有してください
-  </div>
-</div>
-
-<script>
-// =============================================
-//  Firebase設定
-// =============================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
-  authDomain: "jumyou.firebaseapp.com",
-  databaseURL: "https://jumyou-default-rtdb.firebaseio.com",
-  projectId: "jumyou",
-  storageBucket: "jumyou.firebasestorage.app",
-  messagingSenderId: "441346887929",
-  appId: "1:441346887929:web:0ca3115f8d1f806df49228",
-  measurementId: "G-FBZF2NHEC9"
-};
-
-// Firebase初期化
-let db;
-let isFirebaseConnected = false;
-
-try {
-  if (!firebase.apps || firebase.apps.length === 0) {
-    firebase.initializeApp(firebaseConfig);
-    console.log('✅ Firebase初期化成功');
-  }
-  db = firebase.database();
-} catch (e) {
-  console.error('❌ Firebase初期化エラー:', e);
-  document.getElementById('errorMsg').classList.add('show');
-}
-
-// =============================================
-//  接続状態監視
-// =============================================
-let isFirstConnection = true;
-
-function checkFirebaseConnection() {
-  if (!db) return;
-
-  const connectedRef = db.ref('.info/connected');
-  connectedRef.on('value', (snap) => {
-    const isConnected = snap.val() === true;
-    
-    if (isConnected && !isFirebaseConnected) {
-      console.log('✅ Firebase再接続成功');
-      isFirebaseConnected = true;
-      document.getElementById('roomStatus').textContent = '🟢 接続中';
-      document.getElementById('syncBadge').textContent = '🔄 同期中';
-      document.getElementById('syncBadge').className = 'badge';
-      document.getElementById('errorMsg').classList.remove('show');
-      
-      document.getElementById('playBtn').disabled = false;
-      document.getElementById('pauseBtn').disabled = false;
-      document.getElementById('chatInput').disabled = false;
-      document.getElementById('chatSendBtn').disabled = false;
-      
-      const roomRef = db.ref('rooms/' + roomId);
-      const viewerRef = roomRef.child('viewers');
-      viewerRef.transaction((current) => {
-        return (current || 0) + 1;
-      });
-      
-      syncRoomState();
-      // 参加時に現在の状態を取得して同期
-      syncOnJoin();
-      
-      if (!isFirstConnection) {
-        addChatMessage('システム', '🔄 再接続しました！');
-      }
-      isFirstConnection = false;
-      
-    } else if (!isConnected && isFirebaseConnected) {
-      console.log('⏳ Firebase切断（カウント維持中...）');
-      isFirebaseConnected = false;
-      document.getElementById('roomStatus').textContent = '⏳ 切断中...';
-      document.getElementById('syncBadge').textContent = '⛔ 切断';
-      document.getElementById('syncBadge').className = 'badge offline';
-      document.getElementById('errorMsg').classList.add('show');
-      
-      document.getElementById('playBtn').disabled = true;
-      document.getElementById('pauseBtn').disabled = true;
-      document.getElementById('chatInput').disabled = true;
-      document.getElementById('chatSendBtn').disabled = true;
-    }
-  });
-}
-
-function retryConnection() {
-  console.log('🔄 再接続試行...');
-  document.getElementById('errorMsg').classList.remove('show');
-  document.getElementById('roomStatus').textContent = '⏳ 再接続中...';
-  
-  if (db) {
-    const connectedRef = db.ref('.info/connected');
-    connectedRef.off();
-    checkFirebaseConnection();
-  } else {
-    try {
-      if (!firebase.apps || firebase.apps.length === 0) {
-        firebase.initializeApp(firebaseConfig);
-      }
-      db = firebase.database();
-      checkFirebaseConnection();
-    } catch (e) {
-      console.error('❌ 再接続エラー:', e);
-    }
-  }
-}
-
-// =============================================
-//  グローバル状態
-// =============================================
-let player = null;
-let roomId = 'default';
-let myName = 'ユーザー' + Math.floor(Math.random() * 1000);
-let isSyncing = false;
-let lastSyncTime = 0;
-let isReady = false;
-let isPlayerReady = false;
-let currentVideoId = '';
-let isInitialSyncDone = false;
-
-// DOM
-const videoIdInput = document.getElementById('videoIdInput');
-const connectBtn = document.getElementById('connectBtn');
-const roomStatus = document.getElementById('roomStatus');
-const viewerCount = document.getElementById('viewerCount');
-const syncBadge = document.getElementById('syncBadge');
-const chatArea = document.getElementById('chatArea');
-const chatInput = document.getElementById('chatInput');
-const chatSendBtn = document.getElementById('chatSendBtn');
-const roomInfo = document.getElementById('roomInfo');
-const playBtn = document.getElementById('playBtn');
-const pauseBtn = document.getElementById('pauseBtn');
-const progressFill = document.getElementById('progressFill');
-
-// =============================================
-//  YouTube IFrame API
-// =============================================
-function onYouTubeIframeAPIReady() {
-  console.log('✅ YouTube API Ready');
-  isReady = true;
-  const defaultId = videoIdInput.value.trim();
-  if (defaultId) {
-    loadVideo(defaultId, false);
-  }
-}
-
-function createPlayer(videoId) {
-  if (player) {
-    player.destroy();
-    player = null;
-  }
-
-  player = new YT.Player('player', {
-    height: '100%',
-    width: '100%',
-    videoId: videoId,
-    playerVars: {
-      'autoplay': 0,
-      'rel': 0,
-      'controls': 0,
-      'disablekb': 1,
-      'fs': 0,
-      'modestbranding': 1,
-    },
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange,
-      'onError': onPlayerError
-    }
-  });
-}
-
-function onPlayerReady(event) {
-  console.log('🎬 プレイヤー準備完了');
-  isPlayerReady = true;
-  addChatMessage('システム', '動画の準備ができました！');
-  
-  if (isFirebaseConnected) {
-    document.getElementById('playBtn').disabled = false;
-    document.getElementById('pauseBtn').disabled = false;
-  }
-  
-  if (isFirebaseConnected) {
-    syncRoomState();
-    // 参加時に同期
-    setTimeout(() => {
-      syncOnJoin();
-    }, 500);
-  }
-}
-
-function onPlayerStateChange(event) {
-  if (!player) return;
-  if (isSyncing) return;
-  if (!isFirebaseConnected) return;
-  if (!isPlayerReady) return;
-
-  const state = event.data;
-  const currentTime = player.getCurrentTime();
-
-  // プログレスバー更新
-  updateProgress();
-
-  const roomRef = db.ref('rooms/' + roomId);
-  roomRef.update({
-    playerState: state,
-    playerTime: currentTime,
-    updatedAt: Date.now()
-  }).catch(e => {
-    console.warn('状態更新エラー:', e);
-  });
-}
-
-function onPlayerError(event) {
-  console.error('YouTubeエラー:', event.data);
-  addChatMessage('システム', '⚠️ 動画の読み込みに失敗しました。IDを確認してください。');
-}
-
-// プログレスバー更新
-function updateProgress() {
-  if (!player || !player.getCurrentTime || !player.getDuration) return;
-  try {
-    const current = player.getCurrentTime();
-    const duration = player.getDuration();
-    if (duration > 0) {
-      const percent = (current / duration) * 100;
-      progressFill.style.width = Math.min(percent, 100) + '%';
-    }
-  } catch (e) {}
-}
-
-// =============================================
-//  ★ 途中参加時に現在の状態に同期 ★
-// =============================================
-function syncOnJoin() {
-  if (!db || !isFirebaseConnected) return;
-  if (!isPlayerReady) return;
-  
-  console.log('🔄 途中参加同期開始...');
-  syncBadge.textContent = '⏳ 同期中...';
-  syncBadge.className = 'badge syncing';
-
-  const roomRef = db.ref('rooms/' + roomId);
-  roomRef.once('value', (snapshot) => {
-    const data = snapshot.val();
-    if (!data) {
-      syncBadge.textContent = '🔄 同期中';
-      syncBadge.className = 'badge';
-      return;
-    }
-
-    try {
-      // 動画IDを同期
-      if (data.videoId && data.videoId !== currentVideoId) {
-        currentVideoId = data.videoId;
-        player.loadVideoById(currentVideoId);
-        addChatMessage('システム', '🎬 現在の動画に合わせました');
-      }
-
-      // 再生位置を同期
-      const syncTime = data.playerTime || 0;
-      if (syncTime > 0) {
-        isSyncing = true;
-        player.seekTo(syncTime, true);
-        setTimeout(() => { isSyncing = false; }, 500);
-        console.log('⏱️ 再生位置を同期:', syncTime);
-      }
-
-      // 再生状態を同期
-      const syncState = data.playerState;
-      if (syncState === YT.PlayerState.PLAYING) {
-        isSyncing = true;
-        player.playVideo();
-        setTimeout(() => { isSyncing = false; }, 500);
-        console.log('▶️ 再生状態を同期: PLAYING');
-      } else if (syncState === YT.PlayerState.PAUSED) {
-        isSyncing = true;
-        player.pauseVideo();
-        setTimeout(() => { isSyncing = false; }, 500);
-        console.log('⏸️ 再生状態を同期: PAUSED');
-      }
-
-      isInitialSyncDone = true;
-      syncBadge.textContent = '🔄 同期中';
-      syncBadge.className = 'badge';
-      
-      // 少し遅れてプログレスバー更新
-      setTimeout(updateProgress, 1000);
-      
-      addChatMessage('システム', '✅ 同期が完了しました！');
-
-    } catch (e) {
-      console.warn('参加時同期エラー:', e);
-      syncBadge.textContent = '🔄 同期中';
-      syncBadge.className = 'badge';
-    }
-  });
-}
-
-// =============================================
-//  Firebase リアルタイム同期
-// =============================================
-function syncRoomState() {
-  if (!db) return;
-  if (!isFirebaseConnected) {
-    setTimeout(syncRoomState, 2000);
-    return;
-  }
-
-  const roomRef = db.ref('rooms/' + roomId);
-
-  // 視聴者人数
-  roomRef.child('viewers').on('value', (snapshot) => {
-    const count = snapshot.val() || 0;
-    viewerCount.textContent = '👤 ' + count + '人';
-  });
-
-  // 動画ID監視
-  roomRef.child('videoId').on('value', (snapshot) => {
-    const newVideoId = snapshot.val();
-    if (!newVideoId) return;
-    if (newVideoId === currentVideoId) return;
-    if (!isPlayerReady) return;
-    
-    console.log('🔄 動画切り替え検知:', newVideoId);
-    currentVideoId = newVideoId;
-    
-    isSyncing = true;
-    player.loadVideoById(newVideoId);
-    setTimeout(() => { isSyncing = false; }, 500);
-    
-    addChatMessage('システム', '🎬 動画が切り替わりました');
-  });
-
-  // プレイヤー状態を監視
-  roomRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (!data || !player) return;
-    if (!player.getCurrentTime) return;
-    if (!isPlayerReady) return;
-    if (!isInitialSyncDone) return; // 初回同期が終わるまで待つ
-
-    if (data.updatedAt && data.updatedAt === lastSyncTime) return;
-
-    const state = data.playerState;
-    const time = data.playerTime || 0;
-
-    try {
-      const currentTime = player.getCurrentTime();
-      const diff = Math.abs(currentTime - time);
-
-      // 時間がずれていたらシーク（1.5秒以上ずれている場合）
-      if (diff > 1.5 && time > 0) {
-        isSyncing = true;
-        player.seekTo(time, true);
-        setTimeout(() => { isSyncing = false; }, 500);
-        console.log('⏱️ 時間同期:', time);
-      }
-
-      const playerState = player.getPlayerState();
-      if (playerState !== state && state !== undefined && state !== -1) {
-        isSyncing = true;
-        if (state === YT.PlayerState.PLAYING) {
-          player.playVideo();
-        } else if (state === YT.PlayerState.PAUSED) {
-          player.pauseVideo();
-        } else if (state === YT.PlayerState.ENDED) {
-          player.seekTo(0);
-          player.pauseVideo();
+    // ============================================================
+    //  YouTube IFrame API
+    // ============================================================
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: '',
+        playerVars: {
+          'playsinline': 1,
+          'rel': 0,
+          'modestbranding': 1
+        },
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange,
+          'onError': onPlayerError
         }
-        setTimeout(() => { isSyncing = false; }, 500);
+      });
+    }
+
+    // YouTube API がまだ読み込まれていない場合
+    if (typeof YT === 'undefined' || !YT.Player) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    } else {
+      onYouTubeIframeAPIReady();
+    }
+
+    function onPlayerReady(event) {
+      isPlayerReady = true;
+      playerStatus.textContent = '準備完了';
+      toastMessage('プレーヤー準備完了');
+      // ルームに動画情報があれば読み込み
+      if (roomId && roomRef) {
+        roomRef.once('value', (snap) => {
+          const data = snap.val();
+          if (data && data.videoId) {
+            loadVideo(data.videoId, data.currentTime || 0);
+          }
+        });
       }
-      
-      // プログレスバー更新
-      updateProgress();
+    }
+
+    function onPlayerStateChange(event) {
+      if (!roomId || !roomRef) return;
+      const state = event.data;
+      // 再生状態をルームに送信（自分以外の操作による変更は無視）
+      if (!isSyncing) {
+        const updates = {};
+        if (state === YT.PlayerState.PLAYING) {
+          updates['isPlaying'] = true;
+          updates['currentTime'] = player.getCurrentTime();
+          roomRef.update(updates);
+        } else if (state === YT.PlayerState.PAUSED) {
+          updates['isPlaying'] = false;
+          updates['currentTime'] = player.getCurrentTime();
+          roomRef.update(updates);
+        } else if (state === YT.PlayerState.ENDED) {
+          updates['isPlaying'] = false;
+          updates['currentTime'] = 0;
+          roomRef.update(updates);
+        }
+      }
+      updateUI();
+    }
+
+    function onPlayerError(event) {
+      console.error('YouTube エラー:', event.data);
+      toastMessage('動画の読み込みに失敗しました');
+    }
+
+    // ============================================================
+    //  Firebase 接続
+    // ============================================================
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+      console.log('Firebase 接続成功');
     } catch (e) {
-      console.warn('同期エラー:', e);
+      console.warn('Firebase 初期化エラー', e);
     }
-  });
 
-  // オンライン人数管理
-  const viewerRef = roomRef.child('viewers');
-  viewerRef.transaction((current) => {
-    return (current || 0) + 1;
-  });
-
-  viewerRef.onDisconnect().transaction((current) => {
-    return Math.max(0, (current || 1) - 1);
-  });
-
-  // チャット
-  roomRef.child('chat').on('child_added', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      addChatMessage(data.name, data.message, data.time);
+    // ============================================================
+    //  ユーザー名（Cookie）
+    // ============================================================
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : null;
     }
-  });
-}
 
-// =============================================
-//  チャット機能
-// =============================================
-function addChatMessage(name, message, time) {
-  const div = document.createElement('div');
-  div.className = 'msg';
-  const timeStr = time ? new Date(time).toLocaleTimeString() : new Date().toLocaleTimeString();
-  const isSystem = name === 'システム';
-  div.innerHTML = `<span class="name" style="${isSystem ? 'color:#ff6b6b;' : ''}">${name}</span> ${message} <span class="time">${timeStr}</span>`;
-  chatArea.appendChild(div);
-  chatArea.scrollTop = chatArea.scrollHeight;
+    function setCookie(name, value, days = 365) {
+      const d = new Date();
+      d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
+    }
 
-  while (chatArea.children.length > 100) {
-    chatArea.removeChild(chatArea.firstChild);
-  }
-}
+    username = getCookie('watch_username') || '名無し' + Math.floor(Math.random() * 1000);
+    // 簡易的に名前入力（今回は固定）
 
-function sendChatMessage() {
-  const msg = chatInput.value.trim();
-  if (!msg) return;
-  if (!isFirebaseConnected) {
-    addChatMessage('システム', '⚠️ 切断中のため送信できません');
-    return;
-  }
+    // ============================================================
+    //  トースト
+    // ============================================================
+    function toastMessage(msg) {
+      toast.textContent = msg;
+      setTimeout(() => {
+        if (toast.textContent === msg) {
+          toast.textContent = 'ルームを作成または参加してください';
+        }
+      }, 3000);
+    }
 
-  const roomRef = db.ref('rooms/' + roomId + '/chat');
-  roomRef.push({
-    name: myName,
-    message: msg,
-    time: Date.now()
-  });
+    // ============================================================
+    //  ルーム管理
+    // ============================================================
+    function createRoom() {
+      let id = roomIdInput.value.trim().toUpperCase();
+      if (!id) {
+        toastMessage('ルームIDを入力してください');
+        return;
+      }
+      id = id.replace(/[^A-Z0-9_]/g, '');
+      if (id.length < 1) {
+        toastMessage('有効なルームIDを入力してください');
+        return;
+      }
+      roomIdInput.value = id;
 
-  chatInput.value = '';
-}
+      if (!db) {
+        toastMessage('Firebaseに接続されていません');
+        return;
+      }
 
-// =============================================
-//  動画読み込み
-// =============================================
-function loadVideo(videoId, syncToAll = true) {
-  if (!videoId) {
-    alert('動画IDを入力してください');
-    return;
-  }
+      const ref = db.ref('watch_rooms/' + id);
+      ref.once('value', (snap) => {
+        if (snap.exists()) {
+          toastMessage('このルームIDは既に使用されています');
+          return;
+        }
+        const roomData = {
+          players: { [username]: { joined: true } },
+          videoId: '',
+          currentTime: 0,
+          isPlaying: false,
+          creator: username,
+          timestamp: Date.now()
+        };
+        ref.set(roomData).then(() => {
+          roomId = id;
+          roomRef = ref;
+          roomStatus.textContent = `作成: ${id}`;
+          roomInfo.textContent = `ルーム: ${id}`;
+          toastMessage('ルームを作成しました');
+          listenRoom(id);
+        }).catch((err) => {
+          toastMessage('ルーム作成に失敗: ' + err.message);
+        });
+      });
+    }
 
-  let id = videoId;
-  if (videoId.includes('watch?v=')) {
-    id = videoId.split('watch?v=')[1].split('&')[0];
-  } else if (videoId.includes('youtu.be/')) {
-    id = videoId.split('youtu.be/')[1].split('?')[0];
-  } else if (videoId.includes('v=')) {
-    id = videoId.split('v=')[1].split('&')[0];
-  }
+    function joinRoom() {
+      let id = roomIdInput.value.trim().toUpperCase();
+      if (!id) {
+        toastMessage('ルームIDを入力してください');
+        return;
+      }
+      id = id.replace(/[^A-Z0-9_]/g, '');
+      if (id.length < 1) {
+        toastMessage('有効なルームIDを入力してください');
+        return;
+      }
+      roomIdInput.value = id;
 
-  if (!isReady) {
-    alert('YouTube APIが読み込まれていません。少し待ってから再試行してください。');
-    return;
-  }
+      if (!db) {
+        toastMessage('Firebaseに接続されていません');
+        return;
+      }
 
-  currentVideoId = id;
-  isInitialSyncDone = false; // 新しく読み込んだら同期待ち状態に
+      const ref = db.ref('watch_rooms/' + id);
+      ref.once('value', (snap) => {
+        const data = snap.val();
+        if (!data) {
+          toastMessage('ルームが見つかりません');
+          return;
+        }
+        if (data.players && data.players[username]) {
+          toastMessage('この名前は既にルームにいます');
+          return;
+        }
+        const updates = {};
+        updates[`players/${username}`] = { joined: true };
+        ref.update(updates).then(() => {
+          roomId = id;
+          roomRef = ref;
+          roomStatus.textContent = `参加: ${id}`;
+          roomInfo.textContent = `ルーム: ${id}`;
+          toastMessage('ルームに参加しました');
+          listenRoom(id);
+          // 現在の動画情報を読み込む
+          if (data.videoId && isPlayerReady) {
+            loadVideo(data.videoId, data.currentTime || 0);
+            if (data.isPlaying) {
+              player.playVideo();
+            }
+          }
+        }).catch((err) => {
+          toastMessage('参加に失敗: ' + err.message);
+        });
+      });
+    }
 
-  createPlayer(id);
-  addChatMessage('システム', '🎬 動画を読み込み中...');
+    function listenRoom(id) {
+      if (roomListener) roomListener.off();
+      roomListener = db.ref('watch_rooms/' + id);
+      roomListener.on('value', (snap) => {
+        const data = snap.val();
+        if (!data) {
+          toastMessage('ルームが削除されました');
+          exitRoom();
+          return;
+        }
 
-  if (syncToAll && isFirebaseConnected) {
-    const roomRef = db.ref('rooms/' + roomId);
-    roomRef.update({
-      videoId: id,
-      playerTime: 0,
-      playerState: YT.PlayerState.PAUSED,
-      updatedAt: Date.now()
-    }).then(() => {
-      addChatMessage('システム', '📢 全員の動画を切り替えました');
-    }).catch(e => {
-      console.warn('動画切り替え通知エラー:', e);
+        // プレイヤーリスト更新
+        renderPlayerList(data.players || {});
+
+        // 動画情報
+        if (data.videoId && data.videoId !== currentVideoId && isPlayerReady) {
+          loadVideo(data.videoId, data.currentTime || 0);
+        }
+
+        // 再生状態同期（自分以外の操作）
+        if (isPlayerReady && player) {
+          isSyncing = true;
+          const currentPlayerTime = player.getCurrentTime();
+          const targetTime = data.currentTime || 0;
+          const timeDiff = Math.abs(currentPlayerTime - targetTime);
+
+          if (data.isPlaying !== isPlaying) {
+            if (data.isPlaying) {
+              player.playVideo();
+            } else {
+              player.pauseVideo();
+            }
+            isPlaying = data.isPlaying;
+          } else if (timeDiff > 1.0 && targetTime > 0) {
+            // シーク
+            player.seekTo(targetTime, true);
+          }
+          isSyncing = false;
+        }
+
+        updateUI();
+      });
+    }
+
+    function exitRoom() {
+      if (roomRef && roomId) {
+        const updates = {};
+        updates[`players/${username}`] = null;
+        roomRef.update(updates).then(() => {
+          // プレイヤーが0人になったらルーム削除
+          roomRef.once('value', (snap) => {
+            const data = snap.val();
+            if (data) {
+              const players = data.players || {};
+              if (Object.keys(players).length === 0) {
+                roomRef.remove().catch(() => {});
+              }
+            }
+          });
+        }).catch(() => {});
+      }
+      if (roomListener) { roomListener.off();
+        roomListener = null; }
+      roomId = null;
+      roomRef = null;
+      roomStatus.textContent = '-';
+      roomInfo.textContent = 'ルーム: -';
+      playerList.innerHTML = '';
+      toastMessage('退出しました');
+    }
+
+    function renderPlayerList(players) {
+      playerList.innerHTML = '';
+      if (!players) return;
+      const names = Object.keys(players);
+      names.forEach(name => {
+        const tag = document.createElement('span');
+        tag.className = 'player-tag';
+        if (name === username) tag.classList.add('you');
+        tag.textContent = name;
+        playerList.appendChild(tag);
+      });
+      for (let i = names.length; i < 8; i++) {
+        const tag = document.createElement('span');
+        tag.className = 'player-tag';
+        tag.textContent = '空き';
+        tag.style.opacity = '0.3';
+        playerList.appendChild(tag);
+      }
+    }
+
+    // ============================================================
+    //  動画操作
+    // ============================================================
+    function loadVideo(videoId, seekTime = 0) {
+      if (!isPlayerReady || !player) return;
+      if (!videoId) return;
+      currentVideoId = videoId;
+      player.loadVideoById(videoId, seekTime);
+      playerStatus.textContent = `読み込み中...`;
+      // ルームにも保存
+      if (roomRef) {
+        roomRef.update({
+          videoId: videoId,
+          currentTime: seekTime || 0,
+          isPlaying: false
+        });
+      }
+    }
+
+    function loadVideoFromUrl() {
+      const url = videoUrlInput.value.trim();
+      if (!url) {
+        toastMessage('YouTube URLを入力してください');
+        return;
+      }
+      const videoId = extractVideoId(url);
+      if (!videoId) {
+        toastMessage('有効なYouTube URLではありません');
+        return;
+      }
+      if (!roomId) {
+        toastMessage('先にルームに参加してください');
+        return;
+      }
+      loadVideo(videoId, 0);
+      toastMessage('動画を読み込みました');
+      videoUrlInput.value = '';
+    }
+
+    function extractVideoId(url) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=)([^&]+)/,
+        /(?:youtu\.be\/)([^?]+)/,
+        /(?:youtube\.com\/embed\/)([^?]+)/
+      ];
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      // 直接IDが入力された場合
+      if (/^[A-Za-z0-9_-]{11}$/.test(url)) return url;
+      return null;
+    }
+
+    function syncVideo() {
+      if (!roomId || !roomRef) {
+        toastMessage('ルームに参加してください');
+        return;
+      }
+      if (!isPlayerReady || !player) {
+        toastMessage('プレーヤーが準備できていません');
+        return;
+      }
+      const currentTime = player.getCurrentTime();
+      const isPlayingState = player.getPlayerState() === YT.PlayerState.PLAYING;
+      roomRef.update({
+        currentTime: currentTime,
+        isPlaying: isPlayingState
+      }).then(() => {
+        toastMessage('同期しました');
+      }).catch((err) => {
+        toastMessage('同期に失敗: ' + err.message);
+      });
+    }
+
+    function playVideo() {
+      if (!isPlayerReady || !player) return;
+      if (!roomId) { toastMessage('ルームに参加してください'); return; }
+      player.playVideo();
+      roomRef.update({ isPlaying: true });
+    }
+
+    function pauseVideo() {
+      if (!isPlayerReady || !player) return;
+      if (!roomId) { toastMessage('ルームに参加してください'); return; }
+      player.pauseVideo();
+      roomRef.update({ isPlaying: false });
+    }
+
+    function stopVideo() {
+      if (!isPlayerReady || !player) return;
+      if (!roomId) { toastMessage('ルームに参加してください'); return; }
+      player.stopVideo();
+      roomRef.update({ isPlaying: false, currentTime: 0 });
+      playerStatus.textContent = '停止';
+    }
+
+    function updateUI() {
+      if (isPlayerReady && player) {
+        const state = player.getPlayerState();
+        const time = player.getCurrentTime();
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        currentTimeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const stateMap = {
+          [-1]: '未開始',
+          [0]: '終了',
+          [1]: '再生中',
+          [2]: '一時停止',
+          [3]: 'バッファリング',
+          [5]: '頭出し'
+        };
+        playerStatus.textContent = stateMap[state] || '不明';
+        isPlaying = state === YT.PlayerState.PLAYING;
+
+        // ステータスドット
+        if (roomId) {
+          statusDot.className = 'dot green';
+          statusText.textContent = '同期中';
+        } else {
+          statusDot.className = 'dot yellow';
+          statusText.textContent = '未接続';
+        }
+      }
+    }
+
+    // 定期的なUI更新
+    setInterval(updateUI, 500);
+
+    // ============================================================
+    //  イベント
+    // ============================================================
+    createRoomBtn.addEventListener('click', createRoom);
+    joinRoomBtn.addEventListener('click', joinRoom);
+    loadVideoBtn.addEventListener('click', loadVideoFromUrl);
+    syncBtn.addEventListener('click', syncVideo);
+    playBtn.addEventListener('click', playVideo);
+    pauseBtn.addEventListener('click', pauseVideo);
+    stopBtn.addEventListener('click', stopVideo);
+
+    videoUrlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadVideoFromUrl();
     });
-  }
 
-  connectBtn.disabled = true;
-  connectBtn.textContent = '読み込み中...';
-
-  setTimeout(() => {
-    connectBtn.disabled = false;
-    connectBtn.textContent = '動画切り替え';
-  }, 3000);
-}
-
-function copyUrl() {
-  const url = roomInfo.querySelector('a')?.href || window.location.href;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => {
-      alert('URLをコピーしました！');
+    roomIdInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') joinRoom();
     });
-  } else {
-    const input = document.createElement('input');
-    input.value = url;
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    document.body.removeChild(input);
-    alert('URLをコピーしました！');
-  }
-}
 
-// =============================================
-//  再生/一時停止
-// =============================================
-function playVideo() {
-  if (!player || !player.playVideo) return;
-  if (!isFirebaseConnected) {
-    addChatMessage('システム', '⚠️ 切断中のため再生できません');
-    return;
-  }
-  
-  player.playVideo();
-  
-  const roomRef = db.ref('rooms/' + roomId);
-  roomRef.update({
-    playerState: YT.PlayerState.PLAYING,
-    playerTime: player.getCurrentTime(),
-    updatedAt: Date.now()
-  });
-}
+    // ============================================================
+    //  初期化
+    // ============================================================
+    function init() {
+      toastMessage('ルームを作成または参加してください');
+      // 既存の空ルームをクリーンアップ
+      if (db) {
+        db.ref('watch_rooms').once('value', (snap) => {
+          const data = snap.val();
+          if (data) {
+            Object.keys(data).forEach(key => {
+              const room = data[key];
+              const players = room.players || {};
+              if (Object.keys(players).length === 0) {
+                db.ref('watch_rooms/' + key).remove().catch(() => {});
+              }
+            });
+          }
+        });
+      }
+    }
 
-function pauseVideo() {
-  if (!player || !player.pauseVideo) return;
-  if (!isFirebaseConnected) {
-    addChatMessage('システム', '⚠️ 切断中のため一時停止できません');
-    return;
-  }
-  
-  player.pauseVideo();
-  
-  const roomRef = db.ref('rooms/' + roomId);
-  roomRef.update({
-    playerState: YT.PlayerState.PAUSED,
-    playerTime: player.getCurrentTime(),
-    updatedAt: Date.now()
-  });
-}
+    // YouTube API がすでに読み込まれている場合のフォールバック
+    if (typeof YT !== 'undefined' && YT.Player) {
+      onYouTubeIframeAPIReady();
+    }
 
-// =============================================
-//  イベントリスナー
-// =============================================
-connectBtn.addEventListener('click', () => {
-  const videoId = videoIdInput.value.trim();
-  if (!videoId) {
-    alert('動画IDを入力してください');
-    return;
-  }
-  loadVideo(videoId, true);
-});
-
-videoIdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') connectBtn.click();
-});
-
-chatSendBtn.addEventListener('click', sendChatMessage);
-chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendChatMessage();
-});
-
-playBtn.addEventListener('click', playVideo);
-pauseBtn.addEventListener('click', pauseVideo);
-
-// =============================================
-//  初期化
-// =============================================
-const urlParams = new URLSearchParams(window.location.search);
-const roomParam = urlParams.get('room');
-if (roomParam) {
-  roomId = roomParam;
-}
-
-myName = 'ユーザー' + Math.floor(Math.random() * 1000);
-
-console.log('🎬 同時視聴ブラウザ起動');
-console.log('👤 ユーザー名:', myName);
-console.log('🏠 部屋ID:', roomId);
-
-checkFirebaseConnection();
-
-// 共有URL表示
-const shareUrl = window.location.href.split('?')[0] + '?room=' + encodeURIComponent(roomId);
-roomInfo.innerHTML = `
-  🔗 このページを友達と共有してください<br>
-  <a href="${shareUrl}" target="_blank">${shareUrl}</a>
-  <button class="copy-btn" onclick="copyUrl()">コピー</button>
-`;
-
-if (typeof YT !== 'undefined' && YT.loaded) {
-  isReady = true;
-  const defaultId = videoIdInput.value.trim();
-  if (defaultId) loadVideo(defaultId, false);
-}
-
-setTimeout(() => {
-  if (!isFirebaseConnected) {
-    console.log('🔄 自動再接続試行...');
-    retryConnection();
-  }
-}, 5000);
-
-setInterval(() => {
-  if (!isFirebaseConnected) {
-    console.log('🔄 定期再接続試行...');
-    retryConnection();
-  }
-}, 30000);
-
-// プログレスバー定期更新
-setInterval(() => {
-  if (player && isPlayerReady) {
-    updateProgress();
-  }
-}, 1000);
-</script>
+    init();
+  </script>
 </body>
 </html>
