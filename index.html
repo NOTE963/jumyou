@@ -97,6 +97,17 @@
     padding:10px 26px; border:none; border-radius:6px; background:#4fd1c5; color:#05070a;
     font-weight:bold; font-size:14px; cursor:pointer; letter-spacing:1px;
   }
+
+  @media (max-width: 480px) {
+    #loginBox { width:88vw; padding:26px 20px; }
+    #loginBox h1 { font-size:20px; }
+    #hpWrap { width:170px; bottom:140px; left:16px; }
+    #minimapWrap { width:100px; height:100px; }
+    #killFeed { width:150px; font-size:11px; }
+    #topBar { top:10px; }
+    #zoneTimer { font-size:13px; }
+  }
+
 </style>
 </head>
 <body>
@@ -145,6 +156,11 @@
     <button onclick="location.reload()">もう一度プレイ</button>
   </div>
 
+  <div id="waitingOverlay" class="endScreen" style="display:none;">
+    <h2 id="waitingCountdown" style="color:#4fd1c5;">15</h2>
+    <p>参加者を待っています... まもなく島へ出撃します</p>
+  </div>
+
   <canvas id="game"></canvas>
 
   <div id="joystickBase"><div id="joystickStick"></div></div>
@@ -190,6 +206,9 @@ const BULLET_DMG = 14;
 const ZONE_DPS = 4;          // hp / sec outside zone
 const HEARTBEAT_MS = 90;
 const HP_SYNC_MS = 400;
+
+const WAIT_MS = 15000;  // lobby wait before the drop
+const DROP_MS = 6000;   // parachute drop duration onto the island
 
 const STAGES = [
   { hold:15000, shrink:10000, from:900, to:650 },
@@ -349,6 +368,14 @@ function addKillFeed(text){
 }
 
 /* ============================= ZONE MATH ============================= */
+function getPhaseInfo(elapsed){
+  if(elapsed == null) return { phase:'waiting', remaining: WAIT_MS/1000 };
+  if(elapsed < WAIT_MS) return { phase:'waiting', remaining:(WAIT_MS-elapsed)/1000 };
+  if(elapsed < WAIT_MS+DROP_MS) return { phase:'dropping', remaining:(WAIT_MS+DROP_MS-elapsed)/1000, progress:(elapsed-WAIT_MS)/DROP_MS };
+  return { phase:'landed', zoneElapsed: elapsed-WAIT_MS-DROP_MS };
+}
+let currentPhaseInfo = { phase:'waiting', remaining: WAIT_MS/1000 };
+
 function getZoneInfo(elapsed){
   let t = elapsed;
   for(const s of STAGES){
@@ -497,7 +524,7 @@ function loop(now){
 }
 
 function checkWin(){
-  if(won || dead) return;
+  if(won || dead || currentPhaseInfo.phase !== 'landed') return;
   const list = Object.values(players);
   const aliveList = list.filter(p=>p.alive);
   if(list.length >= 1 && aliveList.length === 1 && players[uid] && players[uid].alive && list.length > 0){
@@ -514,6 +541,19 @@ function playersKeyOf(obj){
 }
 
 function update(dt){
+  const elapsed = gameStartTime ? serverNow()-gameStartTime : null;
+  currentPhaseInfo = getPhaseInfo(elapsed);
+
+  if(currentPhaseInfo.phase === 'waiting'){
+    document.getElementById('waitingCountdown').textContent = Math.max(0, Math.ceil(currentPhaseInfo.remaining));
+    document.getElementById('waitingOverlay').style.display = 'flex';
+    camera.x = myPlayer.x - canvas.width/2;
+    camera.y = myPlayer.y - canvas.height/2;
+    updateHud();
+    return;
+  }
+  document.getElementById('waitingOverlay').style.display = 'none';
+
   let vx=0, vy=0;
   if(keys['w']) vy -= 1;
   if(keys['s']) vy += 1;
@@ -529,7 +569,6 @@ function update(dt){
   }
   myPlayer.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE-PLAYER_RADIUS, myPlayer.x));
   myPlayer.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE-PLAYER_RADIUS, myPlayer.y));
-  resolveObstacleCollision(myPlayer);
 
   camera.x = myPlayer.x - canvas.width/2;
   camera.y = myPlayer.y - canvas.height/2;
@@ -537,20 +576,33 @@ function update(dt){
   mouse.worldY = mouse.y + camera.y;
   myPlayer.angle = Math.atan2(mouse.worldY - myPlayer.y, mouse.worldX - myPlayer.x);
 
-  // zone damage
-  if(gameStartTime){
-    const elapsed = serverNow() - gameStartTime;
-    const zone = getZoneInfo(elapsed);
-    const dist = Math.hypot(myPlayer.x-CENTER.x, myPlayer.y-CENTER.y);
-    if(dist > zone.radius){
-      myPlayer.hp -= ZONE_DPS*dt;
-      hpSyncPending = true;
-      if(myPlayer.hp <= 0 && myPlayer.alive){
-        myPlayer.hp = 0;
-        myPlayer.alive = false;
-        db.ref(`${ROOM}/players/${uid}`).update({ hp:0, alive:false });
-        db.ref(`${ROOM}/kills`).push({ killer:'安置', victim:myName, ts:firebase.database.ServerValue.TIMESTAMP });
-      }
+  // smooth remote player render positions (runs in every active phase)
+  for(const id in players){
+    if(id === uid) continue;
+    if(!renderPos[id]) renderPos[id] = { x: players[id].x, y: players[id].y };
+    renderPos[id].x += (players[id].x - renderPos[id].x) * Math.min(1, dt*12);
+    renderPos[id].y += (players[id].y - renderPos[id].y) * Math.min(1, dt*12);
+  }
+
+  if(currentPhaseInfo.phase === 'dropping'){
+    // airborne: free steering onto the island, no collisions, no combat, no zone damage yet
+    updateHud();
+    return;
+  }
+
+  // ---- landed: full gameplay ----
+  resolveObstacleCollision(myPlayer);
+
+  const zone = getZoneInfo(currentPhaseInfo.zoneElapsed);
+  const dist = Math.hypot(myPlayer.x-CENTER.x, myPlayer.y-CENTER.y);
+  if(dist > zone.radius){
+    myPlayer.hp -= ZONE_DPS*dt;
+    hpSyncPending = true;
+    if(myPlayer.hp <= 0 && myPlayer.alive){
+      myPlayer.hp = 0;
+      myPlayer.alive = false;
+      db.ref(`${ROOM}/players/${uid}`).update({ hp:0, alive:false });
+      db.ref(`${ROOM}/kills`).push({ killer:'安置', victim:myName, ts:firebase.database.ServerValue.TIMESTAMP });
     }
   }
 
@@ -575,10 +627,10 @@ function update(dt){
   for(const id in bulletsDb){
     if(!myBulletIds.has(id)) continue;
     const b = bulletsDb[id];
-    const elapsed = serverNow() - b.ts;
-    if(elapsed > BULLET_LIFESPAN){ myBulletIds.delete(id); continue; }
-    const bx = b.x0 + b.vx*(elapsed/1000);
-    const by = b.y0 + b.vy*(elapsed/1000);
+    const bElapsed = serverNow() - b.ts;
+    if(bElapsed > BULLET_LIFESPAN){ myBulletIds.delete(id); continue; }
+    const bx = b.x0 + b.vx*(bElapsed/1000);
+    const by = b.y0 + b.vy*(bElapsed/1000);
 
     let hit = false;
     for(const r of OBSTACLES){
@@ -589,10 +641,9 @@ function update(dt){
         if(pid === uid) continue;
         const pd = players[pid];
         if(!pd.alive) continue;
-        const dist = Math.hypot(bx-pd.x, by-pd.y);
-        if(dist < PLAYER_RADIUS + BULLET_RADIUS){
+        const pdist = Math.hypot(bx-pd.x, by-pd.y);
+        if(pdist < PLAYER_RADIUS + BULLET_RADIUS){
           applyDamage(pid, b.dmg, myName);
-          if(pd.alive){ myPlayer.kills = myPlayer.kills; } // kills counter incremented via db on confirmed kill below
           hit = true;
           break;
         }
@@ -602,14 +653,6 @@ function update(dt){
       db.ref(`${ROOM}/bullets/${id}`).remove();
       myBulletIds.delete(id);
     }
-  }
-
-  // smooth remote player render positions
-  for(const id in players){
-    if(id === uid) continue;
-    if(!renderPos[id]) renderPos[id] = { x: players[id].x, y: players[id].y };
-    renderPos[id].x += (players[id].x - renderPos[id].x) * Math.min(1, dt*12);
-    renderPos[id].y += (players[id].y - renderPos[id].y) * Math.min(1, dt*12);
   }
 
   updateHud();
@@ -661,8 +704,8 @@ function drawGrid(){
 }
 
 function currentZoneRadius(){
-  if(!gameStartTime) return STAGES[0].from;
-  return getZoneInfo(serverNow()-gameStartTime).radius;
+  if(!gameStartTime || currentPhaseInfo.phase !== 'landed') return STAGES[0].from;
+  return getZoneInfo(currentPhaseInfo.zoneElapsed).radius;
 }
 
 function drawZone(){
@@ -708,6 +751,24 @@ function drawBullets(){
 }
 
 function drawPlayerShape(x,y,angle,color,name,hp,isSelf){
+  if(currentPhaseInfo.phase === 'dropping'){
+    ctx.beginPath();
+    ctx.moveTo(x-22,y-14);
+    ctx.quadraticCurveTo(x,y-34,x+22,y-14);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,210,63,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = '#8a6d1f';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-18,y-14); ctx.lineTo(x-4,y-2);
+    ctx.moveTo(x+18,y-14); ctx.lineTo(x+4,y-2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
   ctx.save();
   ctx.translate(x,y);
   ctx.rotate(angle);
@@ -792,8 +853,14 @@ function updateHud(){
   document.getElementById('aliveCount').textContent = `生存: ${aliveCount} 人`;
 
   const zt = document.getElementById('zoneTimer');
-  if(gameStartTime){
-    const zone = getZoneInfo(serverNow()-gameStartTime);
+  if(currentPhaseInfo.phase === 'waiting'){
+    zt.textContent = `出撃まで ${Math.ceil(currentPhaseInfo.remaining)} 秒`;
+    zt.classList.remove('shrinking');
+  } else if(currentPhaseInfo.phase === 'dropping'){
+    zt.textContent = `降下中... 着地まで ${Math.ceil(currentPhaseInfo.remaining)} 秒`;
+    zt.classList.remove('shrinking');
+  } else {
+    const zone = getZoneInfo(currentPhaseInfo.zoneElapsed);
     if(zone.shrinking){
       zt.textContent = `安置収縮中... あと ${Math.ceil(zone.remaining)} 秒`;
       zt.classList.add('shrinking');
@@ -801,8 +868,6 @@ function updateHud(){
       zt.textContent = `次の収縮まで ${Math.ceil(zone.remaining)} 秒`;
       zt.classList.remove('shrinking');
     }
-  } else {
-    zt.textContent = '安置を計算中...';
   }
 }
 </script>
