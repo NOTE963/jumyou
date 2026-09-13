@@ -1,1006 +1,810 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>YouTube 同時視聴</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>安置バトロワ - 2D Battle Royale</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body {
+    width:100%; height:100%; overflow:hidden; background:#0a0d12;
+    font-family:'Segoe UI',"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  }
+  #game { display:block; background:#151a21; cursor:crosshair; touch-action:none; }
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js">
-  </script>
+  /* ---------- Mobile virtual controls ---------- */
+  #joystickBase {
+    position:fixed; width:130px; height:130px; border-radius:50%;
+    background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.25);
+    display:none; z-index:25; pointer-events:none;
+  }
+  #joystickStick {
+    position:absolute; left:35px; top:35px; width:60px; height:60px; border-radius:50%;
+    background:rgba(79,209,197,0.55); border:2px solid rgba(79,209,197,0.9);
+    transition:transform .02s linear;
+  }
+  #fireHint {
+    position:fixed; bottom:26px; right:26px; width:70px; height:70px; border-radius:50%;
+    border:2px dashed rgba(255,95,95,0.45); display:none; z-index:24; pointer-events:none;
+    align-items:center; justify-content:center; color:rgba(255,255,255,0.5); font-size:10px; text-align:center;
+  }
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-    }
-    body {
-      background: #0d1a26;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-    }
-    .app {
-      max-width: 820px;
-      width: 100%;
-      background: #162b3b;
-      border-radius: 28px;
-      padding: 24px 20px 28px;
-      box-shadow: 0 16px 30px -8px rgba(0, 0, 0, 0.8);
-      border: 1px solid #2f4a5e;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .header h1 {
-      color: #f0f9ff;
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-    .header .room-info {
-      color: #8aacbf;
-      font-size: 0.8rem;
-      background: #0f1e2b;
-      padding: 4px 16px;
-      border-radius: 30px;
-      border: 1px solid #2f5066;
-    }
+  /* ---------- Login ---------- */
+  #loginScreen {
+    position:fixed; inset:0; z-index:50;
+    display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at center, #1c2530 0%, #05070a 100%);
+  }
+  #loginBox {
+    background:rgba(20,26,34,0.9); border:1px solid #3a4a5a; border-radius:10px;
+    padding:36px 40px; width:360px; box-shadow:0 0 40px rgba(0,255,180,0.08);
+    text-align:center;
+  }
+  #loginBox h1 { color:#e8f4ff; font-size:24px; letter-spacing:2px; margin-bottom:6px; }
+  #loginBox .sub { color:#7fa8c9; font-size:12px; margin-bottom:22px; }
+  #nameInput {
+    width:100%; padding:10px 12px; border-radius:6px; border:1px solid #45607a;
+    background:#0f1520; color:#e8f4ff; font-size:15px; margin-bottom:14px; outline:none;
+  }
+  #nameInput:focus { border-color:#4fd1c5; }
+  #joinBtn {
+    width:100%; padding:12px; border:none; border-radius:6px; font-size:16px; font-weight:bold;
+    letter-spacing:2px; cursor:pointer; background:linear-gradient(135deg,#ff5f5f,#c92a2a); color:#fff;
+    transition:transform .15s;
+  }
+  #joinBtn:hover { transform:translateY(-1px); }
+  #loginBox .rules {
+    margin-top:16px; font-size:11px; color:#5c7690; line-height:1.6; text-align:left;
+  }
+  #loginBox .keys { margin-top:16px; font-size:12px; color:#9bb8d0; line-height:1.8; text-align:left; }
+  #loginBox .keys b { color:#4fd1c5; }
+  #status { margin-top:10px; font-size:12px; color:#ff9f43; min-height:16px; }
 
-    .name-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 12px;
-      background: #0f1e2b;
-      padding: 8px 14px;
-      border-radius: 30px;
-      border: 1px solid #2d4a5e;
-    }
-    .name-area label {
-      color: #b2d3e8;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-    .name-area input {
-      flex: 1;
-      min-width: 100px;
-      background: #162b3a;
-      border: 1px solid #2f5066;
-      padding: 6px 14px;
-      border-radius: 24px;
-      color: white;
-      font-size: 0.9rem;
-      outline: none;
-    }
-    .name-area input:focus {
-      border-color: #5a9ec9;
-    }
-    .name-area .btn {
-      flex: 0 1 auto;
-      padding: 6px 18px;
-      min-width: 50px;
-      font-size: 0.8rem;
-    }
+  /* ---------- HUD ---------- */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:20; display:none; font-family:inherit; }
+  #topBar { position:absolute; top:14px; left:50%; transform:translateX(-50%); text-align:center; }
+  #zoneTimer { color:#e8f4ff; font-size:15px; text-shadow:0 1px 3px #000; letter-spacing:1px; }
+  #zoneTimer.shrinking { color:#ff5f5f; }
+  #aliveCount { color:#4fd1c5; font-size:13px; margin-top:2px; text-shadow:0 1px 3px #000; }
 
-    .video-wrapper {
-      position: relative;
-      width: 100%;
-      padding-bottom: 56.25%;
-      background: #0a1520;
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      border: 1px solid #2d4a5e;
-    }
-    .video-wrapper iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+  #hpWrap { position:absolute; bottom:150px; left:22px; width:210px; }
+  #hpLabel { color:#e8f4ff; font-size:12px; margin-bottom:4px; text-shadow:0 1px 2px #000; }
+  #hpBarBg { width:100%; height:20px; background:rgba(0,0,0,0.5); border:1px solid #384756; border-radius:4px; overflow:hidden; }
+  #hpBarFill { height:100%; width:100%; background:linear-gradient(90deg,#ff5f5f,#4fd1c5); transition:width .15s; }
+  #killCount { color:#ffcf5c; font-size:12px; margin-top:6px; text-shadow:0 1px 2px #000; }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 14px;
-      align-items: center;
-    }
-    .controls .btn {
-      flex: 0 1 auto;
-      padding: 8px 16px;
-      min-width: 56px;
-      font-size: 0.82rem;
-    }
-    .btn-primary {
-      background: #3a7da8;
-      border-bottom-color: #1d4d6a;
-    }
-    .btn-secondary {
-      background: #4a6a7a;
-      border-bottom-color: #2a4a5a;
-    }
-    .btn-success {
-      background: #2a8266;
-      border-bottom-color: #18523f;
-    }
-    .btn-warning {
-      background: #c97d2b;
-      border-bottom-color: #8a5518;
-    }
-    .btn-danger {
-      background: #b14f4f;
-      border-bottom-color: #752f2f;
-    }
-    .btn:disabled {
-      opacity: 0.4;
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 #0b1e2b;
-      pointer-events: none;
-    }
+  #killFeed { position:absolute; top:14px; left:14px; width:200px; text-align:left; }
+  #killFeed div { color:#dfe9f0; font-size:12px; margin-bottom:4px; background:rgba(0,0,0,0.35);
+    padding:4px 8px; border-radius:4px; opacity:0; animation:fadeIn .3s forwards, fadeOut .4s 4.6s forwards; }
+  @keyframes fadeIn { to{opacity:1;} }
+  @keyframes fadeOut { to{opacity:0;} }
 
-    .url-input-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-      align-items: center;
-    }
-    .url-input-area input {
-      flex: 1;
-      min-width: 160px;
-      background: #162b3a;
-      border: 1px solid #2f5066;
-      padding: 8px 14px;
-      border-radius: 24px;
-      color: white;
-      font-size: 0.9rem;
-      outline: none;
-    }
-    .url-input-area input:focus {
-      border-color: #5a9ec9;
-    }
-    .url-input-area input::placeholder {
-      color: #5a7d93;
-    }
+  #minimapWrap { position:absolute; top:14px; right:14px; width:130px; height:130px;
+    border:1px solid #384756; border-radius:6px; background:rgba(0,0,0,0.45); overflow:hidden; }
+  #minimap { width:100%; height:100%; display:block; }
 
-    .player-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 8px 0 12px 0;
-    }
-    .player-tag {
-      background: #1a3343;
-      padding: 3px 14px;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      color: #b3d4e8;
-      border: 1px solid #2f5066;
-    }
-    .player-tag.you {
-      border-color: #5a9ec9;
-      color: #7bc9a0;
-    }
-
-    .room-input-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin: 6px 0 10px 0;
-    }
-    .room-input-area input {
-      background: #162b3a;
-      border: 1px solid #2f5066;
-      padding: 8px 14px;
-      border-radius: 24px;
-      color: white;
-      width: 150px;
-      outline: none;
-      font-size: 1rem;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-    .room-input-area input:focus {
-      border-color: #5a9ec9;
-    }
-    .room-input-area input::placeholder {
-      text-transform: none;
-      letter-spacing: normal;
-      font-size: 0.85rem;
-    }
-    .room-input-area .btn {
-      flex: 0 1 auto;
-      padding: 8px 16px;
-      min-width: 56px;
-      font-size: 0.82rem;
-    }
-    .room-status {
-      color: #7b9eb3;
-      font-size: 0.75rem;
-      min-width: 50px;
-    }
-
-    .sync-status {
-      color: #8aacbf;
-      font-size: 0.78rem;
-      margin-top: 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-    .sync-status .dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 4px;
-    }
-    .sync-status .dot.green {
-      background: #2a8266;
-    }
-    .sync-status .dot.yellow {
-      background: #c97d2b;
-    }
-    .sync-status .dot.red {
-      background: #b14f4f;
-    }
-
-    .toast {
-      background: #1a3343;
-      padding: 8px 16px;
-      border-radius: 30px;
-      color: #c7e4f5;
-      text-align: center;
-      font-weight: 500;
-      border-left: 4px solid #4f9bc9;
-      margin: 10px 0 4px;
-      min-height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-    }
-
-    .delete-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin: 8px 0 4px 0;
-      justify-content: flex-end;
-    }
-    .delete-area .btn {
-      padding: 6px 18px;
-      font-size: 0.78rem;
-    }
-
-    .footer {
-      text-align: right;
-      color: #5a7d93;
-      font-size: 0.6rem;
-      margin-top: 10px;
-      opacity: 0.5;
-    }
-
-    @media (max-width: 500px) {
-      .app {
-        padding: 14px 10px;
-      }
-      .header h1 {
-        font-size: 1.0rem;
-      }
-      .room-input-area input {
-        width: 90px;
-        font-size: 0.85rem;
-      }
-      .controls .btn {
-        font-size: 0.7rem;
-        padding: 6px 10px;
-        min-width: 44px;
-      }
-      .url-input-area input {
-        font-size: 0.8rem;
-        padding: 6px 10px;
-        min-width: 120px;
-      }
-      .name-area {
-        padding: 6px 10px;
-      }
-      .name-area input {
-        font-size: 0.8rem;
-        padding: 4px 10px;
-        min-width: 80px;
-      }
-    }
-  </style>
+  /* ---------- End screens ---------- */
+  .endScreen {
+    position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    flex-direction:column; background:rgba(4,6,9,0.85); color:#fff; text-align:center;
+  }
+  .endScreen h2 { font-size:44px; letter-spacing:4px; margin-bottom:10px; }
+  #deathScreen h2 { color:#ff5f5f; }
+  #winScreen h2 { color:#ffd23f; text-shadow:0 0 20px rgba(255,210,63,0.6); }
+  .endScreen p { color:#9bb8d0; font-size:14px; margin-bottom:20px; }
+  .endScreen button {
+    padding:10px 26px; border:none; border-radius:6px; background:#4fd1c5; color:#05070a;
+    font-weight:bold; font-size:14px; cursor:pointer; letter-spacing:1px;
+  }
+</style>
 </head>
 <body>
-  <div class="app">
-    <div class="header">
-      <h1>▶ YouTube 同時視聴</h1>
-      <span class="room-info" id="roomInfo">ルーム: -</span>
+
+  <div id="loginScreen">
+    <div id="loginBox">
+      <h1>安置バトロワ</h1>
+      <div class="sub">2D BATTLE ROYALE — SAFE ZONE SHOOTER</div>
+      <input id="nameInput" type="text" maxlength="12" placeholder="ニックネームを入力">
+      <button id="joinBtn">参加する</button>
+      <div id="status"></div>
+      <div class="keys" id="controlsHint">
+        <b>WASD</b>：移動　<b>マウス</b>：照準<br>
+        <b>クリック（長押し可）</b>：射撃
+      </div>
+      <div class="rules">
+        ※ Firebase Realtime Database のルールで read/write が許可されている必要があります。<br>
+        （テスト時は rules を <code>{"rules":{".read":true,".write":true}}</code> にしてください）
+      </div>
     </div>
-
-    <!-- 名前設定 -->
-    <div class="name-area">
-      <label>👤 名前</label>
-      <input type="text" id="usernameInput" placeholder="名前を入力" maxlength="16" />
-      <button class="btn btn-primary" id="setNameBtn">設定</button>
-    </div>
-
-    <!-- ルーム操作 -->
-    <div class="room-input-area">
-      <span style="color:#8aacbf; font-size:0.85rem;">ルームID:</span>
-      <input type="text" id="roomIdInput" placeholder="自由に設定" maxlength="20" />
-      <button class="btn btn-primary" id="createRoomBtn">作成</button>
-      <button class="btn btn-secondary" id="joinRoomBtn">参加</button>
-      <span class="room-status" id="roomStatus">-</span>
-    </div>
-
-    <!-- プレイヤーリスト -->
-    <div class="player-list" id="playerList"></div>
-
-    <!-- URL入力 -->
-    <div class="url-input-area">
-      <input type="text" id="videoUrlInput" placeholder="YouTube URL を入力" />
-      <button class="btn btn-success" id="loadVideoBtn">読み込み</button>
-      <button class="btn btn-warning" id="syncBtn">同期</button>
-    </div>
-
-    <!-- 動画プレーヤー -->
-    <div class="video-wrapper">
-      <div id="player"></div>
-    </div>
-
-    <!-- コントロール -->
-    <div class="controls">
-      <button class="btn btn-primary" id="playBtn">▶ 再生</button>
-      <button class="btn btn-warning" id="pauseBtn">⏸ 一時停止</button>
-      <button class="btn btn-secondary" id="stopBtn">⏹ 停止</button>
-    </div>
-
-    <!-- 同期状態 -->
-    <div class="sync-status">
-      <span><span class="dot green" id="statusDot"></span><span id="statusText">待機中</span></span>
-      <span id="currentTimeDisplay">0:00</span>
-      <span style="color:#5a7d93;">|</span>
-      <span id="playerStatus">未読み込み</span>
-    </div>
-
-    <!-- ルーム全削除 -->
-    <div class="delete-area">
-      <button class="btn btn-danger" id="deleteAllRoomsBtn">🗑️ ルーム全削除</button>
-    </div>
-
-    <div class="toast" id="toastMessage">名前を設定してルームを作成または参加してください</div>
-    <div class="footer">Firebase Realtime DB · 同時視聴</div>
   </div>
 
-  <script>
-    // ============================================================
-    //  Firebase 設定
-    // ============================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
-      authDomain: "jumyou.firebaseapp.com",
-      databaseURL: "https://jumyou-default-rtdb.firebaseio.com",
-      projectId: "jumyou",
-      storageBucket: "jumyou.firebasestorage.app",
-      messagingSenderId: "441346887929",
-      appId: "1:441346887929:web:0ca3115f8d1f806df49228",
-      measurementId: "G-FBZF2NHEC9"
-    };
+  <div id="hud">
+    <div id="topBar">
+      <div id="zoneTimer">安置を計算中...</div>
+      <div id="aliveCount">生存: -- 人</div>
+    </div>
+    <div id="hpWrap">
+      <div id="hpLabel">HP: 100</div>
+      <div id="hpBarBg"><div id="hpBarFill"></div></div>
+      <div id="killCount">キル数: 0</div>
+    </div>
+    <div id="killFeed"></div>
+    <div id="minimapWrap"><canvas id="minimap" width="150" height="150"></canvas></div>
+  </div>
 
-    let db = null;
-    let roomRef = null;
-    let roomListener = null;
-    let roomId = null;
-    let username = '';
-    let player = null;
-    let isSyncing = false;
-    let isPlaying = false;
-    let currentVideoId = '';
-    let isPlayerReady = false;
+  <div id="deathScreen" class="endScreen">
+    <h2>YOU DIED</h2>
+    <p id="deathInfo"></p>
+    <button onclick="location.reload()">もう一度プレイ</button>
+  </div>
 
-    // ============================================================
-    //  DOM 参照
-    // ============================================================
-    const usernameInput = document.getElementById('usernameInput');
-    const setNameBtn = document.getElementById('setNameBtn');
-    const roomIdInput = document.getElementById('roomIdInput');
-    const createRoomBtn = document.getElementById('createRoomBtn');
-    const joinRoomBtn = document.getElementById('joinRoomBtn');
-    const deleteAllRoomsBtn = document.getElementById('deleteAllRoomsBtn');
-    const roomStatus = document.getElementById('roomStatus');
-    const roomInfo = document.getElementById('roomInfo');
-    const playerList = document.getElementById('playerList');
-    const videoUrlInput = document.getElementById('videoUrlInput');
-    const loadVideoBtn = document.getElementById('loadVideoBtn');
-    const syncBtn = document.getElementById('syncBtn');
-    const playBtn = document.getElementById('playBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const toast = document.getElementById('toastMessage');
-    const statusDot = document.getElementById('statusDot');
-    const statusText = document.getElementById('statusText');
-    const currentTimeDisplay = document.getElementById('currentTimeDisplay');
-    const playerStatus = document.getElementById('playerStatus');
+  <div id="winScreen" class="endScreen">
+    <h2>🏆 CHICKEN DINNER 🏆</h2>
+    <p>最後の生存者になりました！</p>
+    <button onclick="location.reload()">もう一度プレイ</button>
+  </div>
 
-    // ============================================================
-    //  Cookie 操作
-    // ============================================================
-    function getCookie(name) {
-      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      return m ? decodeURIComponent(m[2]) : null;
+  <canvas id="game"></canvas>
+
+  <div id="joystickBase"><div id="joystickStick"></div></div>
+  <div id="fireHint">タップ&ドラッグ<br>で射撃</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* ============================= FIREBASE ============================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBqDRgzhHOvUcUoV_JHm9zFJ1IS_CA0394",
+  authDomain: "jumyou.firebaseapp.com",
+  databaseURL: "https://jumyou-default-rtdb.firebaseio.com",
+  projectId: "jumyou",
+  storageBucket: "jumyou.firebasestorage.app",
+  messagingSenderId: "441346887929",
+  appId: "1:441346887929:web:0ca3115f8d1f806df49228",
+  measurementId: "G-FBZF2NHEC9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOM = 'games/main';
+
+let serverOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', s => serverOffset = s.val() || 0);
+function serverNow(){ return Date.now() + serverOffset; }
+
+firebase.auth().signInAnonymously().catch(err=>{
+  console.warn('匿名認証に失敗しました（DBルール次第では問題ない場合もあります）:', err.message);
+});
+
+/* ============================= CONSTANTS ============================= */
+const WORLD_SIZE = 2000;
+const CENTER = { x: 1000, y: 1000 };
+const PLAYER_RADIUS = 16;
+const BULLET_RADIUS = 4;
+const SPEED = 260;           // px/s
+const BULLET_SPEED = 950;    // px/s
+const BULLET_LIFESPAN = 900; // ms
+const FIRE_COOLDOWN = 220;   // ms
+const BULLET_DMG = 14;
+const ZONE_DPS = 4;          // hp / sec outside zone
+const HEARTBEAT_MS = 90;
+const HP_SYNC_MS = 400;
+
+const STAGES = [
+  { hold:15000, shrink:10000, from:900, to:650 },
+  { hold:15000, shrink:10000, from:650, to:420 },
+  { hold:12000, shrink:9000,  from:420, to:250 },
+  { hold:12000, shrink:8000,  from:250, to:120 },
+  { hold:10000, shrink:6000,  from:120, to:0   },
+];
+
+const OBSTACLES = [
+  {x:300,y:300,w:120,h:120}, {x:700,y:200,w:200,h:60}, {x:1200,y:250,w:80,h:180},
+  {x:1600,y:400,w:150,h:150}, {x:400,y:700,w:180,h:80}, {x:900,y:800,w:100,h:100},
+  {x:1400,y:750,w:220,h:70}, {x:200,y:1200,w:100,h:220}, {x:650,y:1300,w:160,h:100},
+  {x:1100,y:1250,w:90,h:90}, {x:1550,y:1150,w:130,h:130}, {x:350,y:1650,w:200,h:80},
+  {x:900,y:1700,w:120,h:120}, {x:1500,y:1650,w:150,h:90}, {x:1060,y:1060,w:140,h:140},
+];
+
+/* ============================= MOBILE DETECTION ============================= */
+const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if(IS_TOUCH){
+  document.getElementById('controlsHint').innerHTML =
+    '<b>左側ドラッグ</b>：移動　<b>右側ドラッグ</b>：照準＆射撃<br>指を離すと止まります';
+}
+
+/* ============================= STATE ============================= */
+let uid = null;
+let myName = '';
+let myPlayer = null; // {x,y,angle,hp,alive,kills}
+let players = {};    // synced remote+self state from DB, key=uid
+let renderPos = {};  // smoothed render positions for remote players
+let bulletsDb = {};  // bullets currently in DB {id: {x0,y0,vx,vy,owner,ownerName,ts,dmg}}
+let myBulletIds = new Set();
+let gameStartTime = null;
+let lastShotAt = 0;
+let hpSyncPending = false;
+let lastHpSync = 0;
+let dead = false;
+let won = false;
+
+const keys = {};
+const mouse = { x:0, y:0, worldX:0, worldY:0, down:false };
+const camera = { x:0, y:0 };
+const moveVec = { x:0, y:0 };
+let moveTouchId = null, aimTouchId = null;
+let joyBaseX = 0, joyBaseY = 0;
+const JOY_RADIUS = 55;
+
+/* ============================= DOM ============================= */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const minimap = document.getElementById('minimap');
+const mctx = minimap.getContext('2d');
+
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+/* ============================= JOIN ============================= */
+document.getElementById('joinBtn').addEventListener('click', tryJoin);
+document.getElementById('nameInput').addEventListener('keydown', e=>{ if(e.key==='Enter') tryJoin(); });
+
+function tryJoin(){
+  const input = document.getElementById('nameInput');
+  const name = input.value.trim().slice(0,12);
+  if(!name){ document.getElementById('status').textContent = '名前を入力してください'; return; }
+  document.getElementById('status').textContent = '接続中...';
+  joinGame(name);
+}
+
+function joinGame(name){
+  myName = name;
+  uid = db.ref(`${ROOM}/players`).push().key;
+
+  const spawnAngle = Math.random()*Math.PI*2;
+  const spawnDist = Math.random()*800;
+  const sx = CENTER.x + Math.cos(spawnAngle)*spawnDist;
+  const sy = CENTER.y + Math.sin(spawnAngle)*spawnDist;
+
+  myPlayer = { x:sx, y:sy, angle:0, hp:100, alive:true, kills:0 };
+
+  const playerRef = db.ref(`${ROOM}/players/${uid}`);
+  playerRef.set({
+    name: myName, x: sx, y: sy, angle: 0, hp: 100, alive: true, kills: 0,
+    ts: firebase.database.ServerValue.TIMESTAMP
+  });
+  playerRef.onDisconnect().remove();
+
+  ensureGameStarted();
+  listenPlayers();
+  listenBullets();
+  listenKills();
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+
+  window.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; });
+  window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+  canvas.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+  canvas.addEventListener('mousedown', ()=>{ mouse.down=true; });
+  window.addEventListener('mouseup', ()=>{ mouse.down=false; });
+
+  if(IS_TOUCH) setupTouchControls();
+
+  requestAnimationFrame(loop);
+  setInterval(heartbeat, HEARTBEAT_MS);
+}
+
+function ensureGameStarted(){
+  const startRef = db.ref(`${ROOM}/meta/startTime`);
+  startRef.transaction(cur => cur ? cur : firebase.database.ServerValue.TIMESTAMP);
+  startRef.on('value', snap=>{
+    const v = snap.val();
+    if(v) gameStartTime = v;
+  });
+}
+
+/* ============================= DB LISTENERS ============================= */
+function listenPlayers(){
+  const ref = db.ref(`${ROOM}/players`);
+  ref.on('value', snap=>{
+    const val = snap.val() || {};
+    players = val;
+    for(const id in players){
+      if(!renderPos[id]) renderPos[id] = { x: players[id].x, y: players[id].y };
     }
-
-    function setCookie(name, value, days = 365) {
-      const d = new Date();
-      d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
-      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/; SameSite=Lax`;
+    // sync self hp/alive from db (authoritative for damage dealt by others)
+    const me = players[uid];
+    if(me && myPlayer){
+      if(typeof me.hp === 'number' && me.hp < myPlayer.hp) myPlayer.hp = me.hp;
+      if(me.alive === false && myPlayer.alive) myPlayer.alive = false;
+      if(typeof me.kills === 'number') myPlayer.kills = me.kills;
     }
+  });
+}
 
-    // ============================================================
-    //  名前管理
-    // ============================================================
-    function loadUsername() {
-      const saved = getCookie('watch_username');
-      if (saved) {
-        usernameInput.value = saved;
-        username = saved;
+function listenBullets(){
+  const ref = db.ref(`${ROOM}/bullets`);
+  ref.on('child_added', snap=>{ bulletsDb[snap.key] = snap.val(); });
+  ref.on('child_removed', snap=>{ delete bulletsDb[snap.key]; });
+}
+
+function listenKills(){
+  const ref = db.ref(`${ROOM}/kills`);
+  ref.limitToLast(1).on('child_added', snap=>{
+    const k = snap.val();
+    if(!k) return;
+    addKillFeed(`${k.killer} が ${k.victim} を倒した`);
+  });
+}
+
+function addKillFeed(text){
+  const feed = document.getElementById('killFeed');
+  const div = document.createElement('div');
+  div.textContent = text;
+  feed.appendChild(div);
+  setTimeout(()=>{ if(div.parentNode) div.parentNode.removeChild(div); }, 5100);
+}
+
+/* ============================= ZONE MATH ============================= */
+function getZoneInfo(elapsed){
+  let t = elapsed;
+  for(const s of STAGES){
+    if(t < s.hold) return { radius:s.from, shrinking:false, remaining:(s.hold - t)/1000 };
+    t -= s.hold;
+    if(t < s.shrink){
+      const p = t / s.shrink;
+      return { radius: s.from + (s.to-s.from)*p, shrinking:true, remaining:(s.shrink - t)/1000, target:s.to };
+    }
+    t -= s.shrink;
+  }
+  return { radius:0, shrinking:false, remaining:0 };
+}
+
+/* ============================= TOUCH CONTROLS ============================= */
+function setupTouchControls(){
+  canvas.addEventListener('touchstart', e=>{
+    for(const t of e.changedTouches){
+      if(t.clientX < window.innerWidth/2){
+        if(moveTouchId === null){
+          moveTouchId = t.identifier;
+          joyBaseX = t.clientX; joyBaseY = t.clientY;
+          showJoystick(joyBaseX, joyBaseY);
+          updateJoystick(t.clientX, t.clientY);
+        }
       } else {
-        const guest = 'ゲスト' + Math.floor(Math.random() * 1000);
-        usernameInput.value = guest;
-        username = guest;
-      }
-    }
-
-    function setUsername() {
-      const name = usernameInput.value.trim();
-      if (!name) {
-        toastMessage('名前を入力してください');
-        return;
-      }
-      if (name.length > 16) {
-        toastMessage('名前は16文字以内にしてください');
-        return;
-      }
-      username = name;
-      setCookie('watch_username', name);
-      toastMessage(`名前を "${name}" に設定しました`);
-      if (roomId && roomRef) {
-        const updates = {};
-        updates[`players/${username}`] = { joined: true };
-        roomRef.update(updates).catch(() => {});
-        roomRef.once('value', (snap) => {
-          const data = snap.val();
-          if (data) renderPlayerList(data.players || {});
-        });
-      }
-    }
-
-    // ============================================================
-    //  YouTube IFrame API
-    // ============================================================
-    function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '100%',
-        width: '100%',
-        videoId: '',
-        playerVars: {
-          'playsinline': 1,
-          'rel': 0,
-          'modestbranding': 1
-        },
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange,
-          'onError': onPlayerError
+        if(aimTouchId === null){
+          aimTouchId = t.identifier;
+          mouse.x = t.clientX; mouse.y = t.clientY;
+          mouse.down = true;
+          document.getElementById('fireHint').style.display = 'none';
         }
-      });
+      }
     }
+    e.preventDefault();
+  }, { passive:false });
 
-    if (typeof YT === 'undefined' || !YT.Player) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  canvas.addEventListener('touchmove', e=>{
+    for(const t of e.changedTouches){
+      if(t.identifier === moveTouchId) updateJoystick(t.clientX, t.clientY);
+      else if(t.identifier === aimTouchId){ mouse.x = t.clientX; mouse.y = t.clientY; }
+    }
+    e.preventDefault();
+  }, { passive:false });
+
+  function endTouch(e){
+    for(const t of e.changedTouches){
+      if(t.identifier === moveTouchId){ moveTouchId = null; moveVec.x = 0; moveVec.y = 0; hideJoystick(); }
+      if(t.identifier === aimTouchId){ aimTouchId = null; mouse.down = false; }
+    }
+  }
+  canvas.addEventListener('touchend', endTouch, { passive:false });
+  canvas.addEventListener('touchcancel', endTouch, { passive:false });
+
+  setTimeout(()=>{ document.getElementById('fireHint').style.display = 'flex'; }, 200);
+}
+
+function showJoystick(x,y){
+  const base = document.getElementById('joystickBase');
+  base.style.left = (x-65)+'px';
+  base.style.top = (y-65)+'px';
+  base.style.display = 'block';
+}
+function updateJoystick(cx,cy){
+  let dx = cx - joyBaseX, dy = cy - joyBaseY;
+  const dist = Math.hypot(dx,dy);
+  if(dist > JOY_RADIUS){ dx = dx/dist*JOY_RADIUS; dy = dy/dist*JOY_RADIUS; }
+  moveVec.x = dx / JOY_RADIUS;
+  moveVec.y = dy / JOY_RADIUS;
+  document.getElementById('joystickStick').style.transform = `translate(${dx}px, ${dy}px)`;
+}
+function hideJoystick(){
+  document.getElementById('joystickBase').style.display = 'none';
+  document.getElementById('joystickStick').style.transform = 'translate(0,0)';
+}
+
+/* ============================= COMBAT ============================= */
+function shoot(){
+  const dx = mouse.worldX - myPlayer.x;
+  const dy = mouse.worldY - myPlayer.y;
+  const len = Math.hypot(dx,dy) || 1;
+  const vx = dx/len*BULLET_SPEED;
+  const vy = dy/len*BULLET_SPEED;
+  const bulletsRef = db.ref(`${ROOM}/bullets`);
+  const newRef = bulletsRef.push();
+  const data = { x0:myPlayer.x, y0:myPlayer.y, vx, vy, owner:uid, ownerName:myName, ts:serverNow(), dmg:BULLET_DMG };
+  newRef.set(data);
+  myBulletIds.add(newRef.key);
+  bulletsDb[newRef.key] = data;
+  setTimeout(()=>{ newRef.remove(); myBulletIds.delete(newRef.key); }, BULLET_LIFESPAN + 100);
+}
+
+function applyDamage(targetId, dmg, killerName){
+  const hpRef = db.ref(`${ROOM}/players/${targetId}/hp`);
+  hpRef.transaction(h=>{
+    if(h === null || h === undefined) return h;
+    return Math.max(0, h - dmg);
+  }, (err, committed, snap)=>{
+    if(!err && committed && snap && snap.val() <= 0){
+      db.ref(`${ROOM}/players/${targetId}`).update({ alive:false });
+      const victimName = (players[targetId] && players[targetId].name) || '???';
+      db.ref(`${ROOM}/kills`).push({ killer:killerName, victim:victimName, ts:firebase.database.ServerValue.TIMESTAMP });
+      if(targetId === uid){ myPlayer.alive = false; }
+    }
+  });
+}
+
+/* ============================= UPDATE ============================= */
+function rectClosestPoint(px,py,r){
+  const cx = Math.max(r.x, Math.min(px, r.x+r.w));
+  const cy = Math.max(r.y, Math.min(py, r.y+r.h));
+  return {cx,cy};
+}
+
+function resolveObstacleCollision(p){
+  for(const r of OBSTACLES){
+    const {cx,cy} = rectClosestPoint(p.x,p.y,r);
+    const dx = p.x-cx, dy = p.y-cy;
+    const dist = Math.hypot(dx,dy);
+    if(dist < PLAYER_RADIUS && dist > 0.0001){
+      const push = (PLAYER_RADIUS-dist);
+      p.x += (dx/dist)*push;
+      p.y += (dy/dist)*push;
+    } else if(dist <= 0.0001){
+      p.x += PLAYER_RADIUS; // fallback nudge
+    }
+  }
+}
+
+let lastFrame = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - lastFrame)/1000);
+  lastFrame = now;
+
+  if(myPlayer && myPlayer.alive) update(dt);
+  render();
+
+  if(myPlayer && !myPlayer.alive && !dead){
+    dead = true;
+    document.getElementById('deathInfo').textContent = `キル数: ${myPlayer.kills}`;
+    document.getElementById('deathScreen').style.display = 'flex';
+  }
+  checkWin();
+
+  requestAnimationFrame(loop);
+}
+
+function checkWin(){
+  if(won || dead) return;
+  const list = Object.values(players);
+  const aliveList = list.filter(p=>p.alive);
+  if(list.length >= 1 && aliveList.length === 1 && players[uid] && players[uid].alive && list.length > 0){
+    // only declare win once at least 2 players have ever been present in this session is nice-to-have; keep simple:
+    if(aliveList[0] === players[uid] || (aliveList.length===1 && playersKeyOf(aliveList[0])===uid)){
+      won = true;
+      document.getElementById('winScreen').style.display = 'flex';
+    }
+  }
+}
+function playersKeyOf(obj){
+  for(const k in players){ if(players[k]===obj) return k; }
+  return null;
+}
+
+function update(dt){
+  let vx=0, vy=0;
+  if(keys['w']) vy -= 1;
+  if(keys['s']) vy += 1;
+  if(keys['a']) vx -= 1;
+  if(keys['d']) vx += 1;
+  vx += moveVec.x;
+  vy += moveVec.y;
+  const mlen = Math.hypot(vx,vy);
+  if(mlen > 0.05){
+    const speedFactor = Math.min(mlen,1); // analog stick: partial push = partial speed
+    myPlayer.x += (vx/mlen)*SPEED*dt*speedFactor;
+    myPlayer.y += (vy/mlen)*SPEED*dt*speedFactor;
+  }
+  myPlayer.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE-PLAYER_RADIUS, myPlayer.x));
+  myPlayer.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_SIZE-PLAYER_RADIUS, myPlayer.y));
+  resolveObstacleCollision(myPlayer);
+
+  camera.x = myPlayer.x - canvas.width/2;
+  camera.y = myPlayer.y - canvas.height/2;
+  mouse.worldX = mouse.x + camera.x;
+  mouse.worldY = mouse.y + camera.y;
+  myPlayer.angle = Math.atan2(mouse.worldY - myPlayer.y, mouse.worldX - myPlayer.x);
+
+  // zone damage
+  if(gameStartTime){
+    const elapsed = serverNow() - gameStartTime;
+    const zone = getZoneInfo(elapsed);
+    const dist = Math.hypot(myPlayer.x-CENTER.x, myPlayer.y-CENTER.y);
+    if(dist > zone.radius){
+      myPlayer.hp -= ZONE_DPS*dt;
+      hpSyncPending = true;
+      if(myPlayer.hp <= 0 && myPlayer.alive){
+        myPlayer.hp = 0;
+        myPlayer.alive = false;
+        db.ref(`${ROOM}/players/${uid}`).update({ hp:0, alive:false });
+        db.ref(`${ROOM}/kills`).push({ killer:'安置', victim:myName, ts:firebase.database.ServerValue.TIMESTAMP });
+      }
+    }
+  }
+
+  // periodic hp sync (only decreases, never clobbers an attacker's write upward)
+  if(hpSyncPending && now_() - lastHpSync > HP_SYNC_MS && myPlayer.alive){
+    lastHpSync = now_();
+    hpSyncPending = false;
+    const val = Math.max(0, Math.floor(myPlayer.hp));
+    db.ref(`${ROOM}/players/${uid}/hp`).transaction(h=>{
+      if(h === null || h === undefined) return val;
+      return Math.min(h, val);
+    });
+  }
+
+  // shooting
+  if(mouse.down && myPlayer.alive && now_() - lastShotAt > FIRE_COOLDOWN){
+    shoot();
+    lastShotAt = now_();
+  }
+
+  // resolve bullets I own against players & obstacles
+  for(const id in bulletsDb){
+    if(!myBulletIds.has(id)) continue;
+    const b = bulletsDb[id];
+    const elapsed = serverNow() - b.ts;
+    if(elapsed > BULLET_LIFESPAN){ myBulletIds.delete(id); continue; }
+    const bx = b.x0 + b.vx*(elapsed/1000);
+    const by = b.y0 + b.vy*(elapsed/1000);
+
+    let hit = false;
+    for(const r of OBSTACLES){
+      if(bx > r.x && bx < r.x+r.w && by > r.y && by < r.y+r.h){ hit = true; break; }
+    }
+    if(!hit){
+      for(const pid in players){
+        if(pid === uid) continue;
+        const pd = players[pid];
+        if(!pd.alive) continue;
+        const dist = Math.hypot(bx-pd.x, by-pd.y);
+        if(dist < PLAYER_RADIUS + BULLET_RADIUS){
+          applyDamage(pid, b.dmg, myName);
+          if(pd.alive){ myPlayer.kills = myPlayer.kills; } // kills counter incremented via db on confirmed kill below
+          hit = true;
+          break;
+        }
+      }
+    }
+    if(hit){
+      db.ref(`${ROOM}/bullets/${id}`).remove();
+      myBulletIds.delete(id);
+    }
+  }
+
+  // smooth remote player render positions
+  for(const id in players){
+    if(id === uid) continue;
+    if(!renderPos[id]) renderPos[id] = { x: players[id].x, y: players[id].y };
+    renderPos[id].x += (players[id].x - renderPos[id].x) * Math.min(1, dt*12);
+    renderPos[id].y += (players[id].y - renderPos[id].y) * Math.min(1, dt*12);
+  }
+
+  updateHud();
+}
+
+function now_(){ return performance.now(); }
+
+function heartbeat(){
+  if(!myPlayer || !myPlayer.alive || !uid) return;
+  db.ref(`${ROOM}/players/${uid}`).update({
+    x: myPlayer.x, y: myPlayer.y, angle: myPlayer.angle, ts: firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+/* ============================= RENDER ============================= */
+function render(){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = '#151a21';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(!myPlayer) return;
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+
+  drawGrid();
+  drawZone();
+  drawObstacles();
+  drawBullets();
+  drawPlayers();
+
+  ctx.restore();
+  drawMinimap();
+}
+
+function drawGrid(){
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  const startX = Math.floor(camera.x/100)*100;
+  const startY = Math.floor(camera.y/100)*100;
+  for(let x=startX; x<camera.x+canvas.width+100; x+=100){
+    ctx.beginPath(); ctx.moveTo(x,camera.y); ctx.lineTo(x,camera.y+canvas.height); ctx.stroke();
+  }
+  for(let y=startY; y<camera.y+canvas.height+100; y+=100){
+    ctx.beginPath(); ctx.moveTo(camera.x,y); ctx.lineTo(camera.x+canvas.width,y); ctx.stroke();
+  }
+  ctx.strokeStyle = '#2a3644';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0,0,WORLD_SIZE,WORLD_SIZE);
+}
+
+function currentZoneRadius(){
+  if(!gameStartTime) return STAGES[0].from;
+  return getZoneInfo(serverNow()-gameStartTime).radius;
+}
+
+function drawZone(){
+  const radius = currentZoneRadius();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-200,-200,WORLD_SIZE+400,WORLD_SIZE+400);
+  ctx.arc(CENTER.x, CENTER.y, radius, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(150,20,20,0.32)';
+  ctx.fill('evenodd');
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(CENTER.x, CENTER.y, Math.max(radius,0), 0, Math.PI*2);
+  ctx.strokeStyle = '#4fd1c5';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+}
+
+function drawObstacles(){
+  for(const r of OBSTACLES){
+    ctx.fillStyle = '#33404d';
+    ctx.strokeStyle = '#1c252e';
+    ctx.lineWidth = 2;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+  }
+}
+
+function drawBullets(){
+  const t = serverNow();
+  for(const id in bulletsDb){
+    const b = bulletsDb[id];
+    const elapsed = t - b.ts;
+    if(elapsed < 0 || elapsed > BULLET_LIFESPAN) continue;
+    const bx = b.x0 + b.vx*(elapsed/1000);
+    const by = b.y0 + b.vy*(elapsed/1000);
+    ctx.beginPath();
+    ctx.arc(bx,by,BULLET_RADIUS,0,Math.PI*2);
+    ctx.fillStyle = b.owner===uid ? '#ffd23f' : '#ff8a5c';
+    ctx.fill();
+  }
+}
+
+function drawPlayerShape(x,y,angle,color,name,hp,isSelf){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(PLAYER_RADIUS+6,0);
+  ctx.lineTo(-4,0);
+  ctx.strokeStyle = '#dfe9f0';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.arc(x,y,PLAYER_RADIUS,0,Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = isSelf ? '#fff' : '#0a0d12';
+  ctx.stroke();
+
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#e8f4ff';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, x, y-PLAYER_RADIUS-14);
+
+  const w = 34;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(x-w/2, y-PLAYER_RADIUS-10, w, 5);
+  ctx.fillStyle = hp>50 ? '#4fd1c5' : hp>20 ? '#ffcf5c' : '#ff5f5f';
+  ctx.fillRect(x-w/2, y-PLAYER_RADIUS-10, w*Math.max(0,hp)/100, 5);
+}
+
+function drawPlayers(){
+  for(const id in players){
+    if(id === uid) continue;
+    const pd = players[id];
+    if(!pd.alive) continue;
+    const rp = renderPos[id] || {x:pd.x,y:pd.y};
+    drawPlayerShape(rp.x, rp.y, pd.angle||0, '#ff8a5c', pd.name, pd.hp, false);
+  }
+  if(myPlayer && myPlayer.alive){
+    drawPlayerShape(myPlayer.x, myPlayer.y, myPlayer.angle, '#4fd1c5', myName, myPlayer.hp, true);
+  }
+}
+
+function drawMinimap(){
+  mctx.clearRect(0,0,150,150);
+  const scale = 150/WORLD_SIZE;
+  mctx.fillStyle = '#0f1520';
+  mctx.fillRect(0,0,150,150);
+
+  for(const r of OBSTACLES){
+    mctx.fillStyle = '#2a3644';
+    mctx.fillRect(r.x*scale, r.y*scale, r.w*scale, r.h*scale);
+  }
+
+  const radius = currentZoneRadius();
+  mctx.beginPath();
+  mctx.arc(CENTER.x*scale, CENTER.y*scale, Math.max(radius,0)*scale, 0, Math.PI*2);
+  mctx.strokeStyle = '#4fd1c5';
+  mctx.lineWidth = 1.5;
+  mctx.stroke();
+
+  for(const id in players){
+    const pd = players[id];
+    if(!pd.alive) continue;
+    mctx.beginPath();
+    mctx.arc(pd.x*scale, pd.y*scale, id===uid?3:2, 0, Math.PI*2);
+    mctx.fillStyle = id===uid ? '#4fd1c5' : '#ff8a5c';
+    mctx.fill();
+  }
+}
+
+/* ============================= HUD ============================= */
+function updateHud(){
+  if(!myPlayer) return;
+  const hp = Math.max(0, Math.round(myPlayer.hp));
+  document.getElementById('hpLabel').textContent = `HP: ${hp}`;
+  document.getElementById('hpBarFill').style.width = hp + '%';
+  document.getElementById('killCount').textContent = `キル数: ${myPlayer.kills||0}`;
+
+  const aliveCount = Object.values(players).filter(p=>p.alive).length;
+  document.getElementById('aliveCount').textContent = `生存: ${aliveCount} 人`;
+
+  const zt = document.getElementById('zoneTimer');
+  if(gameStartTime){
+    const zone = getZoneInfo(serverNow()-gameStartTime);
+    if(zone.shrinking){
+      zt.textContent = `安置収縮中... あと ${Math.ceil(zone.remaining)} 秒`;
+      zt.classList.add('shrinking');
     } else {
-      onYouTubeIframeAPIReady();
+      zt.textContent = `次の収縮まで ${Math.ceil(zone.remaining)} 秒`;
+      zt.classList.remove('shrinking');
     }
-
-    function onPlayerReady(event) {
-      isPlayerReady = true;
-      playerStatus.textContent = '準備完了';
-      toastMessage('プレーヤー準備完了');
-      if (roomId && roomRef) {
-        roomRef.once('value', (snap) => {
-          const data = snap.val();
-          if (data && data.videoId) {
-            loadVideo(data.videoId, data.currentTime || 0);
-          }
-        });
-      }
-    }
-
-    function onPlayerStateChange(event) {
-      if (!roomId || !roomRef) return;
-      const state = event.data;
-      if (!isSyncing) {
-        const updates = {};
-        if (state === YT.PlayerState.PLAYING) {
-          updates['isPlaying'] = true;
-          updates['currentTime'] = player.getCurrentTime();
-          roomRef.update(updates);
-        } else if (state === YT.PlayerState.PAUSED) {
-          updates['isPlaying'] = false;
-          updates['currentTime'] = player.getCurrentTime();
-          roomRef.update(updates);
-        } else if (state === YT.PlayerState.ENDED) {
-          updates['isPlaying'] = false;
-          updates['currentTime'] = 0;
-          roomRef.update(updates);
-        }
-      }
-      updateUI();
-    }
-
-    function onPlayerError(event) {
-      console.error('YouTube エラー:', event.data);
-      toastMessage('動画の読み込みに失敗しました');
-    }
-
-    // ============================================================
-    //  Firebase 接続
-    // ============================================================
-    try {
-      firebase.initializeApp(firebaseConfig);
-      db = firebase.database();
-      console.log('Firebase 接続成功');
-    } catch (e) {
-      console.warn('Firebase 初期化エラー', e);
-    }
-
-    // ============================================================
-    //  トースト
-    // ============================================================
-    function toastMessage(msg) {
-      toast.textContent = msg;
-      setTimeout(() => {
-        if (toast.textContent === msg) {
-          toast.textContent = '名前を設定してルームを作成または参加してください';
-        }
-      }, 3000);
-    }
-
-    // ============================================================
-    //  ルーム管理
-    // ============================================================
-    function createRoom() {
-      if (!username) {
-        toastMessage('先に名前を設定してください');
-        return;
-      }
-      let id = roomIdInput.value.trim().toUpperCase();
-      if (!id) {
-        toastMessage('ルームIDを入力してください');
-        return;
-      }
-      id = id.replace(/[^A-Z0-9_]/g, '');
-      if (id.length < 1) {
-        toastMessage('有効なルームIDを入力してください');
-        return;
-      }
-      roomIdInput.value = id;
-
-      if (!db) {
-        toastMessage('Firebaseに接続されていません');
-        return;
-      }
-
-      const ref = db.ref('watch_rooms/' + id);
-      ref.once('value', (snap) => {
-        if (snap.exists()) {
-          toastMessage('このルームIDは既に使用されています');
-          return;
-        }
-        const roomData = {
-          players: { [username]: { joined: true } },
-          videoId: '',
-          currentTime: 0,
-          isPlaying: false,
-          creator: username,
-          timestamp: Date.now()
-        };
-        ref.set(roomData).then(() => {
-          roomId = id;
-          roomRef = ref;
-          roomStatus.textContent = `作成: ${id}`;
-          roomInfo.textContent = `ルーム: ${id}`;
-          toastMessage('ルームを作成しました');
-          listenRoom(id);
-        }).catch((err) => {
-          toastMessage('ルーム作成に失敗: ' + err.message);
-        });
-      });
-    }
-
-    function joinRoom() {
-      if (!username) {
-        toastMessage('先に名前を設定してください');
-        return;
-      }
-      let id = roomIdInput.value.trim().toUpperCase();
-      if (!id) {
-        toastMessage('ルームIDを入力してください');
-        return;
-      }
-      id = id.replace(/[^A-Z0-9_]/g, '');
-      if (id.length < 1) {
-        toastMessage('有効なルームIDを入力してください');
-        return;
-      }
-      roomIdInput.value = id;
-
-      if (!db) {
-        toastMessage('Firebaseに接続されていません');
-        return;
-      }
-
-      const ref = db.ref('watch_rooms/' + id);
-      ref.once('value', (snap) => {
-        const data = snap.val();
-        if (!data) {
-          toastMessage('ルームが見つかりません');
-          return;
-        }
-        if (data.players && data.players[username]) {
-          toastMessage('この名前は既にルームにいます');
-          return;
-        }
-        const updates = {};
-        updates[`players/${username}`] = { joined: true };
-        ref.update(updates).then(() => {
-          roomId = id;
-          roomRef = ref;
-          roomStatus.textContent = `参加: ${id}`;
-          roomInfo.textContent = `ルーム: ${id}`;
-          toastMessage('ルームに参加しました');
-          listenRoom(id);
-          if (data.videoId && isPlayerReady) {
-            loadVideo(data.videoId, data.currentTime || 0);
-            if (data.isPlaying) {
-              player.playVideo();
-            }
-          }
-        }).catch((err) => {
-          toastMessage('参加に失敗: ' + err.message);
-        });
-      });
-    }
-
-    function listenRoom(id) {
-      if (roomListener) roomListener.off();
-      roomListener = db.ref('watch_rooms/' + id);
-      roomListener.on('value', (snap) => {
-        const data = snap.val();
-        if (!data) {
-          toastMessage('ルームが削除されました');
-          exitRoom();
-          return;
-        }
-
-        renderPlayerList(data.players || {});
-
-        if (data.videoId && data.videoId !== currentVideoId && isPlayerReady) {
-          loadVideo(data.videoId, data.currentTime || 0);
-        }
-
-        if (isPlayerReady && player) {
-          isSyncing = true;
-          const currentPlayerTime = player.getCurrentTime();
-          const targetTime = data.currentTime || 0;
-          const timeDiff = Math.abs(currentPlayerTime - targetTime);
-
-          if (data.isPlaying !== isPlaying) {
-            if (data.isPlaying) {
-              player.playVideo();
-            } else {
-              player.pauseVideo();
-            }
-            isPlaying = data.isPlaying;
-          } else if (timeDiff > 1.0 && targetTime > 0) {
-            player.seekTo(targetTime, true);
-          }
-          isSyncing = false;
-        }
-
-        updateUI();
-      });
-    }
-
-    function exitRoom() {
-      if (roomRef && roomId) {
-        const updates = {};
-        updates[`players/${username}`] = null;
-        roomRef.update(updates).then(() => {
-          roomRef.once('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-              const players = data.players || {};
-              if (Object.keys(players).length === 0) {
-                roomRef.remove().catch(() => {});
-              }
-            }
-          });
-        }).catch(() => {});
-      }
-      if (roomListener) { roomListener.off();
-        roomListener = null; }
-      roomId = null;
-      roomRef = null;
-      roomStatus.textContent = '-';
-      roomInfo.textContent = 'ルーム: -';
-      playerList.innerHTML = '';
-      toastMessage('退出しました');
-    }
-
-    function renderPlayerList(players) {
-      playerList.innerHTML = '';
-      if (!players) return;
-      const names = Object.keys(players);
-      names.forEach(name => {
-        const tag = document.createElement('span');
-        tag.className = 'player-tag';
-        if (name === username) tag.classList.add('you');
-        tag.textContent = name;
-        playerList.appendChild(tag);
-      });
-      for (let i = names.length; i < 8; i++) {
-        const tag = document.createElement('span');
-        tag.className = 'player-tag';
-        tag.textContent = '空き';
-        tag.style.opacity = '0.3';
-        playerList.appendChild(tag);
-      }
-    }
-
-    // ============================================================
-    //  ルーム全削除
-    // ============================================================
-    function deleteAllRooms() {
-      if (!db) {
-        toastMessage('Firebaseに接続されていません');
-        return;
-      }
-      if (!confirm('⚠️ 全てのルームを削除しますか？\nこの操作は取り消せません！')) {
-        return;
-      }
-
-      toastMessage('⏳ ルームを削除中...');
-      const ref = db.ref('watch_rooms');
-      ref.once('value', (snap) => {
-        const data = snap.val();
-        if (!data) {
-          toastMessage('✅ 削除するルームはありませんでした');
-          return;
-        }
-        const keys = Object.keys(data);
-        const promises = keys.map(key => ref.child(key).remove());
-        Promise.all(promises).then(() => {
-          toastMessage(`✅ ${keys.length}件のルームを全て削除しました`);
-          // 現在のルーム状態をリセット
-          if (roomId) {
-            roomId = null;
-            roomRef = null;
-            if (roomListener) { roomListener.off();
-              roomListener = null; }
-            roomStatus.textContent = '-';
-            roomInfo.textContent = 'ルーム: -';
-            playerList.innerHTML = '';
-          }
-        }).catch((err) => {
-          toastMessage('❌ 削除に失敗しました: ' + err.message);
-        });
-      }).catch((err) => {
-        toastMessage('❌ 削除に失敗しました: ' + err.message);
-      });
-    }
-
-    // ============================================================
-    //  動画操作
-    // ============================================================
-    function loadVideo(videoId, seekTime = 0) {
-      if (!isPlayerReady || !player) return;
-      if (!videoId) return;
-      currentVideoId = videoId;
-      player.loadVideoById(videoId, seekTime);
-      playerStatus.textContent = '読み込み中...';
-      if (roomRef) {
-        roomRef.update({
-          videoId: videoId,
-          currentTime: seekTime || 0,
-          isPlaying: false
-        });
-      }
-    }
-
-    function loadVideoFromUrl() {
-      const url = videoUrlInput.value.trim();
-      if (!url) {
-        toastMessage('YouTube URLを入力してください');
-        return;
-      }
-      const videoId = extractVideoId(url);
-      if (!videoId) {
-        toastMessage('有効なYouTube URLではありません');
-        return;
-      }
-      if (!roomId) {
-        toastMessage('先にルームに参加してください');
-        return;
-      }
-      loadVideo(videoId, 0);
-      toastMessage('動画を読み込みました');
-      videoUrlInput.value = '';
-    }
-
-    function extractVideoId(url) {
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=)([^&]+)/,
-        /(?:youtu\.be\/)([^?]+)/,
-        /(?:youtube\.com\/embed\/)([^?]+)/
-      ];
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) return match[1];
-      }
-      if (/^[A-Za-z0-9_-]{11}$/.test(url)) return url;
-      return null;
-    }
-
-    function syncVideo() {
-      if (!roomId || !roomRef) {
-        toastMessage('ルームに参加してください');
-        return;
-      }
-      if (!isPlayerReady || !player) {
-        toastMessage('プレーヤーが準備できていません');
-        return;
-      }
-      const currentTime = player.getCurrentTime();
-      const isPlayingState = player.getPlayerState() === YT.PlayerState.PLAYING;
-      roomRef.update({
-        currentTime: currentTime,
-        isPlaying: isPlayingState
-      }).then(() => {
-        toastMessage('同期しました');
-      }).catch((err) => {
-        toastMessage('同期に失敗: ' + err.message);
-      });
-    }
-
-    function playVideo() {
-      if (!isPlayerReady || !player) return;
-      if (!roomId) { toastMessage('ルームに参加してください'); return; }
-      player.playVideo();
-      roomRef.update({ isPlaying: true });
-    }
-
-    function pauseVideo() {
-      if (!isPlayerReady || !player) return;
-      if (!roomId) { toastMessage('ルームに参加してください'); return; }
-      player.pauseVideo();
-      roomRef.update({ isPlaying: false });
-    }
-
-    function stopVideo() {
-      if (!isPlayerReady || !player) return;
-      if (!roomId) { toastMessage('ルームに参加してください'); return; }
-      player.stopVideo();
-      roomRef.update({ isPlaying: false, currentTime: 0 });
-      playerStatus.textContent = '停止';
-    }
-
-    function updateUI() {
-      if (isPlayerReady && player) {
-        const state = player.getPlayerState();
-        const time = player.getCurrentTime();
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        currentTimeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        const stateMap = {
-          [-1]: '未開始',
-          [0]: '終了',
-          [1]: '再生中',
-          [2]: '一時停止',
-          [3]: 'バッファリング',
-          [5]: '頭出し'
-        };
-        playerStatus.textContent = stateMap[state] || '不明';
-        isPlaying = state === YT.PlayerState.PLAYING;
-
-        if (roomId) {
-          statusDot.className = 'dot green';
-          statusText.textContent = '同期中';
-        } else {
-          statusDot.className = 'dot yellow';
-          statusText.textContent = '未接続';
-        }
-      }
-    }
-
-    setInterval(updateUI, 500);
-
-    // ============================================================
-    //  イベント
-    // ============================================================
-    setNameBtn.addEventListener('click', setUsername);
-    usernameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') setUsername();
-    });
-
-    createRoomBtn.addEventListener('click', createRoom);
-    joinRoomBtn.addEventListener('click', joinRoom);
-    deleteAllRoomsBtn.addEventListener('click', deleteAllRooms);
-    loadVideoBtn.addEventListener('click', loadVideoFromUrl);
-    syncBtn.addEventListener('click', syncVideo);
-    playBtn.addEventListener('click', playVideo);
-    pauseBtn.addEventListener('click', pauseVideo);
-    stopBtn.addEventListener('click', stopVideo);
-
-    videoUrlInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') loadVideoFromUrl();
-    });
-
-    roomIdInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') joinRoom();
-    });
-
-    // ============================================================
-    //  初期化
-    // ============================================================
-    function init() {
-      loadUsername();
-      toastMessage('名前を設定してルームを作成または参加してください');
-      if (db) {
-        db.ref('watch_rooms').once('value', (snap) => {
-          const data = snap.val();
-          if (data) {
-            Object.keys(data).forEach(key => {
-              const room = data[key];
-              const players = room.players || {};
-              if (Object.keys(players).length === 0) {
-                db.ref('watch_rooms/' + key).remove().catch(() => {});
-              }
-            });
-          }
-        });
-      }
-    }
-
-    if (typeof YT !== 'undefined' && YT.Player) {
-      onYouTubeIframeAPIReady();
-    }
-
-    init();
-  </script>
+  } else {
+    zt.textContent = '安置を計算中...';
+  }
+}
+</script>
 </body>
 </html>
