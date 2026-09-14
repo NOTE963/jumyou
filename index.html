@@ -1,764 +1,673 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube 同時視聴ルーム</title>
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: #0f0f0f;
-            color: #fff;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* ========== ルーム選択画面 ========== */
-        .room-selection {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .room-selection h1 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .form-group {
-            width: 100%;
-            max-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .form-group label {
-            font-size: 14px;
-            color: #aaa;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            padding: 12px;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #fff;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .form-group input::placeholder {
-            color: #666;
-        }
-
-        .button-group {
-            width: 100%;
-            max-width: 300px;
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: #ff0000;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #cc0000;
-        }
-
-        .btn-secondary {
-            background: #333;
-            color: #fff;
-        }
-
-        .btn-secondary:hover {
-            background: #444;
-        }
-
-        /* ========== ルーム内画面 ========== */
-        .room-view {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            background: #0f0f0f;
-        }
-
-        .room-header {
-            background: #1a1a1a;
-            padding: 12px 16px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .room-info {
-            font-size: 12px;
-            color: #aaa;
-        }
-
-        .room-info strong {
-            color: #fff;
-        }
-
-        .room-header-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-small:hover {
-            background: #444;
-        }
-
-        .btn-small.danger {
-            background: #ff0000;
-        }
-
-        .btn-small.danger:hover {
-            background: #cc0000;
-        }
-
-        .content-area {
-            display: flex;
-            flex: 1;
-            gap: 0;
-            min-height: 0;
-        }
-
-        .video-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .video-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 10px;
-            overflow-y: auto;
-        }
-
-        #player {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .video-input-section {
-            padding: 0 10px 10px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .video-input-section input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #333;
-            background: #1a1a1a;
-            color: #fff;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .video-input-section button {
-            padding: 8px 12px;
-            background: #ff0000;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        /* ========== コメント欄（YouTube） ========== */
-        .comments-section {
-            width: 300px;
-            background: #1a1a1a;
-            border-left: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .comments-header {
-            padding: 12px;
-            border-bottom: 1px solid #333;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .comments-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-        }
-
-        .youtube-comments-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        /* ========== ユーザーリスト ========== */
-        .users-section {
-            width: 250px;
-            background: #1a1a1a;
-            border-right: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .users-header {
-            padding: 12px;
-            border-bottom: 1px solid #333;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .users-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .user-item {
-            padding: 10px;
-            background: #262626;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .user-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #00ff00;
-        }
-
-        /* ========== レスポンシブ ========== */
-        @media (max-width: 1024px) {
-            .comments-section {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .users-section {
-                display: none;
-            }
-            
-            .content-area {
-                flex-direction: column;
-            }
-
-            .comments-section {
-                display: flex;
-                width: 100%;
-                height: 200px;
-                border-left: none;
-                border-top: 1px solid #333;
-            }
-
-            #player {
-                aspect-ratio: auto;
-                height: 200px;
-            }
-        }
-
-        .loader {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .error {
-            color: #ff0000;
-            padding: 10px;
-            text-align: center;
-            font-size: 14px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Watch Party</title>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: white;
+    }
+    
+    .header {
+      padding: 12px 16px;
+      background: #1f1f1f;
+      color: white;
+      border-bottom: 1px solid #333;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .header-info {
+      font-size: 12px;
+      color: #aaa;
+    }
+    
+    .main-content {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      overflow: hidden;
+    }
+    
+    .video-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .video-player {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .video-player iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+    
+    button {
+      padding: 8px 16px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #cc0000;
+    }
+    
+    button.secondary {
+      background: #666;
+    }
+    
+    button.secondary:hover {
+      background: #555;
+    }
+    
+    button.danger {
+      background: #d32f2f;
+    }
+    
+    button.danger:hover {
+      background: #b71c1c;
+    }
+    
+    .comments-section {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+    
+    .comments-header {
+      padding: 12px;
+      background: #f0f0f0;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .comments-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      background: white;
+    }
+    
+    .comment {
+      font-size: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .comment:last-child {
+      border-bottom: none;
+    }
+    
+    .comment-author {
+      font-weight: 600;
+      color: #1f1f1f;
+      margin-bottom: 4px;
+    }
+    
+    .comment-text {
+      color: #333;
+      word-break: break-word;
+    }
+    
+    .comment-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    
+    .chat-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      background: white;
+    }
+    
+    .chat-header {
+      padding: 12px;
+      background: #f0f0f0;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      background: white;
+    }
+    
+    .chat-message {
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: #f9f9f9;
+      border-radius: 6px;
+    }
+    
+    .chat-message-author {
+      font-weight: 600;
+      color: #ff0000;
+      margin-bottom: 4px;
+    }
+    
+    .chat-message-text {
+      color: #333;
+      word-break: break-word;
+    }
+    
+    .chat-input {
+      padding: 12px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .chat-input input {
+      flex: 1;
+    }
+    
+    .setup-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .setup-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    
+    .setup-card h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #1f1f1f;
+    }
+    
+    .setup-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .setup-form input {
+      width: 100%;
+    }
+    
+    .setup-form label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #666;
+      margin-top: 8px;
+    }
+    
+    .setup-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .setup-buttons button {
+      flex: 1;
+    }
+    
+    @media (max-width: 1200px) {
+      .main-content {
+        flex-direction: column;
+      }
+      
+      .comments-section {
+        width: 100%;
+        max-height: 250px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .main-content {
+        gap: 0;
+      }
+      
+      .comments-section,
+      .chat-section {
+        display: none;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- ルーム選択画面 -->
-        <div class="room-selection" id="roomSelection">
-            <h1>🎥 YouTube 同時視聴</h1>
-            
-            <div class="form-group">
-                <label for="usernameInput">ユーザーネーム</label>
-                <input 
-                    type="text" 
-                    id="usernameInput" 
-                    placeholder="あなたのユーザーネーム"
-                    autocomplete="off"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="roomIdInput">ルームID</label>
-                <input 
-                    type="text" 
-                    id="roomIdInput" 
-                    placeholder="room_name または 新しいID"
-                    autocomplete="off"
-                >
-            </div>
-
-            <div class="button-group">
-                <button class="btn-primary" onclick="app.createRoom()">ルーム作成</button>
-                <button class="btn-secondary" onclick="app.joinRoom()">参加する</button>
-            </div>
-
-            <div id="roomSelectionError" class="error"></div>
-        </div>
-
-        <!-- ルーム内画面 -->
-        <div class="room-view" id="roomView">
-            <div class="room-header">
-                <div class="room-info">
-                    ルームID: <strong id="roomIdDisplay"></strong> | 
-                    ユーザー: <strong id="usernameDisplay"></strong>
-                </div>
-                <div class="room-header-buttons">
-                    <button class="btn-small" onclick="app.leaveRoom()">退出</button>
-                    <button class="btn-small danger" onclick="app.deleteAllRooms()">全削除</button>
-                </div>
-            </div>
-
-            <div class="content-area">
-                <!-- ユーザーリスト -->
-                <div class="users-section">
-                    <div class="users-header">接続中のユーザー</div>
-                    <div class="users-list" id="usersList">
-                        <div class="loader">読み込み中...</div>
-                    </div>
-                </div>
-
-                <!-- メイン動画エリア -->
-                <div class="video-section">
-                    <div class="video-container">
-                        <div id="player"></div>
-                        
-                        <div class="video-input-section">
-                            <input 
-                                type="text" 
-                                id="youtubeUrlInput" 
-                                placeholder="YouTubeのURLまたはビデオID"
-                                autocomplete="off"
-                            >
-                            <button onclick="app.updateVideo()">再生</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- YouTubeコメント欄 -->
-                <div class="comments-section">
-                    <div class="comments-header">コメント</div>
-                    <div class="comments-container">
-                        <iframe 
-                            id="commentsFrame"
-                            class="youtube-comments-iframe"
-                            src=""
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen>
-                        </iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <h1>YouTube Watch Party</h1>
+      <div class="header-info">
+        ルーム: <span id="roomId">-</span> | ユーザー: <span id="userName">-</span>
+      </div>
     </div>
+    
+    <div class="main-content">
+      <div class="video-section">
+        <div class="video-player" id="videoPlayer"></div>
+        
+        <div class="controls">
+          <div class="input-group">
+            <input type="text" id="videoUrlInput" placeholder="YouTubeのURL（例: https://youtube.com/watch?v=...）">
+            <button onclick="app.setVideo()">動画設定</button>
+          </div>
+        </div>
+        
+        <div class="controls">
+          <button onclick="app.syncPlayback()" class="secondary">同期</button>
+          <button onclick="app.deleteRoom()" class="danger">ルーム削除</button>
+        </div>
+      </div>
+      
+      <div class="comments-section">
+        <div class="comments-header">YouTubeコメント</div>
+        <div class="comments-list" id="commentsList">
+          <div style="color: #999; font-size: 12px; padding: 20px; text-align: center;">
+            コメント読み込み中...
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-section">
+      <div class="chat-header">ルームチャット</div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="メッセージを入力...">
+        <button onclick="app.sendMessage()" style="flex: 0 0 auto;">送信</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="setup-modal" id="setupModal">
+    <div class="setup-card">
+      <h2>セットアップ</h2>
+      <div class="setup-form">
+        <div>
+          <label>ルームID（カスタマイズ可能）</label>
+          <input type="text" id="setupRoomId" placeholder="room123">
+        </div>
+        <div>
+          <label>ユーザーネーム</label>
+          <input type="text" id="setupUsername" placeholder="あなたの名前">
+        </div>
+      </div>
+      <div class="setup-buttons">
+        <button onclick="app.createRoom()" style="background: #ff0000;">ルーム作成</button>
+        <button onclick="app.joinRoom()" class="secondary">ルーム参加</button>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        // Firebase初期化
-        const firebaseConfig = {
-            apiKey: "AIzaSyCGkbyKm-ThFB-dA5aeFBAPmwB7aGE0bCE",
-            authDomain: "kmtpj-a8f92.firebaseapp.com",
-            databaseURL: "https://kmtpj-a8f92-default-rtdb.firebaseio.com",
-            projectId: "kmtpj-a8f92",
-            storageBucket: "kmtpj-a8f92.firebasestorage.app",
-            messagingSenderId: "79749146454",
-            appId: "1:79749146454:web:86c5f7cceb3f0b684858f7",
-            measurementId: "G-C13R4G84QW"
-        };
+  <script>
+    // Firebase設定
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGkbyKm-ThFB-dA5aeFBAPmwB7aGE0bCE",
+      authDomain: "kmtpj-a8f92.firebaseapp.com",
+      databaseURL: "https://kmtpj-a8f92-default-rtdb.firebaseio.com",
+      projectId: "kmtpj-a8f92",
+      storageBucket: "kmtpj-a8f92.firebasestorage.app",
+      messagingSenderId: "79749146454",
+      appId: "1:79749146454:web:86c5f7cceb3f0b684858f7",
+      measurementId: "G-C13R4G84QW"
+    };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        let player;
-        let isPlayerReady = false;
-        let isSyncing = false;
-        let currentRoomId = null;
-        let currentUsername = null;
-        let currentUserId = null;
+    class YouTubeWatchPartyApp {
+      constructor() {
+        this.roomId = null;
+        this.userId = Date.now().toString();
+        this.userName = null;
+        this.currentVideoId = null;
+        this.player = null;
+        this.isSync = false;
+      }
 
-        const app = {
-            createRoom() {
-                const username = document.getElementById('usernameInput').value.trim();
-                const roomId = document.getElementById('roomIdInput').value.trim();
+      extractVideoId(url) {
+        const patterns = [
+          /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+          /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+          /^([a-zA-Z0-9_-]{11})$/
+        ];
+        
+        for (let pattern of patterns) {
+          const match = url.match(pattern);
+          if (match) return match[1];
+        }
+        return null;
+      }
 
-                if (!username) {
-                    this.showError('ユーザーネームを入力してください');
-                    return;
-                }
+      createRoom() {
+        const roomId = document.getElementById('setupRoomId').value.trim() || 'room_' + Date.now();
+        const userName = document.getElementById('setupUsername').value.trim();
 
-                if (!roomId) {
-                    this.showError('ルームIDを入力してください');
-                    return;
-                }
+        if (!userName) {
+          alert('ユーザーネームを入力してください');
+          return;
+        }
 
-                currentUsername = username;
-                currentRoomId = roomId;
-                currentUserId = this.generateUserId();
+        this.roomId = roomId;
+        this.userName = userName;
 
-                // ルーム情報をFirebaseに保存
-                const roomRef = db.ref(`rooms/${roomId}`);
-                roomRef.once('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        this.showError('このルームIDは既に存在します');
-                        return;
-                    }
+        const now = new Date().toISOString();
+        db.ref(`rooms/${roomId}`).set({
+          title: 'Watch Party Room',
+          createdBy: userName,
+          createdAt: now,
+          users: { [this.userId]: userName },
+          messages: {},
+          playState: {
+            currentTime: 0,
+            isPlaying: false,
+            lastUpdated: now
+          }
+        }).then(() => {
+          this.joinRoom();
+        }).catch(err => alert('ルーム作成エラー: ' + err.message));
+      }
 
-                    roomRef.set({
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        currentVideo: null,
-                        playbackState: {
-                            playing: false,
-                            currentTime: 0,
-                            lastUpdate: firebase.database.ServerValue.TIMESTAMP
-                        }
-                    });
+      joinRoom() {
+        const roomId = document.getElementById('setupRoomId').value.trim();
+        const userName = document.getElementById('setupUsername').value.trim();
 
-                    this.joinRoomView();
-                });
-            },
+        if (!roomId || !userName) {
+          alert('ルームIDとユーザーネームを入力してください');
+          return;
+        }
 
-            joinRoom() {
-                const username = document.getElementById('usernameInput').value.trim();
-                const roomId = document.getElementById('roomIdInput').value.trim();
+        this.roomId = roomId;
+        this.userName = userName;
 
-                if (!username) {
-                    this.showError('ユーザーネームを入力してください');
-                    return;
-                }
+        db.ref(`rooms/${roomId}`).once('value').then(snapshot => {
+          if (!snapshot.exists()) {
+            alert('ルームが見つかりません');
+            return;
+          }
 
-                if (!roomId) {
-                    this.showError('ルームIDを入力してください');
-                    return;
-                }
+          db.ref(`rooms/${roomId}/users/${this.userId}`).set(userName);
+          this.initializeRoom();
+        });
+      }
 
-                currentUsername = username;
-                currentRoomId = roomId;
-                currentUserId = this.generateUserId();
+      initializeRoom() {
+        document.getElementById('setupModal').style.display = 'none';
+        document.getElementById('roomId').textContent = this.roomId;
+        document.getElementById('userName').textContent = this.userName;
 
-                // ルームの存在確認
-                const roomRef = db.ref(`rooms/${roomId}`);
-                roomRef.once('value', (snapshot) => {
-                    if (!snapshot.exists()) {
-                        this.showError('このルームは存在しません');
-                        return;
-                    }
+        this.setupYouTubePlayer();
+        this.listenToMessages();
+        this.listenToPlayState();
+        this.listenToVideo();
+      }
 
-                    this.joinRoomView();
-                });
-            },
+      setupYouTubePlayer() {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
 
-            joinRoomView() {
-                document.getElementById('roomSelection').style.display = 'none';
-                document.getElementById('roomView').style.display = 'flex';
-                document.getElementById('roomIdDisplay').textContent = currentRoomId;
-                document.getElementById('usernameDisplay').textContent = currentUsername;
-
-                // ユーザー情報をFirebaseに登録
-                const userRef = db.ref(`rooms/${currentRoomId}/users/${currentUserId}`);
-                userRef.set({
-                    username: currentUsername,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                    lastActive: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                // 接続が切れたら自動削除
-                userRef.onDisconnect().remove();
-
-                // YouTubeプレイヤー初期化
-                if (!isPlayerReady) {
-                    this.initYouTubePlayer();
-                }
-
-                // ユーザーリスト監視
-                this.watchUsersList();
-
-                // 動画情報監視
-                this.watchRoomVideo();
-
-                // 再生状態監視
-                this.watchPlaybackState();
-            },
-
-            initYouTubePlayer() {
-                player = new YT.Player('player', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: 'dQw4w9WgXcQ',
-                    events: {
-                        'onReady': this.onPlayerReady.bind(this),
-                        'onStateChange': this.onPlayerStateChange.bind(this),
-                        'onPlaybackRateChange': this.onPlaybackRateChange.bind(this)
-                    },
-                    playerVars: {
-                        controls: 1,
-                        modestbranding: 1,
-                        rel: 0
-                    }
-                });
-                isPlayerReady = true;
-            },
-
-            onPlayerReady(event) {
-                console.log('Player Ready');
-            },
-
-            onPlayerStateChange(event) {
-                if (isSyncing) return;
-
-                const stateMap = {
-                    [YT.PlayerState.PLAYING]: 'playing',
-                    [YT.PlayerState.PAUSED]: 'paused',
-                    [YT.PlayerState.UNSTARTED]: 'stopped'
-                };
-
-                const state = stateMap[event.data];
-                if (state) {
-                    const playbackRef = db.ref(`rooms/${currentRoomId}/playbackState`);
-                    playbackRef.update({
-                        playing: state === 'playing',
-                        currentTime: player.getCurrentTime(),
-                        lastUpdate: firebase.database.ServerValue.TIMESTAMP,
-                        updatedBy: currentUserId
-                    });
-                }
-            },
-
-            onPlaybackRateChange(event) {
-                if (isSyncing) return;
-                const playbackRef = db.ref(`rooms/${currentRoomId}/playbackState`);
-                playbackRef.update({
-                    playbackRate: event.data,
-                    lastUpdate: firebase.database.ServerValue.TIMESTAMP
-                });
-            },
-
-            watchUsersList() {
-                const usersRef = db.ref(`rooms/${currentRoomId}/users`);
-                usersRef.on('value', (snapshot) => {
-                    const usersList = document.getElementById('usersList');
-                    usersList.innerHTML = '';
-
-                    if (!snapshot.exists()) {
-                        usersList.innerHTML = '<div style="color: #666;">ユーザーがいません</div>';
-                        return;
-                    }
-
-                    snapshot.forEach((child) => {
-                        const user = child.val();
-                        const userItem = document.createElement('div');
-                        userItem.className = 'user-item';
-                        userItem.innerHTML = `
-                            <div class="user-dot"></div>
-                            <span>${user.username}</span>
-                        `;
-                        usersList.appendChild(userItem);
-                    });
-                });
-            },
-
-            watchRoomVideo() {
-                const videoRef = db.ref(`rooms/${currentRoomId}/currentVideo`);
-                videoRef.on('value', (snapshot) => {
-                    if (snapshot.exists()) {
-                        const videoId = snapshot.val();
-                        if (player && isPlayerReady) {
-                            isSyncing = true;
-                            player.loadVideoById(videoId);
-                            document.getElementById('youtubeUrlInput').value = videoId;
-                            this.updateCommentsFrame(videoId);
-                            setTimeout(() => {
-                                isSyncing = false;
-                            }, 1000);
-                        }
-                    }
-                });
-            },
-
-            watchPlaybackState() {
-                const playbackRef = db.ref(`rooms/${currentRoomId}/playbackState`);
-                playbackRef.on('value', (snapshot) => {
-                    if (!snapshot.exists() || !player || !isPlayerReady) return;
-
-                    const state = snapshot.val();
-                    if (state.updatedBy === currentUserId) return;
-
-                    isSyncing = true;
-
-                    // 時間の同期
-                    const currentTime = player.getCurrentTime();
-                    const diff = Math.abs(currentTime - state.currentTime);
-                    if (diff > 2) {
-                        player.seekTo(state.currentTime);
-                    }
-
-                    // 再生状態の同期
-                    if (state.playing && player.getPlayerState() !== YT.PlayerState.PLAYING) {
-                        player.playVideo();
-                    } else if (!state.playing && player.getPlayerState() === YT.PlayerState.PLAYING) {
-                        player.pauseVideo();
-                    }
-
-                    // 再生速度の同期
-                    if (state.playbackRate && player.getPlaybackRate() !== state.playbackRate) {
-                        player.setPlaybackRate(state.playbackRate);
-                    }
-
-                    setTimeout(() => {
-                        isSyncing = false;
-                    }, 500);
-                });
-            },
-
-            updateVideo() {
-                const input = document.getElementById('youtubeUrlInput').value.trim();
-                if (!input) {
-                    alert('YouTubeのURLまたはビデオIDを入力してください');
-                    return;
-                }
-
-                const videoId = this.extractVideoId(input);
-                if (!videoId) {
-                    alert('有効なYouTubeのURLまたはビデオIDを入力してください');
-                    return;
-                }
-
-                const videoRef = db.ref(`rooms/${currentRoomId}/currentVideo`);
-                videoRef.set(videoId);
-            },
-
-            extractVideoId(input) {
-                // YouTube URLからビデオIDを抽出
-                const patterns = [
-                    /^([a-zA-Z0-9_-]{11})$/,  // ビデオID直接
-                    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-                    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-                    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
-                ];
-
-                for (let pattern of patterns) {
-                    const match = input.match(pattern);
-                    if (match) {
-                        return match[1];
-                    }
-                }
-                return null;
-            },
-
-            updateCommentsFrame(videoId) {
-                const commentsFrame = document.getElementById('commentsFrame');
-                commentsFrame.src = `https://www.youtube.com/embed/comments?video_id=${videoId}`;
-            },
-
-            generateUserId() {
-                return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            },
-
-            leaveRoom() {
-                if (confirm('ルームから退出しますか？')) {
-                    const userRef = db.ref(`rooms/${currentRoomId}/users/${currentUserId}`);
-                    userRef.remove();
-
-                    // UIをリセット
-                    document.getElementById('roomSelection').style.display = 'flex';
-                    document.getElementById('roomView').style.display = 'none';
-                    document.getElementById('usernameInput').value = '';
-                    document.getElementById('roomIdInput').value = '';
-
-                    currentRoomId = null;
-                    currentUsername = null;
-                    currentUserId = null;
-                }
-            },
-
-            deleteAllRooms() {
-                if (confirm('⚠️ 本当に全てのルームを削除しますか？この操作は取り消せません。')) {
-                    if (confirm('本当に削除しますか？ 確認です。')) {
-                        db.ref('rooms').remove().then(() => {
-                            alert('全てのルームが削除されました');
-                            this.leaveRoom();
-                        }).catch((error) => {
-                            alert('削除に失敗しました: ' + error.message);
-                        });
-                    }
-                }
-            },
-
-            showError(message) {
-                const errorEl = document.getElementById('roomSelectionError');
-                errorEl.textContent = message;
-                setTimeout(() => {
-                    errorEl.textContent = '';
-                }, 3000);
+        window.onYouTubeIframeAPIReady = () => {
+          this.player = new YT.Player('videoPlayer', {
+            height: '390',
+            width: '100%',
+            events: {
+              onReady: (event) => {
+                console.log('Player ready');
+              },
+              onStateChange: (event) => {
+                this.onPlayerStateChange(event);
+              }
             }
+          });
         };
-    </script>
+      }
+
+      setVideo() {
+        const url = document.getElementById('videoUrlInput').value.trim();
+        const videoId = this.extractVideoId(url);
+
+        if (!videoId) {
+          alert('有効なYouTube URLを入力してください');
+          return;
+        }
+
+        this.currentVideoId = videoId;
+        db.ref(`rooms/${this.roomId}/currentVideo`).set(videoId);
+        
+        if (this.player) {
+          this.player.loadVideoById(videoId);
+        }
+        
+        document.getElementById('videoUrlInput').value = '';
+        this.loadComments(videoId);
+      }
+
+      loadComments(videoId) {
+        const commentsList = document.getElementById('commentsList');
+        commentsList.innerHTML = '<div style="color: #999; font-size: 12px; padding: 20px; text-align: center;">コメント読み込み中...</div>';
+
+        const commentHtml = `
+          <div class="comment">
+            <div class="comment-author">注意</div>
+            <div class="comment-text">
+              YouTubeのコメント読み込みはAPI制限があります。
+              <br><br>
+              <strong>API Key を設定して以下のコードを使用してください：</strong>
+              <br><br>
+              <code style="font-size: 11px; background: #f5f5f5; padding: 8px; display: block; border-radius: 4px;">
+fetch(\`https://www.googleapis.com/youtube/v3/commentThreads?videoId=${videoId}&key=YOUR_API_KEY&part=snippet&maxResults=20\`)
+.then(r => r.json())
+.then(data => {
+  // コメント処理
+});
+              </code>
+            </div>
+          </div>
+        `;
+        commentsList.innerHTML = commentHtml;
+      }
+
+      onPlayerStateChange(event) {
+        if (!this.isSync && this.roomId) {
+          if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.PAUSED) {
+            const now = new Date().toISOString();
+            db.ref(`rooms/${this.roomId}/playState`).update({
+              currentTime: this.player.getCurrentTime(),
+              isPlaying: event.data === YT.PlayerState.PLAYING,
+              lastUpdated: now
+            });
+          }
+        }
+      }
+
+      syncPlayback() {
+        if (!this.player) return;
+
+        this.isSync = true;
+        db.ref(`rooms/${this.roomId}/playState`).once('value').then(snapshot => {
+          const state = snapshot.val();
+          if (state) {
+            this.player.seekTo(state.currentTime);
+            if (state.isPlaying) {
+              this.player.playVideo();
+            } else {
+              this.player.pauseVideo();
+            }
+          }
+          setTimeout(() => { this.isSync = false; }, 1000);
+        });
+      }
+
+      listenToPlayState() {
+        db.ref(`rooms/${this.roomId}/playState`).on('value', snapshot => {
+          if (!this.player || this.isSync) return;
+
+          const state = snapshot.val();
+          if (state) {
+            const currentTime = this.player.getCurrentTime();
+            if (Math.abs(currentTime - state.currentTime) > 2) {
+              this.player.seekTo(state.currentTime);
+            }
+          }
+        });
+      }
+
+      listenToVideo() {
+        db.ref(`rooms/${this.roomId}/currentVideo`).on('value', snapshot => {
+          const videoId = snapshot.val();
+          if (videoId && videoId !== this.currentVideoId) {
+            this.currentVideoId = videoId;
+            if (this.player) {
+              this.player.loadVideoById(videoId);
+            }
+            this.loadComments(videoId);
+          }
+        });
+      }
+
+      sendMessage() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        const messageId = Date.now().toString();
+        db.ref(`rooms/${this.roomId}/messages/${messageId}`).set({
+          user: this.userName,
+          text: text,
+          timestamp: new Date().toISOString()
+        });
+
+        input.value = '';
+      }
+
+      listenToMessages() {
+        db.ref(`rooms/${this.roomId}/messages`).on('child_added', snapshot => {
+          const message = snapshot.val();
+          const messageHtml = `
+            <div class="chat-message">
+              <div class="chat-message-author">${escapeHtml(message.user)}</div>
+              <div class="chat-message-text">${escapeHtml(message.text)}</div>
+            </div>
+          `;
+          document.getElementById('chatMessages').innerHTML += messageHtml;
+          document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        });
+      }
+
+      deleteRoom() {
+        if (!confirm('本当にこのルームを削除しますか？')) return;
+
+        db.ref(`rooms/${this.roomId}`).remove().then(() => {
+          alert('ルームを削除しました');
+          location.reload();
+        }).catch(err => alert('削除エラー: ' + err.message));
+      }
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    const app = new YouTubeWatchPartyApp();
+
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') app.sendMessage();
+    });
+
+    document.getElementById('videoUrlInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') app.setVideo();
+    });
+  </script>
 </body>
 </html>
