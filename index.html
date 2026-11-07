@@ -1,673 +1,152 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Watch Party</title>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    html, body {
-      width: 100%;
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f5;
-    }
-    
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: white;
-    }
-    
-    .header {
-      padding: 12px 16px;
-      background: #1f1f1f;
-      color: white;
-      border-bottom: 1px solid #333;
-    }
-    
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    
-    .header-info {
-      font-size: 12px;
-      color: #aaa;
-    }
-    
-    .main-content {
-      flex: 1;
-      display: flex;
-      gap: 12px;
-      padding: 12px;
-      overflow: hidden;
-    }
-    
-    .video-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .video-player {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    
-    .video-player iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    
-    .controls {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    
-    .input-group {
-      display: flex;
-      gap: 6px;
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    input[type="text"] {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 13px;
-      min-height: 36px;
-    }
-    
-    button {
-      padding: 8px 16px;
-      background: #ff0000;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      transition: background 0.2s;
-    }
-    
-    button:hover {
-      background: #cc0000;
-    }
-    
-    button.secondary {
-      background: #666;
-    }
-    
-    button.secondary:hover {
-      background: #555;
-    }
-    
-    button.danger {
-      background: #d32f2f;
-    }
-    
-    button.danger:hover {
-      background: #b71c1c;
-    }
-    
-    .comments-section {
-      width: 300px;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      background: white;
-    }
-    
-    .comments-header {
-      padding: 12px;
-      background: #f0f0f0;
-      font-weight: 600;
-      font-size: 13px;
-      border-bottom: 1px solid #ddd;
-    }
-    
-    .comments-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      background: white;
-    }
-    
-    .comment {
-      font-size: 12px;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .comment:last-child {
-      border-bottom: none;
-    }
-    
-    .comment-author {
-      font-weight: 600;
-      color: #1f1f1f;
-      margin-bottom: 4px;
-    }
-    
-    .comment-text {
-      color: #333;
-      word-break: break-word;
-    }
-    
-    .comment-time {
-      font-size: 11px;
-      color: #999;
-      margin-top: 4px;
-    }
-    
-    .chat-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      background: white;
-    }
-    
-    .chat-header {
-      padding: 12px;
-      background: #f0f0f0;
-      font-weight: 600;
-      font-size: 13px;
-      border-bottom: 1px solid #ddd;
-    }
-    
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      background: white;
-    }
-    
-    .chat-message {
-      font-size: 13px;
-      margin-bottom: 12px;
-      padding: 8px;
-      background: #f9f9f9;
-      border-radius: 6px;
-    }
-    
-    .chat-message-author {
-      font-weight: 600;
-      color: #ff0000;
-      margin-bottom: 4px;
-    }
-    
-    .chat-message-text {
-      color: #333;
-      word-break: break-word;
-    }
-    
-    .chat-input {
-      padding: 12px;
-      border-top: 1px solid #ddd;
-      display: flex;
-      gap: 8px;
-    }
-    
-    .chat-input input {
-      flex: 1;
-    }
-    
-    .setup-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    
-    .setup-card {
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-    
-    .setup-card h2 {
-      font-size: 20px;
-      margin-bottom: 20px;
-      color: #1f1f1f;
-    }
-    
-    .setup-form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    .setup-form input {
-      width: 100%;
-    }
-    
-    .setup-form label {
-      font-size: 12px;
-      font-weight: 500;
-      color: #666;
-      margin-top: 8px;
-    }
-    
-    .setup-buttons {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    
-    .setup-buttons button {
-      flex: 1;
-    }
-    
-    @media (max-width: 1200px) {
-      .main-content {
-        flex-direction: column;
-      }
-      
-      .comments-section {
-        width: 100%;
-        max-height: 250px;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .main-content {
-        gap: 0;
-      }
-      
-      .comments-section,
-      .chat-section {
-        display: none;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>暴露！恋バナルーレット</title>
+<style>
+:root{--bg:#fff5f7;--card:#fff;--ink:#3a2030;--sub:#9a7384;--pri:#ec4a7b;--pri2:#ff8fab;--line:#f3d3dd}
+@media (prefers-color-scheme:dark){:root{--bg:#1d1219;--card:#2a1a24;--ink:#fbe9f0;--sub:#c49aae;--pri:#ff6b97;--pri2:#c2335f;--line:#4a2a3a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;min-height:100vh;display:flex;justify-content:center;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{width:100%;max-width:480px;padding:20px 18px 32px}
+h1{font-size:26px;text-align:center;margin:8px 0 4px}
+.sub{text-align:center;color:var(--sub);font-size:14px;margin:0 0 20px}
+label{display:block;font-weight:700;font-size:14px;margin:16px 0 8px}
+input{width:100%;padding:12px;font-size:16px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+button{font-family:inherit;cursor:pointer}
+.main{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
+.main:disabled{opacity:.4}
+.ghost{width:100%;margin-top:10px;padding:12px;font-size:15px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+.hide{display:none}
+.code{text-align:center;font-size:44px;font-weight:800;letter-spacing:8px;color:var(--pri);margin:6px 0}
+.list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0}
+.pl{padding:8px 14px;border-radius:999px;background:var(--card);border:2px solid var(--line);font-weight:700}
+.pl.h::before{content:"👑 "}
+.box{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px 18px;margin-top:14px;text-align:center;box-shadow:0 8px 24px rgba(236,74,123,.15)}
+.lab{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:10px}
+#topic{font-size:21px;font-weight:700;line-height:1.55;min-height:100px;display:flex;align-items:center;justify-content:center}
+#topic.spin{opacity:.55;filter:blur(1px)}
+#pick{font-size:38px;font-weight:800;color:var(--pri);min-height:56px}
+#pick.spin{opacity:.55}
+.pop{animation:pop .5s}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+#msg{text-align:center;font-weight:700;margin-top:14px;min-height:24px;color:var(--pri)}
+.cnt{text-align:center;font-size:12px;color:var(--sub);margin-top:16px}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>YouTube Watch Party</h1>
-      <div class="header-info">
-        ルーム: <span id="roomId">-</span> | ユーザー: <span id="userName">-</span>
-      </div>
-    </div>
-    
-    <div class="main-content">
-      <div class="video-section">
-        <div class="video-player" id="videoPlayer"></div>
-        
-        <div class="controls">
-          <div class="input-group">
-            <input type="text" id="videoUrlInput" placeholder="YouTubeのURL（例: https://youtube.com/watch?v=...）">
-            <button onclick="app.setVideo()">動画設定</button>
-          </div>
-        </div>
-        
-        <div class="controls">
-          <button onclick="app.syncPlayback()" class="secondary">同期</button>
-          <button onclick="app.deleteRoom()" class="danger">ルーム削除</button>
-        </div>
-      </div>
-      
-      <div class="comments-section">
-        <div class="comments-header">YouTubeコメント</div>
-        <div class="comments-list" id="commentsList">
-          <div style="color: #999; font-size: 12px; padding: 20px; text-align: center;">
-            コメント読み込み中...
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="chat-section">
-      <div class="chat-header">ルームチャット</div>
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="chat-input">
-        <input type="text" id="chatInput" placeholder="メッセージを入力...">
-        <button onclick="app.sendMessage()" style="flex: 0 0 auto;">送信</button>
-      </div>
-    </div>
-  </div>
-  
-  <div class="setup-modal" id="setupModal">
-    <div class="setup-card">
-      <h2>セットアップ</h2>
-      <div class="setup-form">
-        <div>
-          <label>ルームID（カスタマイズ可能）</label>
-          <input type="text" id="setupRoomId" placeholder="room123">
-        </div>
-        <div>
-          <label>ユーザーネーム</label>
-          <input type="text" id="setupUsername" placeholder="あなたの名前">
-        </div>
-      </div>
-      <div class="setup-buttons">
-        <button onclick="app.createRoom()" style="background: #ff0000;">ルーム作成</button>
-        <button onclick="app.joinRoom()" class="secondary">ルーム参加</button>
-      </div>
-    </div>
-  </div>
+<main>
+<section id="home">
+<h1>💘 暴露！恋バナルーレット</h1>
+<p class="sub">お題とターゲットはルーレットで決定</p>
+<label>あなたの名前</label>
+<input id="name" maxlength="10" placeholder="例：あや">
+<button class="main" id="create">ルームを作る</button>
+<label>または、4桁のルーム番号で参加</label>
+<input id="codeIn" inputmode="numeric" maxlength="4" placeholder="1234">
+<button class="ghost" id="join">参加する</button>
+<div id="err" style="color:#e53935;text-align:center;margin-top:12px;font-size:14px"></div>
+</section>
 
-  <script>
-    // Firebase設定
-    const firebaseConfig = {
-      apiKey: "AIzaSyCGkbyKm-ThFB-dA5aeFBAPmwB7aGE0bCE",
-      authDomain: "kmtpj-a8f92.firebaseapp.com",
-      databaseURL: "https://kmtpj-a8f92-default-rtdb.firebaseio.com",
-      projectId: "kmtpj-a8f92",
-      storageBucket: "kmtpj-a8f92.firebasestorage.app",
-      messagingSenderId: "79749146454",
-      appId: "1:79749146454:web:86c5f7cceb3f0b684858f7",
-      measurementId: "G-C13R4G84QW"
-    };
+<section id="room" class="hide">
+<div class="sub" style="margin:0">ルーム番号</div>
+<div class="code" id="code"></div>
+<div class="list" id="players"></div>
+<div id="game" class="hide">
+<div class="box"><div class="lab">🎯 今回のお題</div><div id="topic"></div></div>
+<div class="box"><div class="lab">🎤 暴露する人</div><div id="pick"></div></div>
+<div id="msg"></div>
+</div>
+<div id="wait" class="sub"></div>
+<button class="main" id="draw">お題スタート！</button>
+<button class="ghost" id="leave">退出する（ルームは削除されます）</button>
+<div class="cnt">お題数：<span id="total"></span>通り ／ 誰かが抜けるとルームは消えます</div>
+</section>
+</main>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ===== お題を組み合わせで生成（2000通り以上） =====
+var T1=["初恋","小学生の頃","中学時代","高校時代","大学時代","社会人になってから","去年","今年","先月","先週","最近","旅行先","学校行事","夏休み"];
+var T2=["一番ドキドキした話","一番恥ずかしい失敗","片思いの話","告白の話","振られた話","振った話","黒歴史","嫉妬した話","勘違いした話","友達に言えなかった秘密","デートの失敗談","LINEのやらかし","泣いた恋愛話","一目惚れの話","親にバレた話","キュンとした言葉","冷めた瞬間","初めて手をつないだ話","好きバレした話","恋のライバル話","三角関係の話","モテた話","全然モテなかった話","嘘をついた話","後悔している恋","友達の恋に口出しした話","気になる人へのアピール","恋人の意外な一面","修羅場の話","意味深なLINE","SNSでの恋愛エピソード","恋愛相談した話","遠距離の話","年の差の話","運命を感じた話","ドタキャンされた話","プレゼントの失敗","連絡が取れなくなった話","好きな人の前での変な行動","周りに冷やかされた話","気まずくなった話","付き合う前のやり取り","別れ話","ヨリを戻した話","初デートの話"];
+var W=["元恋人","好きな人","友達の恋人","先輩","後輩","同僚","先生","幼なじみ","友達","初恋の人","気になる人","年上の人","年下の人","推し","隣の席の人","バイト先の人","同じ趣味の人","初対面の人"];
+var A=["嘘をついた","嫉妬した","ドキッとした","勇気を出して話しかけた","告白しようとした","プレゼントを選んだ","連絡を我慢した","既読無視した","ブロックしたくなった","泣かされた","名前を検索した","SNSを遡った","偶然を装って会いに行った","手作りを渡した","照れて逃げた","夢に見た","好きバレした","冷たくしてしまった","わざと返信を遅らせた","返信文を何時間も悩んだ","写真をこっそり保存した","家の近くまで行った","ずっと目で追った","ヤキモチを隠した","思わせぶりな態度をとった","二人きりでご飯に行った","相談に乗ってもらった","ケンカして仲直りした","友達に紹介した","ずっと想い続けた","あきらめようとした","奢ってもらった","傘に入れてもらった","手が触れてドキッとした","褒められて舞い上がった","笑顔にやられた","一緒に帰ろうと誘った","誕生日を祝った","お揃いを提案した","未練を感じた","会話を盛り上げようと必死になった","待ち伏せした","おしゃれして会いに行った","緊張して固まった","嘘の理由で呼び出した","いいねの数を気にした","ストーリーを何度も見た","プロフィールを何度も見返した","返信が来ず不安になった","恋人がいるか探りを入れた","好きなタイプを聞き出した","連絡先を聞こうか迷った","好物を覚えた","相手の趣味を急に始めた","電話で緊張した","夜中に電話した","ラブレターを書いた","名前を呼ばれてときめいた","声にドキッとした"];
+var S=["好きな人から深夜に電話が来た","好きな人に恋人がいると知った","元恋人から突然連絡が来た","友達と好きな人がかぶった","好きな人が他の人と楽しそうに話していた","告白されたのに全然タイプじゃなかった","好きな人に手を握られた","付き合って初めてのケンカをした","記念日を忘れられた","恋人のスマホに知らない名前の通知が来た","好きな人に急にフォローされた","好きな人と二人きりでエレベーターに乗った","好きな人に「今度ご飯行こう」と言われた","好きな人にあだ名で呼ばれた","好きな人が風邪で休んだ","恋人を友達に紹介する","恋人が友達と仲良すぎた","好きな人に突然ハグされた","酔った好きな人に絡まれた","好きな人に恋愛相談された","好きな人が落ち込んでいた","好きな人に連絡先を聞かれた","告白しようと決めた","振られて帰り道を歩いた","デート直前に雨が降った","初デートで話題がなくなった","好きな人のSNSに知らない異性が写っていた","好きな人と目が合ってそらされた","好きな人にお酒を勧められた","好きな人の家に初めて行った"];
+var Q=["どうする？実体験があれば暴露","最初に取る行動は？","心の中では何を思う？","誰に最初に報告する？","実際に起きた経験を暴露","一番多いリアクションは？","顔に出るタイプ？隠すタイプ？","返事は何秒で返す？","友達にはどう話す？","正直な本音は？","絶対にやってしまうことは？","過去の似た経験を暴露","一番言いそうな一言は？","その後どうなった？"];
+var set={},TOPICS=[];
+function add(t){if(!set[t]){set[t]=1;TOPICS.push(t)}}
+T1.forEach(function(a){T2.forEach(function(b){add("「"+a+"の"+b+"」を暴露！")})});
+W.forEach(function(a){A.forEach(function(b){add(a+"に"+b+"ことある？詳しく暴露！")})});
+S.forEach(function(a){Q.forEach(function(b){add(a+"とき、"+b)})});
 
-    class YouTubeWatchPartyApp {
-      constructor() {
-        this.roomId = null;
-        this.userId = Date.now().toString();
-        this.userName = null;
-        this.currentVideoId = null;
-        this.player = null;
-        this.isSync = false;
-      }
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyAqe24qeS_gYtMA_gnF_lYNP70keCQcpnA",
+  authDomain: "renritu-56ae7.firebaseapp.com",
+  databaseURL: "https://renritu-56ae7-default-rtdb.firebaseio.com",
+  projectId: "renritu-56ae7",
+  storageBucket: "renritu-56ae7.firebasestorage.app",
+  messagingSenderId: "327969979771",
+  appId: "1:327969979771:web:709a0fc2a281dc495e91de",
+  measurementId: "G-VFLGB9QXR3"
+};
+firebase.initializeApp(firebaseConfig);
+var db=firebase.database();
+var $=function(i){return document.getElementById(i)};
+var me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
+$("total").textContent=TOPICS.length;
 
-      extractVideoId(url) {
-        const patterns = [
-          /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-          /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-          /^([a-zA-Z0-9_-]{11})$/
-        ];
-        
-        for (let pattern of patterns) {
-          const match = url.match(pattern);
-          if (match) return match[1];
-        }
-        return null;
-      }
+function err(m){$("err").textContent=m}
+function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してね");return null}return n}
+function enter(c,host){code=c;isHost=host;roomRef=db.ref("rooms/"+c);joined=true;lastN=0;
+ roomRef.onDisconnect().remove();
+ roomRef.on("value",onRoom);
+ $("home").classList.add("hide");$("room").classList.remove("hide");$("code").textContent=c;$("game").classList.add("hide")}
+$("create").onclick=function(){var n=myName();if(!n)return;err("");
+ var c=String(Math.floor(1000+Math.random()*9000)),r=db.ref("rooms/"+c);
+ r.once("value").then(function(s){if(s.exists()){err("もう一度押してね");return}
+  var o={host:me,started:false,round:{n:0},players:{}};o.players[me]={name:n};
+  return r.set(o).then(function(){enter(c,true)})}).catch(function(e){err("接続エラー: "+e.message)})};
+$("join").onclick=function(){var n=myName();if(!n)return;err("");
+ var c=$("codeIn").value.trim(),r=db.ref("rooms/"+c);
+ r.once("value").then(function(s){if(!s.exists()){err("ルームが見つかりません");return}
+  return r.child("players/"+me).set({name:n}).then(function(){enter(c,false)})}).catch(function(e){err("接続エラー: "+e.message)})};
+$("leave").onclick=function(){if(roomRef)roomRef.remove()};
 
-      createRoom() {
-        const roomId = document.getElementById('setupRoomId').value.trim() || 'room_' + Date.now();
-        const userName = document.getElementById('setupUsername').value.trim();
+function onRoom(s){
+ if(!s.exists()){closeRoom();return}
+ data=s.val();var ps=data.players||{},ids=Object.keys(ps);
+ $("players").innerHTML="";
+ ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");d.textContent=ps[id].name;$("players").appendChild(d)});
+ isHost=(data.host===me);
+ $("draw").classList.toggle("hide",!isHost);
+ $("draw").disabled=ids.length<2||busy;
+ $("draw").textContent=data.started?"次のお題へ！":"お題スタート！";
+ $("wait").textContent=!data.started?(isHost?(ids.length<2?"もう1人参加を待っています…":"全員そろったらスタート！"):"ホストがスタートするのを待っています"):"";
+ if(data.started&&data.round&&data.round.n!==lastN){lastN=data.round.n;play(data.round,ids.map(function(i){return ps[i].name}))}
+}
+function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);
+ if(roomRef)roomRef.off();roomRef=null;busy=false;
+ $("room").classList.add("hide");$("home").classList.remove("hide");err("誰かが退出したため、ルームは削除されました")}
+$("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
+ var t=TOPICS[Math.floor(Math.random()*TOPICS.length)],cand=ids.filter(function(i){return i!==lastPick}),p=cand[Math.floor(Math.random()*cand.length)];
+ lastPick=p;$("draw").disabled=true;
+ roomRef.update({started:true,round:{n:(data.round.n||0)+1,topic:t,name:ps[p].name}})};
 
-        if (!userName) {
-          alert('ユーザーネームを入力してください');
-          return;
-        }
-
-        this.roomId = roomId;
-        this.userName = userName;
-
-        const now = new Date().toISOString();
-        db.ref(`rooms/${roomId}`).set({
-          title: 'Watch Party Room',
-          createdBy: userName,
-          createdAt: now,
-          users: { [this.userId]: userName },
-          messages: {},
-          playState: {
-            currentTime: 0,
-            isPlaying: false,
-            lastUpdated: now
-          }
-        }).then(() => {
-          this.joinRoom();
-        }).catch(err => alert('ルーム作成エラー: ' + err.message));
-      }
-
-      joinRoom() {
-        const roomId = document.getElementById('setupRoomId').value.trim();
-        const userName = document.getElementById('setupUsername').value.trim();
-
-        if (!roomId || !userName) {
-          alert('ルームIDとユーザーネームを入力してください');
-          return;
-        }
-
-        this.roomId = roomId;
-        this.userName = userName;
-
-        db.ref(`rooms/${roomId}`).once('value').then(snapshot => {
-          if (!snapshot.exists()) {
-            alert('ルームが見つかりません');
-            return;
-          }
-
-          db.ref(`rooms/${roomId}/users/${this.userId}`).set(userName);
-          this.initializeRoom();
-        });
-      }
-
-      initializeRoom() {
-        document.getElementById('setupModal').style.display = 'none';
-        document.getElementById('roomId').textContent = this.roomId;
-        document.getElementById('userName').textContent = this.userName;
-
-        this.setupYouTubePlayer();
-        this.listenToMessages();
-        this.listenToPlayState();
-        this.listenToVideo();
-      }
-
-      setupYouTubePlayer() {
-        const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
-
-        window.onYouTubeIframeAPIReady = () => {
-          this.player = new YT.Player('videoPlayer', {
-            height: '390',
-            width: '100%',
-            events: {
-              onReady: (event) => {
-                console.log('Player ready');
-              },
-              onStateChange: (event) => {
-                this.onPlayerStateChange(event);
-              }
-            }
-          });
-        };
-      }
-
-      setVideo() {
-        const url = document.getElementById('videoUrlInput').value.trim();
-        const videoId = this.extractVideoId(url);
-
-        if (!videoId) {
-          alert('有効なYouTube URLを入力してください');
-          return;
-        }
-
-        this.currentVideoId = videoId;
-        db.ref(`rooms/${this.roomId}/currentVideo`).set(videoId);
-        
-        if (this.player) {
-          this.player.loadVideoById(videoId);
-        }
-        
-        document.getElementById('videoUrlInput').value = '';
-        this.loadComments(videoId);
-      }
-
-      loadComments(videoId) {
-        const commentsList = document.getElementById('commentsList');
-        commentsList.innerHTML = '<div style="color: #999; font-size: 12px; padding: 20px; text-align: center;">コメント読み込み中...</div>';
-
-        const commentHtml = `
-          <div class="comment">
-            <div class="comment-author">注意</div>
-            <div class="comment-text">
-              YouTubeのコメント読み込みはAPI制限があります。
-              <br><br>
-              <strong>API Key を設定して以下のコードを使用してください：</strong>
-              <br><br>
-              <code style="font-size: 11px; background: #f5f5f5; padding: 8px; display: block; border-radius: 4px;">
-fetch(\`https://www.googleapis.com/youtube/v3/commentThreads?videoId=${videoId}&key=YOUR_API_KEY&part=snippet&maxResults=20\`)
-.then(r => r.json())
-.then(data => {
-  // コメント処理
-});
-              </code>
-            </div>
-          </div>
-        `;
-        commentsList.innerHTML = commentHtml;
-      }
-
-      onPlayerStateChange(event) {
-        if (!this.isSync && this.roomId) {
-          if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.PAUSED) {
-            const now = new Date().toISOString();
-            db.ref(`rooms/${this.roomId}/playState`).update({
-              currentTime: this.player.getCurrentTime(),
-              isPlaying: event.data === YT.PlayerState.PLAYING,
-              lastUpdated: now
-            });
-          }
-        }
-      }
-
-      syncPlayback() {
-        if (!this.player) return;
-
-        this.isSync = true;
-        db.ref(`rooms/${this.roomId}/playState`).once('value').then(snapshot => {
-          const state = snapshot.val();
-          if (state) {
-            this.player.seekTo(state.currentTime);
-            if (state.isPlaying) {
-              this.player.playVideo();
-            } else {
-              this.player.pauseVideo();
-            }
-          }
-          setTimeout(() => { this.isSync = false; }, 1000);
-        });
-      }
-
-      listenToPlayState() {
-        db.ref(`rooms/${this.roomId}/playState`).on('value', snapshot => {
-          if (!this.player || this.isSync) return;
-
-          const state = snapshot.val();
-          if (state) {
-            const currentTime = this.player.getCurrentTime();
-            if (Math.abs(currentTime - state.currentTime) > 2) {
-              this.player.seekTo(state.currentTime);
-            }
-          }
-        });
-      }
-
-      listenToVideo() {
-        db.ref(`rooms/${this.roomId}/currentVideo`).on('value', snapshot => {
-          const videoId = snapshot.val();
-          if (videoId && videoId !== this.currentVideoId) {
-            this.currentVideoId = videoId;
-            if (this.player) {
-              this.player.loadVideoById(videoId);
-            }
-            this.loadComments(videoId);
-          }
-        });
-      }
-
-      sendMessage() {
-        const input = document.getElementById('chatInput');
-        const text = input.value.trim();
-
-        if (!text) return;
-
-        const messageId = Date.now().toString();
-        db.ref(`rooms/${this.roomId}/messages/${messageId}`).set({
-          user: this.userName,
-          text: text,
-          timestamp: new Date().toISOString()
-        });
-
-        input.value = '';
-      }
-
-      listenToMessages() {
-        db.ref(`rooms/${this.roomId}/messages`).on('child_added', snapshot => {
-          const message = snapshot.val();
-          const messageHtml = `
-            <div class="chat-message">
-              <div class="chat-message-author">${escapeHtml(message.user)}</div>
-              <div class="chat-message-text">${escapeHtml(message.text)}</div>
-            </div>
-          `;
-          document.getElementById('chatMessages').innerHTML += messageHtml;
-          document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
-        });
-      }
-
-      deleteRoom() {
-        if (!confirm('本当にこのルームを削除しますか？')) return;
-
-        db.ref(`rooms/${this.roomId}`).remove().then(() => {
-          alert('ルームを削除しました');
-          location.reload();
-        }).catch(err => alert('削除エラー: ' + err.message));
-      }
-    }
-
-    function escapeHtml(text) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return text.replace(/[&<>"']/g, m => map[m]);
-    }
-
-    const app = new YouTubeWatchPartyApp();
-
-    document.getElementById('chatInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') app.sendMessage();
-    });
-
-    document.getElementById('videoUrlInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') app.setVideo();
-    });
-  </script>
+function play(r,names){
+ timers.forEach(clearTimeout);timers.forEach(clearInterval);timers=[];busy=true;$("draw").disabled=true;
+ $("game").classList.remove("hide");$("msg").textContent="";$("topic").classList.remove("pop");$("pick").classList.remove("pop");$("pick").textContent="";
+ $("topic").classList.add("spin");$("pick").classList.remove("spin");
+ var i1=setInterval(function(){$("topic").textContent=TOPICS[Math.floor(Math.random()*TOPICS.length)]},70);timers.push(i1);
+ timers.push(setTimeout(function(){clearInterval(i1);$("topic").classList.remove("spin");$("topic").textContent=r.topic;void $("topic").offsetWidth;$("topic").classList.add("pop");
+  $("pick").classList.add("spin");
+  var i2=setInterval(function(){$("pick").textContent=names[Math.floor(Math.random()*names.length)]},80);timers.push(i2);
+  timers.push(setTimeout(function(){clearInterval(i2);$("pick").classList.remove("spin");$("pick").textContent=r.name;void $("pick").offsetWidth;$("pick").classList.add("pop");
+   $("msg").textContent="🎉 "+r.name+" さん、暴露タイム！";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<2},2400));
+ },2600));
+}
+</script>
 </body>
 </html>
