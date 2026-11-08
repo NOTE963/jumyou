@@ -48,6 +48,18 @@ button:active{transform:scale(.98)}
 .bar{height:6px;background:var(--soft);border-radius:3px;margin:10px 0 8px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--acc);transition:width .6s}
 .rn2{font-size:12px;color:var(--sub);line-height:1.7}
+#sayTa{display:block;width:100%;padding:14px;font-size:16px;font-family:inherit;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);resize:none;outline:none;margin-top:10px}
+#sayTa:focus{border-color:var(--acc)}
+.ans{padding:14px 16px;margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.an{font-size:12px;color:var(--acc);font-weight:700;letter-spacing:.1em;margin-bottom:6px}
+.at{font-family:var(--serif);font-size:16px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+#drCv{display:block;width:100%;aspect-ratio:1;border:1px solid var(--line);border-radius:12px;background:#fff;touch-action:none;margin-top:10px}
+#drTm{font-family:var(--serif);font-size:28px;text-align:center;color:var(--acc);letter-spacing:.1em}
+.tools{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);padding:0}
+.sw.on{outline:2px solid var(--acc);outline-offset:2px}
+.tl{padding:8px 12px;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px}
+img.dr{width:100%;border-radius:8px;border:1px solid var(--line);background:#fff;display:block}
 </style>
 </head>
 <body>
@@ -146,6 +158,25 @@ vpairs(AC,["放課後にしたいのはどっち？","好きな人と過ごし�
 vpairs(LV,["自分はどっち寄り？"]);
 [["告白は？","自分からする","待つ"],["付き合うなら？","年上","年下"],["連絡は？","毎日したい","たまにでいい"],["デートは？","インドア","アウトドア"],["告白の方法は？","直接会って","LINEで"],["恋人には？","尽くしたい","尽くされたい"],["好きな人の前では？","素直になる","ツンツンしてしまう"],["初恋は？","覚えている","あまり覚えていない"],["片思いと両思いなら？","片思いの方がドキドキする","両思いの方が幸せ"],["好きな人ができたら？","すぐ友達に話す","ずっと秘密にする"],["付き合う前の期間は？","長い方がいい","短い方がいい"],["恋愛と友情なら？","恋愛が大事","友情が大事"],["好きな人の呼び方は？","呼び捨て","さん・くん付け"],["デートの待ち合わせは？","現地集合","一緒に行く"],["恋人の条件は？","顔が好み","性格が合う"],["一目惚れは？","する","しない"],["プレゼントは？","形に残るもの","消えもの"],["記念日は？","毎月祝いたい","大事な日だけでいい"],["ケンカしたら？","自分から謝る","相手を待つ"],["恋人との時間は？","毎日会いたい","週末だけで十分"],["告白するなら？","放課後","休日"],["恋人にするなら？","同じクラスの人","他のクラスの人"],["恋人にするなら？","同じ部活の人","違う部活の人"],["好きな人と同じ班なら？","うれしい","緊張して困る"],["バレンタインは？","手作りを渡す","市販のものを渡す"],["好きな人にしたいのは？","相談","告白"],["恋愛相談するなら？","同性の友達","異性の友達"],["恋人の連絡頻度は？","多めがいい","少なめがいい"],["思い出に残るのは？","大きなイベント","何気ない日常"],["理想のカップルは？","いつも一緒の二人","それぞれの時間も大切にする二人"],["モテるなら？","たくさんの人に好かれたい","一人に深く愛されたい"],["付き合うなら？","面白い人","優しい人"],["好きな人の第一印象は？","大事","そこまで気にしない"],["振られたら？","すぐ次を探す","しばらく引きずる"],["告白されたら？","すぐ返事する","時間をもらう"],["恋愛ドラマは？","好き","あまり見ない"],["友達の恋は？","全力で応援する","見守る"],["好きな人のSNSは？","よく見る","あまり見ない"],["好きな人にもらうなら？","手紙","プレゼント"],["恋人に見せたいのは？","かっこいい・かわいい自分","ありのままの自分"],["恋人との旅行は？","計画しっかり","ノープラン"]].forEach(function(v){addV(v[0],v[1],v[2])});
 
+// 10) 指名投票（この中で一番〜な人）
+var MP=["将来結婚が早そうな人","一番浮気しなさそうな人","恋に落ちるのが早そうな人","恋愛相談に向いている人","告白されたことが多そうな人","付き合ったら楽しそうな人","デートで頼りになりそうな人","連絡がマメそうな人","片思いが長そうな人","一目惚れしやすそうな人","振られても立ち直りが早そうな人","記念日を覚えていそうな人","サプライズが得意そうな人","照れ屋そうな人","ツンデレそうな人","好きな人の前で挙動不審になりそうな人","好きバレしやすそうな人","嘘が下手そうな人","秘密を守れそうな人","恋人に甘えそうな人","恋人を甘やかしそうな人","手紙を書きそうな人","告白を断れなさそうな人","好きな人のために頑張りそうな人","恋愛より友情を選びそうな人","初恋がまだ続いていそうな人","実は片思い中そうな人","実は恋愛経験が豊富そうな人","実はモテていそうな人","実は一途そうな人","好きな人に積極的に話しかけそうな人","告白を待つタイプの人","自分から告白しそうな人","恋人の前でキャラが変わりそうな人","一緒にいて飽きなさそうな人","ヤキモチを隠せなさそうな人","ラブソングを聴いて泣きそうな人"];
+var PVQ=[],pset={};
+AT.concat(MP).forEach(function(a){["この中で、"+a+"は誰？","せーので指名！"+a+"は？","全員で投票：メンバーの中で"+a+"は誰？"].forEach(function(q){if(!pset[q]){pset[q]=1;PVQ.push(q)}})});
+
+// 11) 全員回答（こんなときどうする？）
+var SS=["好きな人から急にLINEが来た","好きな人が他の人と楽しそうに話していた","好きな人と手が触れた","好きな人にあだ名で呼ばれた","好きな人が風邪で休んだ","好きな人に恋愛相談された","好きな人に連絡先を聞かれた","好きな人と目が合ってそらされた","席替えで好きな人の隣になった","好きな人と同じ班になった","好きな人にノートを借りた","好きな人と帰り道が一緒になった","好きな人の好きな人を知ってしまった","好きな人に勉強を教えてもらった","好きな人に「ありがとう」と言われた","好きな人が落ち込んでいた","体育祭で好きな人が活躍した","文化祭で好きな人と回ることになった","好きな人が友達と付き合ったと聞いた","好きな人にSNSをフォローされた","好きな人に笑いかけられた","好きな人に名前を呼ばれた","友達と好きな人がかぶった","告白されたのにタイプじゃなかった","好きな人が他校の人と話していた","好きな人の誕生日が近づいた","好きな人に恋人がいると知った","好きな人に好きな人がいるか聞かれた","好きな人にからかわれた","好きな人と二人で日直になった","好きな人が髪型を変えた","好きな人にお礼のお菓子をもらった","友達に好きな人を当てられた","好きな人の前で転んだ","好きな人に変なところを見られた","好きな人からの返信が既読のまま止まった","好きな人が自分の趣味を褒めてくれた","友達が好きな人に告白しようとしていた","好きな人が他の人に告白されたと聞いた","好きな人が転校すると知った","好きな人と同じ係になった","好きな人のSNSを見ていて間違っていいねを押した","好きな人から手紙をもらった","気になる人に告白された","修学旅行の夜に恋バナになった","友達に好きな人を聞かれた","好きな人の友達に好きバレした","好きな人に勉強で負けた","好きな人が部活を引退する","好きな人と二人きりで帰ることになった"];
+var SAYQ=[];
+var SAYTMP=[];each(SS,["とき、あなたならどうする？","とき、最初に何て言う？","とき、友達にどう話す？"],function(s,q){var t=s+q;SAYQ.push(t);return"\u0000"+t});
+TOPICS=TOPICS.filter(function(x){return x.charAt(0)!=="\u0000"});
+
+// 12) お絵かき（20秒）
+var DR1=["好きな人","気になる人","初恋の人","好きな先輩","好きな後輩","隣の席の人","同じ部活の好きな人","仲のいい友達","親友","幼なじみ","片思い中の相手","恋人"];
+var DR2=["誕生日","バレンタイン","ホワイトデー","クリスマス","卒業のとき","進級のとき","合格したとき","試合の前","落ち込んでいるとき","風邪で休んでいるとき","文化祭が終わったとき","修学旅行のとき"];
+var DRQ=[];
+each(DR2,DR1,function(o,r){DRQ.push(o+"、"+r+"にあげるなら何？20秒で絵に描いて");return"\u0000"});
+TOPICS=TOPICS.filter(function(x){return x.charAt(0)!=="\u0000"});
+["理想のデート","理想のプロポーズ","好きなタイプの顔","好きな人の特徴（似顔絵）","初恋の思い出の場面","理想の告白シーン","理想のお弁当","理想の相合傘","好きな人にあげたい手作りお菓子","理想の部屋","恋に落ちた瞬間","好きな人のイメージに近い動物","自分の恋愛を動物にすると","今の恋心を天気にすると","好きな人へのラブレターの封筒","理想の初デートの服","恋人とお揃いにしたいもの","恋人と行きたい旅行先","好きな人と食べたいもの","自分のモテ度のイメージ","恋愛あるあるの一コマ","好きな人と過ごしたい放課後","理想のバレンタインのお返し","好きな人のイメージカラーの持ち物","理想の恋人のシルエット","告白の返事を待つ自分","好きバレした瞬間の自分","好きな人を前にした自分","理想のカップルの後ろ姿","初デートの待ち合わせ","文化祭を好きな人と回る場面","夏祭りで好きな人と過ごす場面","好きな人と同じ班になった瞬間の自分","席替えで好きな人の隣になった自分","友達に恋バナをしている自分"].forEach(function(x){DRQ.push(x+"を20秒で絵に描いて")});
+
 // ===== Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyAqe24qeS_gYtMA_gnF_lYNP70keCQcpnA",
@@ -161,7 +192,7 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var $=function(i){return document.getElementById(i)};
 var myNm="",me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
-$("total").textContent=TOPICS.length+VOTES.length;
+$("total").textContent=TOPICS.length+VOTES.length+PVQ.length+SAYQ.length+DRQ.length;
 
 function err(m){$("err").textContent=m}
 function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}myNm=n;return n}
@@ -178,9 +209,9 @@ $("join").onclick=function(){var n=myName();if(!n)return;err("");
  var c=$("codeIn").value.trim(),r=db.ref("rooms/"+c);
  r.once("value").then(function(s){if(!s.exists()||!s.child("players").exists()){if(s.exists())r.remove();err("ルームが見つかりません");return}
   return r.child("players/"+me).set({name:n}).then(function(){enter(c,false)})}).catch(function(e){err("接続エラー: "+e.message)})};
-function armDisc(){roomRef.child("players/"+me).onDisconnect().remove();roomRef.child("votes/"+me).onDisconnect().remove()}
+function armDisc(){roomRef.child("players/"+me).onDisconnect().remove();roomRef.child("votes/"+me).onDisconnect().remove();roomRef.child("answers/"+me).onDisconnect().remove();roomRef.child("draws/"+me).onDisconnect().remove()}
 function leaveRoom(){if(!roomRef)return;var r=roomRef;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);r.off();
- r.child("players/"+me).onDisconnect().cancel();r.child("votes/"+me).onDisconnect().cancel();
+ r.child("players/"+me).onDisconnect().cancel();r.child("votes/"+me).onDisconnect().cancel();r.child("answers/"+me).onDisconnect().cancel();r.child("answers/"+me).remove();r.child("draws/"+me).onDisconnect().cancel();r.child("draws/"+me).remove();
  r.child("votes/"+me).remove();
  r.child("players/"+me).remove().then(function(){return r.child("players").once("value")}).then(function(x){if(!x.exists())return r.remove()});
  roomRef=null;busy=false;$("room").classList.add("hide");$("home").classList.remove("hide");err("")}
@@ -196,7 +227,7 @@ function onRoom(s){
  isHost=(data.host===me);
  $("draw").classList.toggle("hide",!isHost);
  $("draw").disabled=ids.length<2||busy;
- var rd0=data.round||{};$("draw").textContent=(data.started&&rd0.type==="vote"&&!rd0.reveal)?"結果を見る":(data.started?"次のお題へ":"ゲームスタート");
+ var rd0=data.round||{};$("draw").textContent=btnLabel(data);
  $("wait").textContent=!data.started?(isHost?(ids.length<2?"もう1人参加を待っています…":"全員そろったらスタート！"):"ホストがスタートするのを待っています"):"";
  if(data.started&&data.round&&data.round.n!==lastN){lastN=data.round.n;play(data.round,ids.map(function(i){return ps[i].name}))}
  renderVote();
@@ -204,46 +235,121 @@ function onRoom(s){
 function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);
  if(roomRef)roomRef.off();roomRef=null;busy=false;
  $("room").classList.add("hide");$("home").classList.remove("hide");err("ルームが終了しました")}
+function btnLabel(d){var r=d.round||{};if(!d.started)return"ゲームスタート";
+ if(r.type==="vote"||r.type==="pvote")return r.reveal?"次のお題へ":"結果を見る";
+ if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";return(r.shown||0)<r.order.length?"次の回答を見る":"次のお題へ"}
+ return"次のお題へ"}
 $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
- var rd=data.round||{};
- if(data.started&&rd.type==="vote"&&!rd.reveal){roomRef.child("round/reveal").set(true);return}
- var n=(rd.n||0)+1,round;
- if(Math.random()<0.25){var v=VOTES[Math.floor(Math.random()*VOTES.length)];round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false,name:""}}
- else{var t=TOPICS[Math.floor(Math.random()*TOPICS.length)],cand=ids.filter(function(i){return i!==lastPick}),p=cand[Math.floor(Math.random()*cand.length)];lastPick=p;round={n:n,type:"ask",topic:t,name:ps[p].name}}
+ var rd=data.round||{},T=rd.type;
+ if(data.started){
+  if((T==="vote"||T==="pvote")&&!rd.reveal){advance();return}
+  if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}}
+ }
+ var n=(rd.n||0)+1,round,x=Math.random();
+ function pk(a){return a[Math.floor(Math.random()*a.length)]}
+ if(x<0.15){var v=pk(VOTES);round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false}}
+ else if(x<0.29){round={n:n,type:"pvote",topic:pk(PVQ),reveal:false}}
+ else if(x<0.43){round={n:n,type:"say",topic:pk(SAYQ),shown:0}}
+ else if(x<0.55){round={n:n,type:"draw",topic:pk(DRQ),shown:0}}
+ else{var t=pk(TOPICS),cand=ids.filter(function(i){return i!==lastPick}),p=pk(cand);lastPick=p;round={n:n,type:"ask",topic:t,name:ps[p].name}}
  $("draw").disabled=true;
- roomRef.update({started:true,round:round,votes:null})};
+ roomRef.update({started:true,round:round,votes:null,answers:null,draws:null})};
 
 var voteReady=false;
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function buildCanvas(box){
+ var W=360,cv=el("canvas");cv.id="drCv";cv.width=W;cv.height=W;
+ var tm=el("div","","");tm.id="drTm";box.appendChild(tm);box.appendChild(cv);
+ var ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,W,W);ctx.lineCap="round";ctx.lineJoin="round";
+ var col="#222222",wd=5,dr=false,locked=false,last=null,sent=false,left=20;
+ function pos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*W/r.height}}
+ cv.onpointerdown=function(e){if(locked)return;dr=true;last=pos(e);try{cv.setPointerCapture(e.pointerId)}catch(x){}
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(last.x,last.y,wd/2,0,7);ctx.fill();e.preventDefault()};
+ cv.onpointermove=function(e){if(!dr||locked)return;var p=pos(e);ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;e.preventDefault()};
+ cv.onpointerup=cv.onpointercancel=function(){dr=false};
+ var tools=el("div","tools");
+ ["#222222","#e53935","#1e88e5","#43a047","#fdd835"].forEach(function(c,i){var b=el("button","sw"+(i?"":" on"));b.style.background=c;b.onclick=function(){col=c;wd=5;[].forEach.call(tools.querySelectorAll(".sw"),function(x){x.classList.remove("on")});b.classList.add("on")};tools.appendChild(b)});
+ var er=el("button","tl","消しゴム");er.onclick=function(){col="#ffffff";wd=22};tools.appendChild(er);
+ var cl=el("button","tl","全消し");cl.onclick=function(){if(locked)return;ctx.fillStyle="#fff";ctx.fillRect(0,0,W,W)};tools.appendChild(cl);
+ box.appendChild(tools);
+ var sb=el("button","opt","描き終わった（提出）");box.appendChild(sb);
+ var ct=el("div","hint","");ct.id="drCnt";box.appendChild(ct);
+ function submit(){if(sent)return;sent=true;locked=true;clearInterval(iv);
+  if(roomRef)roomRef.child("draws/"+me).set(cv.toDataURL("image/jpeg",0.6));
+  sb.textContent="提出済み";sb.disabled=true;tm.textContent="提出しました"}
+ sb.onclick=submit;
+ function tick(){tm.textContent="残り "+left+" 秒";if(left<=0)submit();left--}
+ var iv=setInterval(tick,1000);timers.push(iv);tick();
+}
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function advance(){var rd=data.round,ids=Object.keys(data.players||{});
+ if(rd.type==="say"||rd.type==="draw")roomRef.child("round").update({order:shuf(ids),shown:1});else roomRef.child("round/reveal").set(true)}
 function renderVote(){
- var rd=data&&data.round,box=$("vote");
- if(!rd||rd.type!=="vote"||!voteReady){box.classList.add("hide");return}
- var ps=data.players||{},vs=data.votes||{},ids=Object.keys(ps);
- var done=ids.filter(function(i){return vs[i]!==undefined}).length;
- if(isHost&&!rd.reveal&&ids.length>1&&done>=ids.length){roomRef.child("round/reveal").set(true);return}
- box.innerHTML="";box.classList.remove("hide");
- var opts=[rd.a,rd.b];
- if(!rd.reveal){
-  opts.forEach(function(o,i){var b=el("button","opt"+(vs[me]===i?" sel":""),o);b.onclick=function(){roomRef.child("votes/"+me).set(i)};box.appendChild(b)});
-  box.appendChild(el("div","hint","投票済み "+done+" / "+ids.length+(vs[me]===undefined?"　どちらかを選んでください":"　他の人を待っています（選び直せます）")));
-  $("msg").textContent="全員で多数決";
+ var rd=data&&data.round,box=$("vote"),T=rd&&rd.type;
+ if(!rd||(T!=="vote"&&T!=="pvote"&&T!=="say"&&T!=="draw")||!voteReady){box.classList.add("hide");return}
+ var ps=data.players||{},ids=Object.keys(ps),vs=data.votes||{},an=(T==="draw"?data.draws:data.answers)||{};
+ var src=(T==="say"||T==="draw")?an:vs,done=ids.filter(function(i){return src[i]!==undefined}).length;
+ var started=(T==="say"||T==="draw")?!!rd.order:!!rd.reveal;
+ if(isHost&&!started&&ids.length>1&&done>=ids.length){advance();return}
+ box.classList.remove("hide");
+ if(T==="draw"&&!started){
+  if(box.dataset.k!=="draw"+rd.n){box.dataset.k="draw"+rd.n;box.innerHTML="";buildCanvas(box)}
+  var dc=$("drCnt");if(dc)dc.textContent="提出済み "+done+" / "+ids.length;
+  $("msg").textContent="全員が提出すると、一人ずつ公開されます";
+  return}
+ if(T==="say"&&!started){
+  if(box.dataset.k!=="say"+rd.n){box.dataset.k="say"+rd.n;box.innerHTML="";
+   var ta=el("textarea");ta.id="sayTa";ta.maxLength=80;ta.rows=3;ta.placeholder="あなたならどうする？（80文字まで）";ta.value=an[me]||"";box.appendChild(ta);
+   var sb=el("button","opt","回答を送信");sb.onclick=function(){var v=ta.value.trim();if(!v)return;roomRef.child("answers/"+me).set(v);sb.textContent="送信済み（もう一度押すと修正できます）"};box.appendChild(sb);
+   var ct=el("div","hint","");ct.id="sayCnt";box.appendChild(ct)}
+  $("sayCnt").textContent="回答済み "+done+" / "+ids.length;
+  $("msg").textContent="全員が送信すると、一人ずつ公開されます";
+  return}
+ box.dataset.k="";box.innerHTML="";
+ function row(label,n,tot,names,win){var w=el("div","res"+(win?" win":"")),top=el("div","rtop");
+  top.appendChild(el("span","",label));top.appendChild(el("span","rc",n+"票"));w.appendChild(top);
+  var bar=el("div","bar"),f=el("i");f.style.width=Math.round(n/tot*100)+"%";bar.appendChild(f);w.appendChild(bar);
+  w.appendChild(el("div","rn2",names||"なし"));box.appendChild(w)}
+ function nm(list){return list.map(function(id){return ps[id].name}).join("、")}
+ if(T==="vote"){
+  var opts=[rd.a,rd.b];
+  if(!started){
+   opts.forEach(function(o,i){var b=el("button","opt"+(vs[me]===i?" sel":""),o);b.onclick=function(){roomRef.child("votes/"+me).set(i)};box.appendChild(b)});
+   box.appendChild(el("div","hint","投票済み "+done+" / "+ids.length+(vs[me]===undefined?"　どちらかを選んでください":"　他の人を待っています（選び直せます）")));
+   $("msg").textContent="全員で多数決";
+  }else{
+   var c=[0,0];ids.forEach(function(id){if(vs[id]!==undefined)c[vs[id]]++});
+   var tot=(c[0]+c[1])||1;
+   opts.forEach(function(o,i){row(o,c[i],tot,nm(ids.filter(function(id){return vs[id]===i})),c[i]>c[1-i])});
+   $("msg").textContent=c[0]===c[1]?"同票でした":(c[0]>c[1]?rd.a:rd.b)+" が多数派です";
+  }
+ }else if(T==="pvote"){
+  if(!started){
+   ids.forEach(function(id){var b=el("button","opt"+(vs[me]===id?" sel":""),ps[id].name+(id===me?"（自分）":""));b.onclick=function(){roomRef.child("votes/"+me).set(id)};box.appendChild(b)});
+   box.appendChild(el("div","hint","投票済み "+done+" / "+ids.length+(vs[me]===undefined?"　メンバーから1人選んでください":"　他の人を待っています（選び直せます）")));
+   $("msg").textContent="この中から1人を指名";
+  }else{
+   var cnt={},all=0;ids.forEach(function(id){cnt[id]=0});
+   ids.forEach(function(id){var t=vs[id];if(t!==undefined&&cnt[t]!==undefined){cnt[t]++;all++}});
+   var sorted=ids.slice().sort(function(a,b){return cnt[b]-cnt[a]}),mx=cnt[sorted[0]]||0;
+   sorted.forEach(function(id){row(ps[id].name,cnt[id],all||1,nm(ids.filter(function(v){return vs[v]===id})),mx>0&&cnt[id]===mx)});
+   var tops=sorted.filter(function(id){return mx>0&&cnt[id]===mx});
+   $("msg").textContent=!tops.length?"投票がありませんでした":(tops.length>1?nm(tops)+" が同票で1位です":nm(tops)+" さんが1位です");
+  }
  }else{
-  var c=[0,0];ids.forEach(function(id){if(vs[id]!==undefined)c[vs[id]]++});
-  var tot=(c[0]+c[1])||1;
-  opts.forEach(function(o,i){
-   var w=el("div","res"+(c[i]>c[1-i]?" win":"")),top=el("div","rtop");
-   top.appendChild(el("span","",o));top.appendChild(el("span","rc",c[i]+"票"));w.appendChild(top);
-   var bar=el("div","bar"),f=el("i");f.style.width=Math.round(c[i]/tot*100)+"%";bar.appendChild(f);w.appendChild(bar);
-   var nm=ids.filter(function(id){return vs[id]===i}).map(function(id){return ps[id].name}).join("、");
-   w.appendChild(el("div","rn2",nm||"なし"));box.appendChild(w)});
-  $("msg").textContent=c[0]===c[1]?"同票でした":(c[0]>c[1]?rd.a:rd.b)+" が多数派です";
+  var ord=rd.order,sh=Math.min(rd.shown||0,ord.length);
+  box.appendChild(el("div","hint","回答 "+sh+" / "+ord.length));
+  for(var k=sh-1;k>=0;k--){var id=ord[k],cd=el("div","ans"+(k===sh-1?" pop":""));
+   cd.appendChild(el("div","an",ps[id]?ps[id].name:"（退出）"));
+   if(T==="draw"&&an[id]){var im=el("img","dr");im.src=an[id];cd.appendChild(im)}else cd.appendChild(el("div","at",an[id]!==undefined&&an[id]!==""?an[id]:(T==="draw"?"（未提出）":"（未回答）")));box.appendChild(cd)}
+  $("msg").textContent=sh>=ord.length?"全員分が出そろいました":"";
  }
 }
 function play(r,names){
  timers.forEach(clearTimeout);timers.forEach(clearInterval);timers=[];busy=true;voteReady=false;$("draw").disabled=true;
- var isV=r.type==="vote";
- $("game").classList.remove("hide");$("rn").textContent="第"+r.n+"問"+(isV?"　多数決":"");$("msg").textContent="";
- $("vote").classList.add("hide");$("pickBox").classList.toggle("hide",isV);
+ var isV=(r.type==="vote"||r.type==="pvote"||r.type==="say"||r.type==="draw");
+ $("game").classList.remove("hide");$("rn").textContent="第"+r.n+"問"+({vote:"　多数決",pvote:"　指名投票",say:"　全員回答",draw:"　お絵かき"})[r.type]||"";$("msg").textContent="";
+ $("vote").classList.add("hide");$("vote").dataset.k="";$("pickBox").classList.toggle("hide",isV);
  $("topic").classList.remove("pop");$("pick").classList.remove("pop");$("pick").textContent="";
  $("topic").classList.add("spin");$("pick").classList.remove("spin");
  var i1=setInterval(function(){$("topic").textContent=TOPICS[Math.floor(Math.random()*TOPICS.length)]},70);timers.push(i1);
