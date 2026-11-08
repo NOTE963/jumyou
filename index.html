@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>暴露ゲーム1</title>
+<title>レウスパーティ</title>
 <style>
 :root{--bg:#f7f3f0;--card:#fffdfb;--ink:#2a2125;--sub:#8b7c82;--acc:#a8324f;--line:#e6dcd8;--soft:#f1e8e5;--serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}
 @media (prefers-color-scheme:dark){:root{--bg:#18131a;--card:#221b24;--ink:#f3eaee;--sub:#a8969f;--acc:#e5748f;--line:#3a2f3a;--soft:#2c222d}}
@@ -60,17 +60,34 @@ button:active{transform:scale(.98)}
 .sw.on{outline:2px solid var(--acc);outline-offset:2px}
 .tl{padding:8px 12px;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px}
 img.dr{width:100%;border-radius:8px;border:1px solid var(--line);background:#fff;display:block}
+.modes{display:flex;gap:8px}
+.mb{flex:1;padding:13px 8px;font-size:14px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px}
+.mb.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mb:disabled{opacity:1;cursor:default}
+.pl em{font-style:normal;color:var(--acc);font-size:12px;font-weight:700}
+.fig{display:block;width:100%;max-width:300px;margin:10px auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+#vote .opt.vt{text-align:left}
+#vote .opt.vt img{max-height:220px;object-fit:contain}
+#vote .opt:disabled{opacity:.45}
+html,body{overscroll-behavior:none}
+#drCv{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.hm{flex:1;padding:13px 8px;font-size:14px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px}
+.hm.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.modeTag{text-align:center;font-size:12px;font-weight:700;letter-spacing:.24em;color:var(--acc);margin-top:14px}
 </style>
 </head>
 <body>
 <main>
 <section id="home">
-<div class="eyebrow">GAME 01</div>
-<h1>暴露ゲーム1</h1>
+<div class="eyebrow">LEUS PARTY</div>
+<h1>レウスパーティ</h1>
 <div class="rule"></div>
-<p class="sub">ルーレットで決まったお題に、ルーレットで選ばれた人が<br>本音で答えるゲーム</p>
+<p class="sub">暴露モードと大喜利モードで遊ぶ<br>オンラインパーティゲーム</p>
 <label>あなたの名前</label>
 <input id="name" maxlength="10" placeholder="例：あや">
+<label>モードを選んでルームを作る</label>
+<div class="modes"><button class="hm on" data-m="bakuro">暴露モード</button><button class="hm" data-m="ogiri">大喜利モード</button></div>
+<div class="hint" id="homeDesc" style="margin:8px 0 0"></div>
 <button class="main" id="create">ルームを作る</button>
 <label>ルーム番号で参加</label>
 <input id="codeIn" inputmode="numeric" maxlength="4" placeholder="4桁の番号">
@@ -82,6 +99,8 @@ img.dr{width:100%;border-radius:8px;border:1px solid var(--line);background:#fff
 <div class="eyebrow">ROOM</div>
 <div class="code" id="code"></div>
 <div class="list" id="players"></div>
+<div class="modeTag" id="modeTag"></div>
+<div class="hint" id="modeDesc" style="margin:8px 0 18px"></div>
 <div id="game" class="hide">
 <div class="box"><div class="lab"><span>TOPIC</span><span id="rn"></span></div><div id="topic"></div></div>
 <div class="box" id="pickBox"><div class="lab"><span>ANSWERER</span></div><div id="pick"></div></div>
@@ -177,6 +196,18 @@ each(DR2,DR1,function(o,r){DRQ.push(o+"、"+r+"にあげるなら何？20秒で�
 TOPICS=TOPICS.filter(function(x){return x.charAt(0)!=="\u0000"});
 ["理想のデート","理想のプロポーズ","好きなタイプの顔","好きな人の特徴（似顔絵）","初恋の思い出の場面","理想の告白シーン","理想のお弁当","理想の相合傘","好きな人にあげたい手作りお菓子","理想の部屋","恋に落ちた瞬間","好きな人のイメージに近い動物","自分の恋愛を動物にすると","今の恋心を天気にすると","好きな人へのラブレターの封筒","理想の初デートの服","恋人とお揃いにしたいもの","恋人と行きたい旅行先","好きな人と食べたいもの","自分のモテ度のイメージ","恋愛あるあるの一コマ","好きな人と過ごしたい放課後","理想のバレンタインのお返し","好きな人のイメージカラーの持ち物","理想の恋人のシルエット","告白の返事を待つ自分","好きバレした瞬間の自分","好きな人を前にした自分","理想のカップルの後ろ姿","初デートの待ち合わせ","文化祭を好きな人と回る場面","夏祭りで好きな人と過ごす場面","好きな人と同じ班になった瞬間の自分","席替えで好きな人の隣になった自分","友達に恋バナをしている自分"].forEach(function(x){DRQ.push(x+"を20秒で絵に描いて")});
 
+// 13) 大喜利モード
+var OGP=["授業中","給食の時間","修学旅行のバス","体育の授業","文化祭の準備中","朝の通学電車","部活の練習中","家族との夕食中","友達の誕生日会","初デートの待ち合わせ","図書館","コンビニ","遊園地の行列","映画館","美容院","夏祭り","卒業式","面接","エレベーターの中","帰り道"];
+var OGE=["突然、先生が全員に「今から一発ギャグをして」と言った","隣の人が急に大声で恋の歌を歌い始めた","好きな人の名前が大音量の放送で呼ばれた","財布の中身が全部どんぐりになっていた","目の前の人が自分と全く同じ服を着ていた","知らない人に「久しぶり！」と抱きつかれた","隣に宇宙人が立っていた","スマホの画面に自分の黒歴史が大きく表示された","急に自分の声が全部ささやき声になった","猫がしゃべりかけてきた","周りの全員が同時に振り返ってこっちを見た","突然、会場から拍手が起こった","好きな人に変なあだ名をつけられた","自分だけ服が前後ろ逆だった","持ち物が全部ぬいぐるみになっていた","突然、時間が止まった","足元から小さなロボットが出てきた","目の前に突然ドアが現れた","先生が実は魔法使いだとバレた","かばんから謎の生き物が飛び出した","周りの全員がいきなりものまねを始めた","床が突然ふかふかになった","好きな人と同じ傘に入ることになった","雨が逆向きに降り始めた","自分の影が勝手に動き出した","全員の頭の上に今日の運勢が表示された"];
+var OGQ=[];
+OGP.forEach(function(p){OGE.forEach(function(e){OGQ.push(p+"、"+e+"。さあ、あなたはどうする？")})});
+["もし自分が漫画の主人公なら、タイトルは？","もし学校に新しい校則を一つ作れるなら？","もし先生が突然ラップを始めたら、返しのひと言は？","もし好きな人が実は宇宙人だったら、最初に何て言う？","もし朝起きたら教室が海になっていたら？","もし明日から1週間、語尾に「ござる」をつけるなら、どう過ごす？","もし1日だけ好きな動物になれるなら、何になって何をする？","もし世界一ダサい告白をするなら、何て言う？","もし自分専用の効果音が鳴るなら、どんなとき何の音？","もし給食に一品だけ好きなものを追加できるなら？","もしテストの答案に一言添えられるなら？","もし好きな人に一言で自分を売り込むなら？","もし自分のあだ名を自分で決められるなら？","もしクラスに宇宙人の転校生が来たら、歓迎の言葉は？","もし自分の部屋に突然ペンギンが住み着いたら？","もし1分間だけ透明人間になれるなら、何をする？","もし校長先生と入れ替わったら、朝礼で何を言う？","もし自分の人生に実況がついたら、今何て実況される？","もし好きな人にカレーを作るなら、隠し味は？","もし恋愛の神様に会えたら、一言目は？","もし未来の自分から手紙が届いたら、何と書いてある？","もし自分が発明家なら、何を発明する？","もし学校の七不思議に1つ加えるなら？","もし運動会に新種目を作るなら、名前と内容は？","もし自分の座右の銘を決めるなら？","もし好きな人への最初のLINEが誤送信されたら、何が届く？","もしバレンタインに変なチョコを渡すなら、何味？","もし時間割に新しい教科を追加するなら？","もし教室に自動販売機が置かれたら、何が売られている？","もし今日の日記にタイトルをつけるなら？"].forEach(function(x){OGQ.push(x)});
+var OGW=["これは何？一言で答えて","この謎の物体の名前と特徴を答えて","これは新商品です。商品名とキャッチコピーを答えて","これは新種の生き物です。名前と鳴き声を答えて","これは未来の発明品です。何に使う？","これは伝説の武器です。必殺技の名前は？","これは恋が叶うアイテムです。効果と副作用は？","これは名画です。タイトルをつけて","これは新しい校則を表した図です。どんな校則？","この形は何味？味の感想を答えて","これは動物園の新展示です。説明文を答えて","これは地図です。どこの宝の地図？","これは新しいスポーツのコートです。ルールは？","これは宇宙人からのメッセージです。何と書いてある？","これは新作ゲームの画面です。ゲームのタイトルは？","これは占いの結果です。あなたへの一言は？","これは新メニューの料理です。料理名は？","これは謎の建物です。何のためにある？","これは未来の乗り物です。名前と最高速度は？","これは先生の落書きです。何を描いた？","これは歴史的な発見です。博物館の説明文は？","これは新しいキャラクターです。名前と性格は？"];
+var OGD=[];
+OGE.forEach(function(e){["その瞬間の自分を20秒で絵に描いて","その場面を20秒で絵に描いて"].forEach(function(f){OGD.push(e.replace(/^突然、/,"")+"。"+f)})});
+OGP.forEach(function(p){OGD.push(p+"で起きたら一番面白い出来事を20秒で絵に描いて")});
+["世界一ダサいヒーロー","新種の生き物","未来の自動販売機","最強のお弁当","一番かっこ悪い告白シーン","ありえない校則","変なあだ名がついた理由の場面","宇宙人との初デート","先生の意外な休日","校長先生の秘密の趣味","世界一変な乗り物","恋のキューピッドの失敗","一番盛り上がらない文化祭の出し物","未来の教室","友達の変顔","この世にない新しい楽器","動物たちの運動会","最悪な寝ぐせの自分","ロボットが告白する場面","ペンギンの学校生活","一番おいしくなさそうな新作スイーツ","おばけの恋愛相談","自分の黒歴史の一場面","変な発明品を使っている自分","世界一あやしい占い師"].forEach(function(x){OGD.push(x+"を20秒で絵に描いて")});
+
 // ===== Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyAqe24qeS_gYtMA_gnF_lYNP70keCQcpnA",
@@ -192,7 +223,7 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var $=function(i){return document.getElementById(i)};
 var myNm="",me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
-$("total").textContent=TOPICS.length+VOTES.length+PVQ.length+SAYQ.length+DRQ.length;
+$("total").textContent=TOPICS.length+VOTES.length+PVQ.length+SAYQ.length+DRQ.length+OGQ.length+OGW.length+OGD.length;
 
 function err(m){$("err").textContent=m}
 function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}myNm=n;return n}
@@ -203,7 +234,7 @@ function enter(c,host){code=c;isHost=host;roomRef=db.ref("rooms/"+c);joined=true
 $("create").onclick=function(){var n=myName();if(!n)return;err("");
  var c=String(Math.floor(1000+Math.random()*9000)),r=db.ref("rooms/"+c);
  r.once("value").then(function(s){if(s.exists()&&s.child("players").exists()){err("もう一度押してください");return}
-  var o={host:me,started:false,round:{n:0},players:{}};o.players[me]={name:n};
+  var o={host:me,mode:selMode,started:false,round:{n:0},players:{}};o.players[me]={name:n};
   return r.set(o).then(function(){enter(c,true)})}).catch(function(e){err("接続エラー: "+e.message)})};
 $("join").onclick=function(){var n=myName();if(!n)return;err("");
  var c=$("codeIn").value.trim(),r=db.ref("rooms/"+c);
@@ -223,8 +254,10 @@ function onRoom(s){
  if(!ps[me]){roomRef.child("players/"+me).set({name:myNm});armDisc();return}
  if(!ps[data.host]&&ids.slice().sort()[0]===me)roomRef.child("host").set(me);
  $("players").innerHTML="";
- ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);$("players").appendChild(d)});
+ ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);if(data.mode==="ogiri"){var pt=document.createElement("em");pt.textContent=((data.scores||{})[id]||0)+"pt";d.appendChild(pt)}$("players").appendChild(d)});
  isHost=(data.host===me);
+ var md=data.mode||"bakuro";$("modeTag").textContent=md==="ogiri"?"大喜利モード":"暴露モード";
+ $("modeDesc").textContent=md==="ogiri"?"お題に面白く答えて、投票で一番面白い人を決めるモード":"名前や本音を暴露し合うモード";
  $("draw").classList.toggle("hide",!isHost);
  $("draw").disabled=ids.length<2||busy;
  var rd0=data.round||{};$("draw").textContent=btnLabel(data);
@@ -237,23 +270,27 @@ function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout)
  $("room").classList.add("hide");$("home").classList.remove("hide");err("ルームが終了しました")}
 function btnLabel(d){var r=d.round||{};if(!d.started)return"ゲームスタート";
  if(r.type==="vote"||r.type==="pvote")return r.reveal?"次のお題へ":"結果を見る";
- if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";return(r.shown||0)<r.order.length?"次の回答を見る":"次のお題へ"}
+ if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";if((r.shown||0)<r.order.length)return"次の回答を見る";if(r.og){if(!r.vphase)return"投票スタート";if(!r.reveal)return"結果を見る"}return"次のお題へ"}
  return"次のお題へ"}
 $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
  var rd=data.round||{},T=rd.type;
  if(data.started){
   if((T==="vote"||T==="pvote")&&!rd.reveal){advance();return}
-  if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}}
+  if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}if(rd.og){if(!rd.vphase){roomRef.child("round/vphase").set(true);return}if(!rd.reveal){advance();return}}}
  }
  var n=(rd.n||0)+1,round,x=Math.random();
  function pk(a){return a[Math.floor(Math.random()*a.length)]}
- if(x<0.15){var v=pk(VOTES);round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false}}
+ if(data.mode==="ogiri"){var y=Math.random();
+  if(y<0.4)round={n:n,type:"say",og:true,topic:pk(OGQ),shown:0};
+  else if(y<0.65)round={n:n,type:"say",og:true,fig:Math.floor(Math.random()*1e9),topic:pk(OGW),shown:0};
+  else round={n:n,type:"draw",og:true,topic:pk(OGD),shown:0}}
+ else if(x<0.15){var v=pk(VOTES);round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false}}
  else if(x<0.29){round={n:n,type:"pvote",topic:pk(PVQ),reveal:false}}
  else if(x<0.43){round={n:n,type:"say",topic:pk(SAYQ),shown:0}}
  else if(x<0.55){round={n:n,type:"draw",topic:pk(DRQ),shown:0}}
  else{var t=pk(TOPICS),cand=ids.filter(function(i){return i!==lastPick}),p=pk(cand);lastPick=p;round={n:n,type:"ask",topic:t,name:ps[p].name}}
  $("draw").disabled=true;
- roomRef.update({started:true,round:round,votes:null,answers:null,draws:null})};
+ var u={started:true,round:round,votes:null,answers:null,draws:null};if(!data.started)u.scores=null;roomRef.update(u)};
 
 var voteReady=false;
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
@@ -262,11 +299,13 @@ function buildCanvas(box){
  var tm=el("div","","");tm.id="drTm";box.appendChild(tm);box.appendChild(cv);
  var ctx=cv.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,W,W);ctx.lineCap="round";ctx.lineJoin="round";
  var col="#222222",wd=5,dr=false,locked=false,last=null,sent=false,left=20;
- function pos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*W/r.height}}
- cv.onpointerdown=function(e){if(locked)return;dr=true;last=pos(e);try{cv.setPointerCapture(e.pointerId)}catch(x){}
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(last.x,last.y,wd/2,0,7);ctx.fill();e.preventDefault()};
- cv.onpointermove=function(e){if(!dr||locked)return;var p=pos(e);ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;e.preventDefault()};
- cv.onpointerup=cv.onpointercancel=function(){dr=false};
+ function pos(e){var t=(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e;var r=cv.getBoundingClientRect();return{x:(t.clientX-r.left)*W/r.width,y:(t.clientY-r.top)*W/r.height}}
+ function st(e){e.preventDefault();if(locked)return;dr=true;last=pos(e);ctx.fillStyle=col;ctx.beginPath();ctx.arc(last.x,last.y,wd/2,0,7);ctx.fill()}
+ function mv(e){e.preventDefault();if(!dr||locked)return;var p=pos(e);ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p}
+ function en(e){dr=false}
+ cv.addEventListener("touchstart",st,{passive:false});cv.addEventListener("touchmove",mv,{passive:false});
+ cv.addEventListener("touchend",en);cv.addEventListener("touchcancel",en);
+ cv.addEventListener("mousedown",st);cv.addEventListener("mousemove",mv);window.addEventListener("mouseup",en);
  var tools=el("div","tools");
  ["#222222","#e53935","#1e88e5","#43a047","#fdd835"].forEach(function(c,i){var b=el("button","sw"+(i?"":" on"));b.style.background=c;b.onclick=function(){col=c;wd=5;[].forEach.call(tools.querySelectorAll(".sw"),function(x){x.classList.remove("on")});b.classList.add("on")};tools.appendChild(b)});
  var er=el("button","tl","消しゴム");er.onclick=function(){col="#ffffff";wd=22};tools.appendChild(er);
@@ -282,8 +321,28 @@ function buildCanvas(box){
  var iv=setInterval(tick,1000);timers.push(iv);tick();
 }
 function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+var advKey="";
+function drawFig(cv,seed){var W=cv.width,c=cv.getContext("2d"),s=seed>>>0;function rnd(){s=(s*1664525+1013904223)>>>0;return s/4294967296}
+ c.fillStyle="#fff";c.fillRect(0,0,W,W);var cols=["#222222","#e53935","#1e88e5","#43a047","#fdd835","#8e24aa"];c.lineCap="round";
+ var n=4+Math.floor(rnd()*4);
+ for(var i=0;i<n;i++){var col=cols[Math.floor(rnd()*cols.length)];c.fillStyle=col;c.strokeStyle=col;c.lineWidth=3+rnd()*8;
+  var k=Math.floor(rnd()*4),x=50+rnd()*(W-100),y=50+rnd()*(W-100),r=18+rnd()*50;c.beginPath();
+  if(k===0)c.arc(x,y,r,0,7);else if(k===1)c.rect(x-r,y-r/2,r*2,r);else if(k===2){c.moveTo(x,y-r);c.lineTo(x+r,y+r);c.lineTo(x-r,y+r);c.closePath()}else{c.moveTo(x-r,y);c.bezierCurveTo(x-r/2,y-r*1.5,x+r/2,y+r*1.5,x+r,y)}
+  if(k===3||rnd()<.4)c.stroke();else c.fill()}}
+function figEl(seed){var c=el("canvas","fig");c.width=360;c.height=360;drawFig(c,seed);return c}
+function lblOf(r){if(r.og)return r.type==="draw"?"　大喜利・イラスト":(r.fig!==undefined?"　大喜利・これは何？":"　大喜利・回答");returnlblOf(r)}
+var selMode="bakuro",HD={bakuro:"名前や本音を暴露し合うモード",ogiri:"お題に面白く答えて、投票で一番面白い人を決めるモード"};
+function setHome(){document.querySelectorAll(".hm").forEach(function(b){b.classList.toggle("on",b.dataset.m===selMode)});$("homeDesc").textContent=HD[selMode]}
+document.querySelectorAll(".hm").forEach(function(b){b.onclick=function(){selMode=b.dataset.m;setHome()}});setHome();
 function advance(){var rd=data.round,ids=Object.keys(data.players||{});
- if(rd.type==="say"||rd.type==="draw")roomRef.child("round").update({order:shuf(ids),shown:1});else roomRef.child("round/reveal").set(true)}
+ var key=rd.n+"|"+(rd.order?"o":"i")+(rd.vphase?"v":"");if(advKey===key)return;advKey=key;
+ if((rd.type==="say"||rd.type==="draw")&&!rd.order)roomRef.child("round").update({order:shuf(ids),shown:1});
+ else if(rd.og&&rd.vphase){var vs=data.votes||{},cnt={};
+  ids.forEach(function(i){var t=vs[i];if(t&&ids.indexOf(t)>=0)cnt[t]=(cnt[t]||0)+1});
+  Object.keys(cnt).forEach(function(i){roomRef.child("scores/"+i).transaction(function(v){return(v||0)+cnt[i]})});
+  roomRef.child("round/reveal").set(true)}
+ else roomRef.child("round/reveal").set(true)}
+
 function renderVote(){
  var rd=data&&data.round,box=$("vote"),T=rd&&rd.type;
  if(!rd||(T!=="vote"&&T!=="pvote"&&T!=="say"&&T!=="draw")||!voteReady){box.classList.add("hide");return}
@@ -299,11 +358,32 @@ function renderVote(){
   return}
  if(T==="say"&&!started){
   if(box.dataset.k!=="say"+rd.n){box.dataset.k="say"+rd.n;box.innerHTML="";
-   var ta=el("textarea");ta.id="sayTa";ta.maxLength=80;ta.rows=3;ta.placeholder="あなたならどうする？（80文字まで）";ta.value=an[me]||"";box.appendChild(ta);
+   if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));var ta=el("textarea");ta.id="sayTa";ta.maxLength=80;ta.rows=3;ta.placeholder=rd.og?"面白い答えを入力（80文字まで）":"あなたならどうする？（80文字まで）";ta.value=an[me]||"";box.appendChild(ta);
    var sb=el("button","opt","回答を送信");sb.onclick=function(){var v=ta.value.trim();if(!v)return;roomRef.child("answers/"+me).set(v);sb.textContent="送信済み（もう一度押すと修正できます）"};box.appendChild(sb);
    var ct=el("div","hint","");ct.id="sayCnt";box.appendChild(ct)}
   $("sayCnt").textContent="回答済み "+done+" / "+ids.length;
   $("msg").textContent="全員が送信すると、一人ずつ公開されます";
+  return}
+ if(rd.og&&started&&rd.vphase&&(T==="say"||T==="draw")){
+  var vd=ids.filter(function(i){return vs[i]!==undefined}).length;
+  if(isHost&&!rd.reveal&&ids.length>1&&vd>=ids.length){advance();return}
+  box.dataset.k="";box.innerHTML="";
+  if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));
+  var oo=rd.order.filter(function(i){return ps[i]});
+  var content=function(h,id){if(T==="draw"&&an[id]){var im=el("img","dr");im.src=an[id];h.appendChild(im)}else h.appendChild(el("div","at",an[id]!==undefined&&an[id]!==""?an[id]:"（なし）"))};
+  if(!rd.reveal){
+   box.appendChild(el("div","hint","一番面白かった回答に投票（自分には投票できません）"));
+   oo.forEach(function(id){var b=el("button","opt vt"+(vs[me]===id?" sel":""));b.appendChild(el("div","an",ps[id].name+(id===me?"（あなた）":"")));content(b,id);b.disabled=(id===me);b.onclick=function(){roomRef.child("votes/"+me).set(id)};box.appendChild(b)});
+   box.appendChild(el("div","hint","投票済み "+vd+" / "+ids.length));
+   $("msg").textContent="面白かった人に投票してください";
+  }else{
+   var cn={},all=0;ids.forEach(function(i){cn[i]=0});
+   ids.forEach(function(i){var t=vs[i];if(t!==undefined&&cn[t]!==undefined){cn[t]++;all++}});
+   var so=ids.slice().sort(function(a,b){return cn[b]-cn[a]}),mx=cn[so[0]]||0;
+   so.forEach(function(id){row(ps[id].name,cn[id],all||1,nm(ids.filter(function(v){return vs[v]===id})),mx>0&&cn[id]===mx)});
+   var tp=so.filter(function(id){return mx>0&&cn[id]===mx});
+   $("msg").textContent=!tp.length?"投票がありませんでした":"一番面白かったのは "+nm(tp)+" さん";
+  }
   return}
  box.dataset.k="";box.innerHTML="";
  function row(label,n,tot,names,win){var w=el("div","res"+(win?" win":"")),top=el("div","rtop");
@@ -337,7 +417,7 @@ function renderVote(){
    $("msg").textContent=!tops.length?"投票がありませんでした":(tops.length>1?nm(tops)+" が同票で1位です":nm(tops)+" さんが1位です");
   }
  }else{
-  var ord=rd.order,sh=Math.min(rd.shown||0,ord.length);
+  var ord=rd.order,sh=Math.min(rd.shown||0,ord.length);if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));
   box.appendChild(el("div","hint","回答 "+sh+" / "+ord.length));
   for(var k=sh-1;k>=0;k--){var id=ord[k],cd=el("div","ans"+(k===sh-1?" pop":""));
    cd.appendChild(el("div","an",ps[id]?ps[id].name:"（退出）"));
