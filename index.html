@@ -74,6 +74,8 @@ html,body{overscroll-behavior:none}
 .hm{flex:1;padding:13px 8px;font-size:14px;font-weight:700;letter-spacing:.06em;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px}
 .hm.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .modeTag{text-align:center;font-size:12px;font-weight:700;letter-spacing:.24em;color:var(--acc);margin-top:14px}
+.seal{width:132px;height:132px;border-radius:50%;font-size:3rem;margin:14px auto;display:block;background:var(--soft);color:var(--acc);border:2px solid var(--line);box-shadow:0 6px 0 var(--line)}
+#lc .opt{display:block;width:100%;padding:16px;margin-top:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:var(--serif);font-size:16px;font-weight:600;line-height:1.6}
 </style>
 </head>
 <body>
@@ -92,7 +94,16 @@ html,body{overscroll-behavior:none}
 <label>ルーム番号で参加</label>
 <input id="codeIn" inputmode="numeric" maxlength="4" placeholder="4桁の番号">
 <button class="ghost" id="join">参加する</button>
+<label>1台で遊ぶ</label>
+<button class="ghost" id="localBtn" style="margin-top:0">ワードウルフ（1台でまわす）</button>
 <div id="err" style="color:#c0392b;text-align:center;margin-top:14px;font-size:13px"></div>
+</section>
+
+<section id="local" class="hide">
+<div class="eyebrow">WORD WOLF</div>
+<h1>ワードウルフ</h1>
+<div class="rule"></div>
+<div id="lc"></div>
 </section>
 
 <section id="room" class="hide">
@@ -197,7 +208,7 @@ TOPICS=TOPICS.filter(function(x){return x.charAt(0)!=="\u0000"});
 ["理想のデート","理想のプロポーズ","好きなタイプの顔","好きな人の特徴（似顔絵）","初恋の思い出の場面","理想の告白シーン","理想のお弁当","理想の相合傘","好きな人にあげたい手作りお菓子","理想の部屋","恋に落ちた瞬間","好きな人のイメージに近い動物","自分の恋愛を動物にすると","今の恋心を天気にすると","好きな人へのラブレターの封筒","理想の初デートの服","恋人とお揃いにしたいもの","恋人と行きたい旅行先","好きな人と食べたいもの","自分のモテ度のイメージ","恋愛あるあるの一コマ","好きな人と過ごしたい放課後","理想のバレンタインのお返し","好きな人のイメージカラーの持ち物","理想の恋人のシルエット","告白の返事を待つ自分","好きバレした瞬間の自分","好きな人を前にした自分","理想のカップルの後ろ姿","初デートの待ち合わせ","文化祭を好きな人と回る場面","夏祭りで好きな人と過ごす場面","好きな人と同じ班になった瞬間の自分","席替えで好きな人の隣になった自分","友達に恋バナをしている自分"].forEach(function(x){DRQ.push(x+"を20秒で絵に描いて")});
 
 // 13) ワードウルフ用お題ペア（恋バナ限定）
-var WWP=[["初恋","片思い"],["告白","プロポーズ"],["両思い","相思相愛"],["一目惚れ","一途"],["ドキドキ","キュンキュン"],["ヤキモチ","嫉妬"],["ツンデレ","クーデレ"],["肉食系","草食系"],["三角関係","両片思い"],["ダブルデート","グループデート"],["屋上で告白","体育館裏で告白"],["夕焼けの帰り道","夜の公園"],["手紙で告白","LINEで告白"],["直接告白","電話で告白"],["遊園地デート","水族館デート"],["映画館","プラネタリウム"],["カフェ","ファミレス"],["動物園","植物園"],["ボウリング","カラオケ"],["花火大会","夏祭り"],["初詣","クリスマス"],["イルミネーション","クリスマスマーケット"],["バレンタイン","ホワイトデー"],["誕生日","記念日"],["文化祭","体育祭"],["修学旅行","遠足"],["卒業式","入学式"],["手をつなぐ","腕を組む"],["相合傘","二人乗り"],["壁ドン","頭ポンポン"],["あーん","ハグ"],["お姫様抱っこ","おんぶ"],["優しい人","面白い人"],["年上","年下"],["クール","天然"],["幼なじみ","同級生"],["先輩","後輩"],["笑顔","声"],["ロングヘア","ショートヘア"],["背が高い人","運動ができる人"],["頭がいい人","しっかり者"],["ラブレター","プレゼント"],["手作りチョコ","手作りクッキー"],["お揃いのキーホルダー","お揃いのストラップ"],["ペアリング","ネックレス"],["制服デート","私服デート"],["プリクラ","自撮り"],["ミサンガ","お守り"],["花束","ぬいぐるみ"],["マフラー","手袋"],["ひざ掛け","カイロ"],["お弁当","差し入れ"],["席替え","クラス替え"],["日直","委員会"],["図書室","保健室"],["放課後","昼休み"],["部活の応援","練習の見学"],["グループLINE","個別LINE"],["既読無視","未読スルー"],["おはようLINE","おやすみLINE"],["電話","ビデオ通話"],["好きバレ","両思いバレ"],["告白の返事待ち","告白の前日"],["隣の席","前の席"],["下校","登校"],["恋愛相談","恋バナ"],["連絡先交換","SNSフォロー"],["あだ名で呼ぶ","呼び捨てで呼ぶ"],["くん付け","さん付け"],["遠距離恋愛","同じクラスの恋愛"],["友達から恋人","一目惚れから恋人"],["失恋","振られる"],["未練","忘れられない恋"],["恋のライバル","恋のキューピッド"],["恋愛ソング","ラブコメ漫画"],["恋愛ドラマ","恋愛映画"],["理想のデート","理想の告白"],["初めて手をつないだ日","初めて名前を呼ばれた日"],["初デートの待ち合わせ","初デートの帰り道"],["相談相手","応援してくれる友達"],["恋占い","おまじない"],["ラッキーアイテム","恋のお守り"],["モテ期","青春"],["好きなタイプ","理想の恋人"]];
+var WWP=[["初恋","片思い"],["告白","プロポーズ"],["両思い","相思相愛"],["一目惚れ","一途"],["ドキドキ","キュンキュン"],["ヤキモチ","嫉妬"],["ツンデレ","クーデレ"],["肉食系","草食系"],["三角関係","両片思い"],["ダブルデート","グループデート"],["屋上で告白","体育館裏で告白"],["夕焼けの帰り道","夜の公園"],["手紙で告白","LINEで告白"],["直接告白","電話で告白"],["遊園地デート","水族館デート"],["映画館","プラネタリウム"],["カフェ","ファミレス"],["動物園","植物園"],["ボウリング","カラオケ"],["花火大会","夏祭り"],["初詣","クリスマス"],["イルミネーション","クリスマスマーケット"],["バレンタイン","ホワイトデー"],["誕生日","記念日"],["文化祭","体育祭"],["修学旅行","遠足"],["卒業式","入学式"],["手をつなぐ","腕を組む"],["相合傘","二人乗り"],["壁ドン","頭ポンポン"],["あーん","ハグ"],["お姫様抱っこ","おんぶ"],["優しい人","面白い人"],["年上","年下"],["クール","天然"],["幼なじみ","同級生"],["先輩","後輩"],["笑顔","声"],["ロングヘア","ショートヘア"],["背が高い人","運動ができる人"],["頭がいい人","しっかり者"],["ラブレター","プレゼント"],["手作りチョコ","手作りクッキー"],["お揃いのキーホルダー","お揃いのストラップ"],["ペアリング","ネックレス"],["制服デート","私服デート"],["プリクラ","自撮り"],["ミサンガ","お守り"],["花束","ぬいぐるみ"],["マフラー","手袋"],["ひざ掛け","カイロ"],["お弁当","差し入れ"],["席替え","クラス替え"],["日直","委員会"],["図書室","保健室"],["放課後","昼休み"],["部活の応援","練習の見学"],["グループLINE","個別LINE"],["既読無視","未読スルー"],["おはようLINE","おやすみLINE"],["電話","ビデオ通話"],["好きバレ","両思いバレ"],["告白の返事待ち","告白の前日"],["隣の席","前の席"],["下校","登校"],["恋愛相談","恋バナ"],["連絡先交換","SNSフォロー"],["あだ名で呼ぶ","呼び捨てで呼ぶ"],["くん付け","さん付け"],["遠距離恋愛","同じクラスの恋愛"],["友達から恋人","一目惚れから恋人"],["失恋","振られる"],["未練","忘れられない恋"],["恋のライバル","恋のキューピッド"],["恋愛ソング","ラブコメ漫画"],["恋愛ドラマ","恋愛映画"],["理想のデート","理想の告白"],["初めて手をつないだ日","初めて名前を呼ばれた日"],["初デートの待ち合わせ","初デートの帰り道"],["相談相手","応援してくれる友達"],["恋占い","おまじない"],["ラッキーアイテム","恋のお守り"],["モテ期","青春"],["好きなタイプ","理想の恋人"],["片思い","一目惚れ"],["手つなぎ","腕組み"],["既読スルー","未読スルー"],["嫉妬","束縛"],["ツンデレ","ヤンデレ"],["ラブレター","LINE告白"],["失恋","喧嘩別れ"],["ギャップ萌え","ひとめぼれ"],["バレンタイン","クリスマス"],["初デート","初対面"],["年上彼氏","年下彼氏"],["バックハグ","お姫様抱っこ"],["相合傘","ペアルック"],["お揃い","ペアリング"],["指輪","ネックレス"],["サプライズ","ドッキリ"],["夜景","花火"],["観覧車","ジェットコースター"],["映画館デート","カラオケデート"],["プリクラ","ツーショット"],["スタンプ","絵文字"],["ノロケ","愚痴"],["友達以上恋人未満","親友"],["告白待ち","告白される"],["ときめき","胸キュン"],["初恋","憧れ"],["相思相愛","相性抜群"],["運命の人","理想の人"],["両親への挨拶","顔合わせ"],["プロポーズの言葉","告白の言葉"],["仲直り","謝罪"],["未練","後悔"],["忘れられない人","初恋の人"],["恋愛占い","血液型占い"],["恋愛ドラマ","少女漫画"],["胸キュン映画","恋愛小説"],["ラブソング","失恋ソング"],["カップル動画","カップルアカウント"],["香水","シャンプーの匂い"],["メイク","髪型"],["ネイル","ヘアアレンジ"],["デート前日","デート当日"],["待ち合わせ","お迎え"],["送り迎え","家まで送る"],["手料理","外食"],["お弁当","カフェ"],["ホワイトデー","七夕"],["初詣","花火大会"],["夏祭り","イルミネーション"],["誕生日プレゼント","記念日プレゼント"],["手紙","メッセージカード"],["交換日記","LINE"],["尽くす","尽くされる"],["甘える","甘やかす"],["聞き上手","話し上手"],["イケメン","優しい人"],["塩顔","ソース顔"],["犬系彼氏","猫系彼女"],["王子様","お姫様"],["天然","あざとい"],["小悪魔","女神"],["ドキドキ","安心感"],["好きバレ","告白"],["見つめ合う","目が合う"],["頭ポンポン","なでなで"],["友達に紹介","家族に紹介"]];
 
 // ===== Firebase =====
 const firebaseConfig = {
@@ -260,14 +271,14 @@ function closeRoom(){if(!joined)return;joined=false;wwClear();timers.forEach(cle
  if(roomRef)roomRef.off();roomRef=null;busy=false;
  $("room").classList.add("hide");$("home").classList.remove("hide");err("ルームが終了しました")}
 function btnLabel(d){var r=d.round||{};if(!d.started)return"ゲームスタート";
- if(r.type==="ww")return({talk:"投票へ進む",vote:"結果を見る",result:"次のゲームへ"})[r.phase]||"次のゲームへ";
+ if(r.type==="ww")return({reveal:"話し合いスタート",talk:"投票へ進む",vote:"結果を見る",result:"次のゲームへ"})[r.phase]||"次のゲームへ";
  if(r.type==="vote"||r.type==="pvote")return r.reveal?"次のお題へ":"結果を見る";
  if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";if((r.shown||0)<r.order.length)return"次の回答を見る";return"次のお題へ"}
  return"次のお題へ"}
 $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<minP())return;
  var rd=data.round||{},T=rd.type;
  if(data.started){
-  if(T==="ww"){if(rd.phase==="talk"){roomRef.child("round/phase").set("vote");return}if(rd.phase==="vote"){wwFinish();return}}
+  if(T==="ww"){if(rd.phase==="reveal"){roomRef.child("round").update({phase:"talk",startAt:firebase.database.ServerValue.TIMESTAMP});return}if(rd.phase==="talk"){roomRef.child("round/phase").set("vote");return}if(rd.phase==="vote"){wwFinish();return}}
   if((T==="vote"||T==="pvote")&&!rd.reveal){advance();return}
   if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}}
  }
@@ -278,7 +289,7 @@ $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.
   wwUsed.push(pr[0]+"|"+pr[1]);if(wwUsed.length>=WWP.length-3)wwUsed=[];
   var flip=Math.random()<.5,cw=flip?pr[0]:pr[1],xw=flip?pr[1]:pr[0],wolf=pk(ids),words={};
   ids.forEach(function(i){words[i]=(i===wolf)?xw:cw});
-  round={n:n,type:"ww",topic:"ワードウルフ",phase:"talk",startAt:firebase.database.ServerValue.TIMESTAMP,wolf:wolf,words:words,cw:cw,xw:xw}}
+  round={n:n,type:"ww",topic:"ワードウルフ",phase:"reveal",wolf:wolf,words:words,cw:cw,xw:xw}}
  else if(x<0.15){var v=pk(VOTES);round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false}}
  else if(x<0.29){round={n:n,type:"pvote",topic:pk(PVQ),reveal:false}}
  else if(x<0.43){round={n:n,type:"say",topic:pk(SAYQ),shown:0}}
@@ -317,6 +328,21 @@ function renderWW(rd,box){
  var part=ids.filter(function(i){return words[i]!==undefined});
  function nm(list){return list.map(function(i){return ps[i]?ps[i].name:"（退出）"}).join("、")}
  var wolfNm=ps[rd.wolf]?ps[rd.wolf].name:"（退出）";
+ if(ph==="reveal"){
+  var kr="ww"+rd.n+"r";
+  if(box.dataset.k!==kr){
+   wwClear();box.dataset.k=kr;box.innerHTML="";
+   var c0=el("div","box");c0.appendChild(wwHead(rd,"REVEAL"));
+   if(myw===undefined){c0.appendChild(el("div","hint","このゲームの途中から参加しました。次のゲームから遊べます"))}
+   else{
+    var sl=el("button","seal","♥");sl.setAttribute("aria-label","お題を見る");
+    var rw=el("div","","");rw.style.cssText="font-family:var(--serif);font-size:34px;font-weight:700;color:var(--acc);text-align:center;padding:6px 0 12px;letter-spacing:.06em;word-break:break-all;min-height:62px";
+    sl.onclick=function(){rw.textContent=rw.textContent?"":myw};
+    c0.appendChild(sl);c0.appendChild(rw);
+    c0.appendChild(el("div","hint","ハートをタップで表示／非表示。他の人に見えないようにね"))}
+   box.appendChild(c0)}
+  $("msg").textContent=isHost?"全員が見終わったら「話し合いスタート」を押してね":"全員が見終わるまで待っていてね";
+  return}
  if(ph==="talk"){
   var key="ww"+rd.n+"t";
   if(box.dataset.k!==key){
@@ -324,12 +350,12 @@ function renderWW(rd,box){
    var c=el("div","box");c.appendChild(wwHead(rd,"TALK"));
    if(myw===undefined){c.appendChild(el("div","hint","このゲームの途中から参加しました。次のゲームから遊べます"))}
    else{
-    var wd=el("div","",myw);wd.id="wwWord";wd.className="pop";wd.style.cssText="font-family:var(--serif);font-size:34px;font-weight:700;color:var(--acc);text-align:center;padding:16px 0 12px;letter-spacing:.06em;word-break:break-all";
+    var wd=el("div","","・・・・・");wd.dataset.h="1";wd.id="wwWord";wd.style.cssText="font-family:var(--serif);font-size:34px;font-weight:700;color:var(--acc);text-align:center;padding:16px 0 12px;letter-spacing:.06em;word-break:break-all";
     c.appendChild(wd);
     var tw=el("div","tools");tw.style.marginTop="2px";
-    var tg=el("button","tl","お題を隠す");tg.onclick=function(){var h=wd.dataset.h==="1";wd.dataset.h=h?"0":"1";wd.textContent=h?myw:"・・・・・";tg.textContent=h?"お題を隠す":"お題を見る"};
+    var tg=el("button","tl","お題を見る");tg.onclick=function(){var h=wd.dataset.h==="1";wd.dataset.h=h?"0":"1";wd.textContent=h?myw:"・・・・・";tg.textContent=h?"お題を隠す":"お題を見る"};
     tw.appendChild(tg);c.appendChild(tw);
-    c.appendChild(el("div","hint","このお題で恋バナをしよう。他の人と話がかみ合わない人が、ひとりだけいる「ウルフ」かも。自分のお題は直接言わないでね。話し合いは口頭やチャットでどうぞ"))}
+    c.appendChild(el("div","hint","お題を直接言わずに、「それってどんなとき？」と質問し合おう。自分のお題が少数派だと感じたら、うまく合わせよう。"))}
    box.appendChild(c);
    var tm=el("div","","");tm.id="wwTm";tm.style.cssText="font-family:var(--serif);font-size:22px;text-align:center;color:var(--acc);letter-spacing:.08em;margin-top:16px";box.appendChild(tm);
    var tick=function(){var e=$("wwTm"),r=data&&data.round;if(!e||!r||r.type!=="ww"||r.phase!=="talk"){wwClear();return}
@@ -495,6 +521,65 @@ function play(r,names){
    $("msg").textContent=r.name+" さん、答えてください";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<minP()},2400));
  },2600));
 }
+
+// ===== 1台でまわすワードウルフ =====
+var L={names:[],phase:"setup"},lIv=null;
+var LWORD="font-family:var(--serif);font-size:34px;font-weight:700;color:var(--acc);text-align:center;padding:16px 0 12px;letter-spacing:.06em;word-break:break-all";
+function lShow(on){if(lIv){clearInterval(lIv);lIv=null}$("home").classList.toggle("hide",on);$("local").classList.toggle("hide",!on);err("")}
+$("localBtn").onclick=function(){L.phase="setup";lShow(true);lr()};
+function lGo(ph){L.phase=ph;lr()}
+function lStart(){var pr=WWP[Math.floor(Math.random()*WWP.length)],f=Math.random()<.5;
+ L.cw=f?pr[0]:pr[1];L.xw=f?pr[1]:pr[0];L.wolf=Math.floor(Math.random()*L.names.length);L.ri=0;L.vi=0;L.votes=[];L.shown=false;lGo("reveal")}
+function lr(){
+ if(lIv){clearInterval(lIv);lIv=null}
+ var c=$("lc");c.innerHTML="";var ph=L.phase,n=L.names.length;
+ function B(t,cls,f){var b=el("button",cls,t);b.onclick=f;c.appendChild(b);return b}
+ function BX(l,r){var b=el("div","box"),lb=el("div","lab");lb.appendChild(el("span","",l));lb.appendChild(el("span","",r||""));b.appendChild(lb);c.appendChild(b);return b}
+ if(ph==="setup"){
+  c.appendChild(el("div","sub","参加者を入力してね（3〜8人）。順番にスマホを回して遊びます"));
+  var ls=el("div","list");
+  L.names.forEach(function(nm,i){var d=el("div","pl");d.appendChild(el("b","",nm.charAt(0)));d.appendChild(el("span","",nm));
+   var x=el("span","","×");x.style.cssText="cursor:pointer;color:var(--sub);padding-left:4px";x.onclick=function(){L.names.splice(i,1);lr()};d.appendChild(x);ls.appendChild(d)});
+  c.appendChild(ls);
+  var inp=el("input");inp.id="lIn";inp.maxLength=10;inp.placeholder="ニックネーム";c.appendChild(inp);
+  var lAdd=function(){var v=inp.value.trim();if(v&&L.names.length<8&&L.names.indexOf(v)<0)L.names.push(v);lr();var i2=$("lIn");if(i2)i2.focus()};
+  inp.onkeydown=function(e){if(e.key==="Enter")lAdd()};
+  B("追加","ghost",lAdd);
+  var st=B("ゲーム開始","main",lStart);st.disabled=n<3;
+  B("もどる","ghost",function(){lShow(false)});return}
+ if(ph==="reveal"){var nmR=L.names[L.ri];
+  if(!L.shown){var b1=BX(nmR+" さんの番","REVEAL");b1.appendChild(el("div","hint","他の人に見えないように、端末を受け取ってね"));
+   B(nmR+"です。お題を見る","main",function(){L.shown=true;lr()})}
+  else{var b2=BX(nmR+" さんのお題","REVEAL");var w=el("div","",L.ri===L.wolf?L.xw:L.cw);w.style.cssText=LWORD;b2.appendChild(w);
+   b2.appendChild(el("div","hint","覚えたら次の人へ渡そう"));
+   B("覚えた","main",function(){L.shown=false;L.ri++;if(L.ri>=n){L.end=Date.now()+18e4;lGo("talk")}else lr()})}
+  return}
+ if(ph==="talk"){var b3=BX("話し合い","TALK");
+  var tm=el("div","","");tm.style.cssText="font-family:var(--serif);font-size:34px;text-align:center;color:var(--acc);letter-spacing:.08em;padding:12px 0";b3.appendChild(tm);
+  b3.appendChild(el("div","hint","お題を直接言わずに、「それってどんなとき？」と質問し合おう。自分のお題が少数派だと感じたら、うまく合わせよう。"));
+  var tk=function(){var s=Math.max(0,Math.ceil((L.end-Date.now())/1000));tm.textContent=s>0?Math.floor(s/60)+":"+("0"+s%60).slice(-2):"時間です！"};
+  tk();lIv=setInterval(tk,500);
+  B("投票へ進む","main",function(){L.vi=0;L.shown=false;lGo("vote")});return}
+ if(ph==="vote"){var vn=L.names[L.vi];
+  if(!L.shown){var b4=BX("投票 "+(L.vi+1)+" / "+n,"VOTE");b4.appendChild(el("div","hint","端末を "+vn+" さんに渡してね"));
+   B(vn+"です","main",function(){L.shown=true;lr()})}
+  else{var b5=BX(vn+" さん、ウルフは誰？","VOTE");b5.appendChild(el("div","hint","ウルフだと思う人を選んでね"));
+   L.names.forEach(function(nm,i){if(i===L.vi)return;var b=el("button","opt",nm);
+    b.onclick=function(){L.votes[L.vi]=i;L.shown=false;L.vi++;if(L.vi>=n)lGo("result");else lr()};c.appendChild(b)})}
+  return}
+ var cnt=L.names.map(function(){return 0});L.votes.forEach(function(t){cnt[t]++});
+ var mx=Math.max.apply(null,cnt),tops=[];cnt.forEach(function(v,i){if(mx>0&&v===mx)tops.push(i)});
+ var caught=tops.length===1&&tops[0]===L.wolf;
+ var rb=BX("結果","RESULT");
+ var tt=el("div","",caught?"ウルフを見つけた！市民の勝ち":"ウルフの逃げ切り！");tt.style.cssText="font-family:var(--serif);font-size:24px;font-weight:700;color:var(--acc);text-align:center;padding:8px 0";rb.appendChild(tt);
+ var ic=el("div","ans");ic.appendChild(el("div","an","ウルフは "+L.names[L.wolf]+" さん"));
+ ic.appendChild(el("div","at","市民のお題：「"+L.cw+"」\nウルフのお題：「"+L.xw+"」"));c.appendChild(ic);
+ var lb=el("div","lab","");lb.style.marginTop="22px";lb.appendChild(el("span","","投票結果"));c.appendChild(lb);
+ L.names.map(function(nm,i){return i}).sort(function(a,b){return cnt[b]-cnt[a]}).forEach(function(i){
+  var w=el("div","res"+(mx>0&&cnt[i]===mx?" win":"")),top=el("div","rtop");
+  top.appendChild(el("span","",L.names[i]+(i===L.wolf?"（ウルフ）":"")));top.appendChild(el("span","rc",cnt[i]+"票"));w.appendChild(top);
+  w.appendChild(el("div","rn2",L.names.filter(function(x,v){return L.votes[v]===i}).join("、")||"なし"));c.appendChild(w)});
+ B("もう一度","main",lStart);B("ホームへ","ghost",function(){lShow(false)})}
 </script>
 </body>
 </html>
