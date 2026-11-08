@@ -3,65 +3,84 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>暴露！恋バナルーレット</title>
+<title>暴露ゲーム1</title>
 <style>
-:root{--bg:#fff5f7;--card:#fff;--ink:#3a2030;--sub:#9a7384;--pri:#ec4a7b;--pri2:#ff8fab;--line:#f3d3dd}
-@media (prefers-color-scheme:dark){:root{--bg:#1d1219;--card:#2a1a24;--ink:#fbe9f0;--sub:#c49aae;--pri:#ff6b97;--pri2:#c2335f;--line:#4a2a3a}}
+:root{--bg:#f7f3f0;--card:#fffdfb;--ink:#2a2125;--sub:#8b7c82;--acc:#a8324f;--line:#e6dcd8;--soft:#f1e8e5;--serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}
+@media (prefers-color-scheme:dark){:root{--bg:#18131a;--card:#221b24;--ink:#f3eaee;--sub:#a8969f;--acc:#e5748f;--line:#3a2f3a;--soft:#2c222d}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;min-height:100vh;display:flex;justify-content:center;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
-main{width:100%;max-width:480px;padding:20px 18px 32px}
-h1{font-size:26px;text-align:center;margin:8px 0 4px}
-.sub{text-align:center;color:var(--sub);font-size:14px;margin:0 0 20px}
-label{display:block;font-weight:700;font-size:14px;margin:16px 0 8px}
-input{width:100%;padding:12px;font-size:16px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
-button{font-family:inherit;cursor:pointer}
-.main{width:100%;margin-top:14px;padding:15px;font-size:18px;font-weight:700;border:0;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff}
-.main:disabled{opacity:.4}
-.ghost{width:100%;margin-top:10px;padding:12px;font-size:15px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
+main{width:100%;max-width:460px;padding:34px 22px 40px}
+.eyebrow{text-align:center;font-size:11px;font-weight:700;letter-spacing:.34em;color:var(--acc)}
+h1{font-family:var(--serif);font-size:32px;text-align:center;margin:12px 0 0;letter-spacing:.1em;font-weight:700}
+.rule{width:34px;height:2px;background:var(--acc);margin:18px auto}
+.sub{text-align:center;color:var(--sub);font-size:13px;line-height:1.8;margin:0 0 22px}
+label{display:block;font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--sub);margin:22px 0 8px}
+input{width:100%;padding:14px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);outline:none;transition:border-color .2s}
+input:focus{border-color:var(--acc)}
+button{font-family:inherit;cursor:pointer;transition:opacity .2s,transform .1s}
+button:active{transform:scale(.98)}
+.main{width:100%;margin-top:16px;padding:16px;font-size:15px;font-weight:700;letter-spacing:.16em;border:0;border-radius:10px;background:var(--ink);color:var(--bg)}
+.main:disabled{opacity:.3;cursor:default}
+.ghost{width:100%;margin-top:12px;padding:14px;font-size:13px;letter-spacing:.1em;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink)}
 .hide{display:none}
-.code{text-align:center;font-size:44px;font-weight:800;letter-spacing:8px;color:var(--pri);margin:6px 0}
-.list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:14px 0}
-.pl{padding:8px 14px;border-radius:999px;background:var(--card);border:2px solid var(--line);font-weight:700}
-.pl.h::before{content:"👑 "}
-.box{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:22px 18px;margin-top:14px;text-align:center;box-shadow:0 8px 24px rgba(236,74,123,.15)}
-.lab{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:10px}
-#topic{font-size:21px;font-weight:700;line-height:1.55;min-height:100px;display:flex;align-items:center;justify-content:center}
-#topic.spin{opacity:.55;filter:blur(1px)}
-#pick{font-size:38px;font-weight:800;color:var(--pri);min-height:56px}
-#pick.spin{opacity:.55}
-.pop{animation:pop .5s}
-@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
-#msg{text-align:center;font-weight:700;margin-top:14px;min-height:24px;color:var(--pri)}
-.cnt{text-align:center;font-size:12px;color:var(--sub);margin-top:16px}
+.code{font-family:var(--serif);text-align:center;font-size:50px;letter-spacing:.3em;padding:10px 0 10px .3em;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:10px 0 0}
+.list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:20px 0}
+.pl{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 6px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:14px;font-weight:600}
+.pl b{width:26px;height:26px;border-radius:50%;background:var(--soft);color:var(--acc);display:flex;align-items:center;justify-content:center;font-size:13px}
+.pl.h::after{content:"HOST";font-size:9px;letter-spacing:.14em;color:var(--acc);font-weight:700}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px 24px;margin-top:14px;box-shadow:0 14px 34px rgba(70,30,45,.07)}
+.lab{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--sub);margin-bottom:14px}
+#topic{font-family:var(--serif);font-size:19px;line-height:1.85;min-height:112px;display:flex;align-items:center;font-weight:600;transition:opacity .15s,filter .15s}
+#topic.spin{opacity:.35;filter:blur(2px)}
+#pick{font-family:var(--serif);font-size:38px;font-weight:700;color:var(--acc);min-height:58px;letter-spacing:.06em;transition:opacity .15s}
+#pick.spin{opacity:.3}
+.pop{animation:pop .55s cubic-bezier(.2,1.3,.4,1)}
+@keyframes pop{0%{transform:scale(.88);opacity:0}100%{transform:scale(1);opacity:1}}
+#msg{font-family:var(--serif);text-align:center;font-size:15px;line-height:1.8;margin-top:20px;min-height:28px}
+.hint{text-align:center;font-size:12px;color:var(--sub);line-height:1.8;margin-top:14px}
+.cnt{text-align:center;font-size:11px;letter-spacing:.08em;color:var(--sub);margin-top:26px;line-height:1.9}
+#vote .opt{display:block;width:100%;padding:16px;margin-top:10px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-family:var(--serif);font-size:16px;font-weight:600;line-height:1.6}
+#vote .opt.sel{border-color:var(--acc);background:var(--soft);color:var(--acc)}
+.res{margin-top:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.res.win{border-color:var(--acc)}
+.rtop{display:flex;justify-content:space-between;gap:10px;font-family:var(--serif);font-weight:600;font-size:15px}
+.rc{color:var(--acc);white-space:nowrap}
+.bar{height:6px;background:var(--soft);border-radius:3px;margin:10px 0 8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);transition:width .6s}
+.rn2{font-size:12px;color:var(--sub);line-height:1.7}
 </style>
 </head>
 <body>
 <main>
 <section id="home">
-<h1>💘 暴露！恋バナルーレット</h1>
-<p class="sub">中学生の恋バナ編｜お題とターゲットはルーレットで決定</p>
+<div class="eyebrow">GAME 01</div>
+<h1>暴露ゲーム1</h1>
+<div class="rule"></div>
+<p class="sub">ルーレットで決まったお題に、ルーレットで選ばれた人が<br>本音で答えるゲーム</p>
 <label>あなたの名前</label>
 <input id="name" maxlength="10" placeholder="例：あや">
 <button class="main" id="create">ルームを作る</button>
-<label>または、4桁のルーム番号で参加</label>
-<input id="codeIn" inputmode="numeric" maxlength="4" placeholder="1234">
+<label>ルーム番号で参加</label>
+<input id="codeIn" inputmode="numeric" maxlength="4" placeholder="4桁の番号">
 <button class="ghost" id="join">参加する</button>
-<div id="err" style="color:#e53935;text-align:center;margin-top:12px;font-size:14px"></div>
+<div id="err" style="color:#c0392b;text-align:center;margin-top:14px;font-size:13px"></div>
 </section>
 
 <section id="room" class="hide">
-<div class="sub" style="margin:0">ルーム番号</div>
+<div class="eyebrow">ROOM</div>
 <div class="code" id="code"></div>
 <div class="list" id="players"></div>
 <div id="game" class="hide">
-<div class="box"><div class="lab">🎯 今回のお題</div><div id="topic"></div></div>
-<div class="box"><div class="lab">🎤 暴露する人</div><div id="pick"></div></div>
+<div class="box"><div class="lab"><span>TOPIC</span><span id="rn"></span></div><div id="topic"></div></div>
+<div class="box" id="pickBox"><div class="lab"><span>ANSWERER</span></div><div id="pick"></div></div>
+<div id="vote" class="hide"></div>
 <div id="msg"></div>
+<div class="hint">名前を聞かれたときは、フルネーム・下の名前・イニシャル・あだ名のどれでもOK</div>
 </div>
 <div id="wait" class="sub"></div>
-<button class="main" id="draw">お題スタート！</button>
+<button class="main" id="draw">ゲームスタート</button>
 <button class="ghost" id="leave">退出する（ルームは削除されます）</button>
-<div class="cnt">お題数：<span id="total"></span>通り ／ 誰かが抜けるとルームは消えます</div>
+<div class="cnt">収録お題 <span id="total"></span> 通り<br>誰かが抜けるとルームは削除されます</div>
 </section>
 </main>
 
@@ -74,37 +93,58 @@ function add(t){if(!set[t]){set[t]=1;TOPICS.push(t)}}
 function each(a,b,f){a.forEach(function(x){b.forEach(function(y){add(f(x,y))})})}
 function pairs(l,f){for(var i=0;i<l.length;i++)for(var j=i+1;j<l.length;j++)add(f(l[i],l[j]))}
 
-// 1) 好きな人のことで〇〇したことある？
-var W=["好きな人","気になる人","初恋の人","隣の席の人","同じ部活の好きな人","好きな先輩","好きな後輩","好きな幼なじみ","塾で気になる人","他のクラスの気になる人","同じクラスの気になる人","委員会が同じ気になる人"];
-var A=["夜眠れなくなった","授業中ぼーっとした","友達に相談した","一日中ニヤニヤした","思わず泣いた","ヤキモチを焼いた","返信を何時間も悩んだ","髪型や持ち物を気にした","SNSを何度も見返した","夢に見た","勇気が出なくて話せなかった","緊張して固まった","名前を何度も思い出した","友達にからかわれた","親にバレそうになった","ひとりで赤面した","勉強に集中できなかった","学校に行くのが楽しみになった","好きな曲が変わった","偶然会えて一日機嫌がよかった","うれしくて誰かに話したくなった","ライバルがいると知って焦った","あきらめようとした","告白を考えた","作戦を考えた","友達に協力してもらった","手紙を書きかけた","返信をわざと遅らせた","目が合って顔をそらした","廊下ですれ違うのを待った","休み時間にチラチラ見た","好きなタイプを聞き出した","連絡先を聞こうか迷った","話しかけるきっかけを探した","席替えを祈った","他の人と話しているのを見てモヤモヤした","褒められて舞い上がった","名前を呼ばれてときめいた","一緒に帰ろうか迷った","プレゼントを選んだ"];
-each(W,A,function(w,a){return w+"のことで、"+a+"ことある？暴露して！"});
+// 1) 範囲 × 人物の条件
+var SC=["今のクラスで","学年全体で","部活で","同じ塾や習い事で","小学校の同級生の中で","今までに出会った人の中で","この学校全体で","先輩の中で","後輩の中で","自分の周りで","友達グループの中で","この部屋のメンバーの中で","委員会や係の中で","他のクラスで","今まで同じクラスだった人の中で","通学路で見かける人の中で","部活の同級生の中で","幼なじみの中で"];
+var AT=["一番優しいと思う人","一番かっこいい・かわいいと思う人","一番笑顔が素敵な人","一番面白い人","一番モテそうな人","一番ピュアそうな人","一番告白が上手そうな人","一番尽くしてくれそうな人","一番ヤキモチを焼きそうな人","一番恋愛経験が多そうな人","一番恋愛に奥手そうな人","付き合ってみたい人","告白されたらOKしそうな人","一緒に帰りたい人","席が隣になったらうれしい人","LINEが来たらうれしい人","なんとなく目で追ってしまう人","話すと緊張する人","相談したら親身に聞いてくれそうな人","一緒にいて一番落ち着く人","一緒に文化祭を回りたい人","修学旅行で同じ班になりたい人","ちょっと気になっている人","実は意識している人","友達に紹介したい人","守ってあげたくなる人","頼りにしている人","憧れている人","勉強を教えてもらいたい人","手作りのお菓子をあげたい人","誕生日を祝いたい人","名前を呼ばれたらドキッとする人","笑わせたい人","一番話しやすい人","一番ギャップがありそうな人","将来大物になりそうな人","一番努力家だと思う人","一番センスがいいと思う人","一番声がいいと思う人","一番字がきれいな人","一番運動神経がいいと思う人","一番頭がいいと思う人","一番おしゃれだと思う人","一番天然だと思う人","一番聞き上手だと思う人","一番気配りができる人","一番頼りになる人","一番クールな人","密かに応援している恋の相手","友達に取られたくない人"];
+each(SC,AT,function(s,a){return s+"、"+a+"の名前を暴露して"});
 
-// 2) 時期×恋バナ
-var T1=["小学生の頃","中1の頃","中2の頃","中3の頃","入学式","体育祭","文化祭","修学旅行","夏休み","冬休み","バレンタイン","部活の合宿"];
-var T2=["一番ドキドキした話","一番恥ずかしかった話","片思いの話","告白の話","好きバレした話","勘違いした話","ヤキモチを焼いた話","友達に言えなかった秘密","キュンとした出来事","周りに冷やかされた話","気まずくなった話","LINEでやらかした話","恋のライバルの話","笑った恋バナ","泣いた恋バナ","好きな人との思い出","一目惚れの話","親にバレた話","友達の恋バナ","恋愛相談した話","目が合った話","話しかけられた話","話しかけられなかった話","一緒に帰った話","手紙やメモの話","あだ名の話","噂になった話","緊張して固まった話","失恋から立ち直った話","両思いかもと思った話","好きなタイプが変わった話","勇気を出した話"];
-each(T1,T2,function(a,b){return "「"+a+"の"+b+"」を暴露！"});
+// 2) 経験した相手 × 答え方
+var TG=["初恋の人","今の好きな人","前に好きだった人","一番最近ドキドキした相手","告白しようか迷っている人","告白されたことがある相手","気になっている先輩","気になっている後輩","片思い中の人","憧れている人","友達に隠している気になる人","最初に好きになった人","一番長く片思いした人","一番ドキッとさせられた人","勇気を出して話しかけた相手","連絡先を聞いた相手","手紙を書いた相手","プレゼントを渡した相手","一緒に帰ったことがある人","好きバレしてしまった相手","友達と好きな人がかぶった相手","恋愛相談をされた相手","恋愛相談をした相手","夢に出てきた人","ヤキモチを焼いた相手","目が合ってそらしてしまった人","話しかけられてうれしかった人","名前を呼ばれてドキッとした人","笑顔にやられた人","勉強を教えてもらった人","傘に入れてもらった人","席替えで隣になった人","同じ班になってうれしかった人","部活の応援に行った相手","バレンタインを渡したい人","誕生日を祝った人","周りに冷やかされた相手","噂になったことがある相手","友達に紹介したい人"];
+var ST=["フルネームで","下の名前だけで","イニシャルで","あだ名で","ヒントを出しながら","頭文字と特徴をひとつ添えて"];
+each(TG,ST,function(t,s){return t+"の名前を"+s+"暴露して"});
 
-// 3) シチュエーション×質問
-var S=["好きな人から急にLINEが来た","好きな人が他の人と楽しそうに話していた","好きな人と手が触れた","好きな人にあだ名で呼ばれた","好きな人が風邪で休んだ","好きな人に恋愛相談された","好きな人に連絡先を聞かれた","好きな人と目が合ってそらされた","席替えで好きな人の隣になった","好きな人と同じ班になった","好きな人にノートを借りた","好きな人と帰り道が一緒になった","好きな人の好きな人を知ってしまった","好きな人に勉強を教えてもらった","好きな人が自分の名前を覚えていてくれた","好きな人に「ありがとう」と言われた","好きな人が落ち込んでいた","体育祭で好きな人が活躍した","文化祭で好きな人と一緒に回ることになった","好きな人が友達と付き合ったと聞いた","好きな人にSNSをフォローされた","好きな人に笑いかけられた","好きな人に名前を呼ばれた","友達と好きな人がかぶった","告白されたのにタイプじゃなかった","好きな人が他校の人と話していた","好きな人の誕生日が近づいた","好きな人に恋人がいると知った","修学旅行で好きな人と同じ班になった","好きな人に好きな人がいるか聞かれた","好きな人にからかわれた","好きな人と二人で日直になった","好きな人が部活で頑張っている姿を見た","好きな人が髪型を変えた","好きな人が自分の話を覚えていた","好きな人にお礼のお菓子をもらった"];
-var Q=["実際にあった人は暴露して！","そのときの心の中を教えて","顔や態度に出るタイプ？隠すタイプ？","誰かに話したくなる？","ドキドキする？それとも落ち着いてる？","その後どうなったか教えて"];
-each(S,Q,function(s,q){return s+"とき、"+q});
+// 3) 時期 × 人物
+var TM=["小学校低学年の頃","小学校高学年の頃","中1になったばかりの頃","中1の秋","中2の春","中2の夏","中2の冬","中3になった頃","受験を意識し始めた頃","体育祭の頃","文化祭の頃","修学旅行の頃","夏休み前","冬休み前","バレンタインの頃","去年の今ごろ","今年の春","先月","先週","クラス替えの頃","席替えの頃","部活に入ったばかりの頃","遠足の頃","合唱コンクールの頃"];
+var TV=["好きだった人","気になっていた人","目で追っていた人","話しかけたかった人","仲良くなりたかった人","告白しようと思った人","ヤキモチを焼いた相手","一番ドキドキした相手","連絡を待っていた相手","一緒に帰りたかった人","ひそかに憧れていた人","友達に隠していた気になる人"];
+each(TM,TV,function(t,v){return t+"、"+v+"の名前を暴露して"});
 
-// 4) どっち？（二択）
-var D=["遊園地","水族館","動物園","映画館","図書館","カフェ","ショッピングモール","公園","花火大会","夏祭り","カラオケ","ゲームセンター","ボウリング","海","プール","美術館","プラネタリウム","初詣","イルミネーション","本屋","スイーツのお店","科学館","動物カフェ","ピクニック","サイクリング","学校の帰り道"];
-pairs(D,function(a,b){return "好きな人とデートするなら「"+a+"」と「"+b+"」、どっち？理由も教えて"});
-var R=["優しい","面白い","頭がいい","運動ができる","おしゃれ","笑顔が素敵","声がいい","字がきれい","しっかりしている","天然","気配りができる","誰にでも平等","ちょっとクール","明るい","真面目","絵や音楽が得意","背が高い","聞き上手","話しやすい","努力家","動物好き","頼りになる"];
-pairs(R,function(a,b){return "好きな人に求めるなら「"+a+"」と「"+b+"」、どっちが大事？"});
-var C=["直接会って","手紙で","LINEで","電話で","友達に伝えてもらって","放課後の教室で","帰り道で","校舎裏で","公園で","文化祭のあとに","卒業式の日に","誕生日に"];
-pairs(C,function(a,b){return "告白するなら「"+a+"」と「"+b+"」、どっちがいい？"});
-var G=["手紙","手作りのお菓子","ぬいぐるみ","おそろいのキーホルダー","お守り","文房具","本","写真","花","好きな曲のプレイリスト","手作りのアクセサリー","寄せ書き","メッセージカード","ハンカチ","缶バッジ"];
-pairs(G,function(a,b){return "好きな人にもらうなら「"+a+"」と「"+b+"」、どっちがうれしい？"});
-var H=["一緒に帰る","一緒に勉強する","ゲームをする","カラオケに行く","映画を見る","買い物に行く","散歩する","お祭りに行く","写真を撮る","ごはんを食べる","電話で話す","LINEでやり取りする","部活を見学する","図書館で過ごす","公園で話す","花火を見る"];
-pairs(H,function(a,b){return "好きな人と放課後にするなら「"+a+"」と「"+b+"」、どっち？"});
+// 4) もしも〜なら誰と
+var WS=["席替えで隣になるなら","修学旅行で同じ班になるなら","文化祭を一緒に回るなら","一緒に帰るなら","日直を組むなら","体育祭で二人三脚をするなら","フォークダンスを踊るなら","花火大会に行くなら","初詣に行くなら","映画を見に行くなら","遊園地に行くなら","水族館に行くなら","勉強を教えてもらうなら","部活の応援に来てほしいなら","電話で話すなら","誕生日を祝ってほしいなら","手作りのお菓子をもらうなら","手紙をもらうなら","告白されるなら","隣で給食を食べるなら","お弁当を作ってもらうなら","相合傘をするなら","写真を一緒に撮るなら","悩みを相談するなら","卒業式に会いたいなら","同窓会で再会したいなら","自習中に隣にいてほしいなら","一緒に委員会をするなら","一緒に掃除当番をするなら","同じ係になるなら","グループ発表を組むなら","席が前後になるなら","放課後に残って話すなら","図書館で一緒に勉強するなら","夏祭りに行くなら","一緒にカラオケに行くなら","自転車で一緒に帰るなら","遠足でお弁当を食べるなら","バスで隣に座るなら","肝試しのペアを組むなら","キャンプで同じ班になるなら","風邪のお見舞いに来てほしいなら","誕生日プレゼントを選ぶなら","クリスマスに会うなら","試合を見に来てほしいなら","ペアで調理実習をするなら","学級委員を一緒にやるなら","合唱コンクールで隣に並ぶなら"];
+var WX=["一番に思い浮かぶ人の名前を暴露して","誰とがいいか名前を暴露して。理由もひとこと","本命とダークホース、2人の名前を暴露して","候補を3人、名前で暴露して","相手の名前をイニシャルで暴露して","相手の名前をあだ名で暴露して","ヒントを出しながら名前を暴露して","思い浮かんだ人の下の名前を暴露して"];
+each(WS,WX,function(w,x){return w+"、"+x});
 
-// 5) 告白されたら
-var P=["同じクラスの人","全然話したことない人","幼なじみ","先輩","後輩","部活のライバル","親友","隣の席の人","塾の人","他のクラスの人","友達が好きな人","友達が前に好きだった人","生徒会の人","クラスの人気者","おとなしい人","学年で一番モテる人","真面目な優等生","スポーツが得意な人","ムードメーカーの人","同じ委員会の人","いとこの友達","近所の人","小学校の同級生","転校生","習い事が同じ人","部活の先輩","部活の後輩","同じ班の人","日直が一緒の人","図書委員の人","帰り道が同じ人","好きでも嫌いでもない人","ちょっと苦手だった人","ずっと仲のいい男友達・女友達"];
-var PQ=["返事は即答？保留？","友達に相談する？","OKする？断る？理由も教えて","最初に何て言う？","誰に最初に報告する？"];
-each(P,PQ,function(p,q){return p+"から告白されたら、"+q});
+// 5) タイプ二択 × 名前
+var TY=["優しい人","面白い人","頭がいい人","運動ができる人","おしゃれな人","笑顔が素敵な人","声がいい人","字がきれいな人","しっかりしている人","天然な人","気配りができる人","誰にでも平等な人","ちょっとクールな人","明るい人","真面目な人","絵や音楽が得意な人","背が高い人","聞き上手な人","話しやすい人","努力家な人","頼りになる人","守ってあげたくなる人","ミステリアスな人","素直な人","負けず嫌いな人","責任感のある人","少しシャイな人","静かで落ち着いた人"];
+pairs(TY,function(a,b){return "「"+a+"」と「"+b+"」、付き合うならどっち？そのタイプで思い浮かぶ人の名前を暴露して"});
+pairs(TY,function(a,b){return "「"+a+"」と「"+b+"」、告白されたらOKしやすいのはどっち？そのタイプの知り合いの名前を暴露して"});
+pairs(TY,function(a,b){return "「"+a+"」と「"+b+"」、一緒にいて落ち着くのはどっち？そのタイプで思い浮かぶ人の名前を暴露して"});
+
+// 6) 場所・過ごし方の二択 × 名前
+var PL=["遊園地","水族館","動物園","映画館","図書館","カフェ","ショッピングモール","公園","花火大会","夏祭り","カラオケ","ゲームセンター","ボウリング","海","プール","美術館","プラネタリウム","初詣","イルミネーション","本屋","スイーツのお店","科学館","動物カフェ","ピクニック"];
+pairs(PL,function(a,b){return "「"+a+"」と「"+b+"」、デートで行きたいのはどっち？一緒に行きたい人の名前を暴露して"});
+var AC=["一緒に帰る","一緒に勉強する","ゲームをする","カラオケに行く","映画を見る","買い物に行く","散歩する","お祭りに行く","写真を撮る","ごはんを食べる","電話で話す","部活を見学する","図書館で過ごす","公園で話す"];
+pairs(AC,function(a,b){return "放課後は「"+a+"」と「"+b+"」、どっちをしたい？一緒にしたい人の名前を暴露して"});
+
+// 7) タイプ系
+var TP=["好きなタイプ","苦手なタイプ","理想の恋人","初恋の人","今の好きな人"];
+var TA=["性格","顔の系統","髪型","身長","声","話し方","笑い方","服装","雰囲気","趣味","得意なこと","仕草","口ぐせ","年齢（年上・年下・同い年）","目","歩き方","第一印象","良いところ","気になるところ","名前の響き"];
+each(TP,TA,function(p,a){return p+"の"+a+"は？"});
+var LV=["尽くすタイプ","尽くされたいタイプ","追いかけるタイプ","追いかけられたいタイプ","一途なタイプ","気が多いタイプ","甘えたいタイプ","甘えられたいタイプ","連絡マメなタイプ","連絡ゆるいタイプ","ひとりの時間が大事なタイプ","ずっと一緒にいたいタイプ","自分から告白する派","告白される派","友達から恋人になる派","一目惚れ派","ヤキモチ焼きなタイプ","気持ちを隠すタイプ","ストレートに伝えるタイプ","照れ屋なタイプ"];
+pairs(LV,function(a,b){return "あなたは「"+a+"」と「"+b+"」、どっち寄り？理由も教えて"});
+
+// 8) シンプルなお題
+var SP=["好きなタイプを一言で言うと？","今、好きな人はいる？いるなら名前を暴露して","初恋はいつ？相手の名前も暴露して","告白されたい場所は？","告白したい場所は？","好きな人にひとこと伝えるなら？","一目惚れしたことある？相手の名前も暴露して","片思い歴は最長でどれくらい？","付き合うなら年上？年下？同い年？","告白は自分からする？待つ？","今までで一番ドキドキした瞬間は？","好きな人に言われてうれしい言葉は？","好きな人にされてうれしいことは？","デートで行きたい場所は？","初デートで着ていきたい服は？","理想のプロポーズは？","好きな人のどこを一番に見る？","異性の友達は何人いる？","親友に恋愛相談はする？","好きな人ができたら誰に最初に話す？","告白されたことはある？","告白したことはある？","振られたことはある？その時どうした？","振ったことはある？その時どう思った？","両思いになったことはある？","好きな人とLINEするときの話題は？","返信は早い派？遅い派？","好きな人からの返信、何分以内なら早いと思う？","恋愛ソングで好きな曲は？","好きな人に見せたくない一面は？","自分の恋愛あるあるを一つ言うと？","恋愛で絶対に譲れないことは？","恋人にしてほしくないことは？","恋人にしてあげたいことは？","一緒に行きたい旅行先は？","呼ばれたいあだ名は？","呼ばれたい呼び方（呼び捨て・くん・さん）は？","手作りのお菓子をあげるなら何？","バレンタインに渡したい相手の名前を暴露して","誕生日を一番祝いたい人の名前を暴露して","今日いちばん話したい人の名前を暴露して","この部屋のメンバーで一番仲良くなりたい人は？","この部屋のメンバーの中で、恋愛相談をしたい人は？","この部屋のメンバーの中で、一番モテると思う人は？","この部屋のメンバーの中で、恋愛経験が多そうな人は？","この部屋のメンバーの中で、一番ピュアそうな人は？","この部屋のメンバーの中で、一番告白が上手そうな人は？","この部屋のメンバーの中で、付き合ったら尽くしてくれそうな人は？","この部屋のメンバーの中で、ヤキモチを焼きそうな人は？","この部屋のメンバーの中で、デートが楽しそうな人は？","好きな人のイニシャルを暴露して","好きな人の学年を暴露して","好きな人の部活を暴露して","好きな人の好きなところを3つ暴露して","好きな人とのエピソードを一つ暴露して","初恋のエピソードを暴露して","最近キュンとした出来事を暴露して","一番恥ずかしかった恋愛の失敗を暴露して","今まで誰にも言っていない恋バナを暴露して","好きな人にまだ言えていないことを暴露して","友達に隠している気になる人の特徴を暴露して","今、一番気になる人のタイプを暴露して","告白しようか迷っている人はいる？","もし今日告白されたらOKする？","もし明日告白するなら、誰に？名前を暴露して","クラスで付き合ってほしいカップルの名前を暴露して","クラスで実は両思いだと思うペアの名前を暴露して","学年で一番人気がありそうな人の名前を暴露して","自分の恋愛を点数にすると何点？理由も教えて","自分のモテ度を10点満点で言うと？","いま恋愛にかける熱量は10点満点でいくつ？","理想のデートプランを1分で話して","理想の告白シーンを一言で説明して","好きな人に初めて話しかけるときの一言は？"];
+SP.forEach(add);
+
+// 9) 多数決お題
+var VOTES=[],vset={};
+function addV(q,a,b){var k=q+"|"+a+"|"+b;if(!vset[k]){vset[k]=1;VOTES.push({q:q,a:a,b:b})}}
+function vpairs(l,qs){for(var i=0;i<l.length;i++)for(var j=i+1;j<l.length;j++)qs.forEach(function(q){addV(q,l[i],l[j])})}
+vpairs(TY,["付き合うならどっちのタイプ？","告白されたらOKしやすいのはどっち？","一緒にいて落ち着くのはどっち？","相談したくなるのはどっち？","修学旅行で同じ班になりたいのはどっち？","つい目で追ってしまうのはどっち？"]);
+vpairs(PL,["デートで行きたいのはどっち？","友達と遊びに行きたいのはどっち？","初デートにふさわしいのはどっち？"]);
+vpairs(AC,["放課後にしたいのはどっち？","好きな人と過ごしたいのはどっち？"]);
+vpairs(LV,["自分はどっち寄り？"]);
+[["告白は？","自分からする","待つ"],["付き合うなら？","年上","年下"],["連絡は？","毎日したい","たまにでいい"],["デートは？","インドア","アウトドア"],["告白の方法は？","直接会って","LINEで"],["恋人には？","尽くしたい","尽くされたい"],["好きな人の前では？","素直になる","ツンツンしてしまう"],["初恋は？","覚えている","あまり覚えていない"],["片思いと両思いなら？","片思いの方がドキドキする","両思いの方が幸せ"],["好きな人ができたら？","すぐ友達に話す","ずっと秘密にする"],["付き合う前の期間は？","長い方がいい","短い方がいい"],["恋愛と友情なら？","恋愛が大事","友情が大事"],["好きな人の呼び方は？","呼び捨て","さん・くん付け"],["デートの待ち合わせは？","現地集合","一緒に行く"],["恋人の条件は？","顔が好み","性格が合う"],["一目惚れは？","する","しない"],["プレゼントは？","形に残るもの","消えもの"],["記念日は？","毎月祝いたい","大事な日だけでいい"],["ケンカしたら？","自分から謝る","相手を待つ"],["恋人との時間は？","毎日会いたい","週末だけで十分"],["告白するなら？","放課後","休日"],["恋人にするなら？","同じクラスの人","他のクラスの人"],["恋人にするなら？","同じ部活の人","違う部活の人"],["好きな人と同じ班なら？","うれしい","緊張して困る"],["バレンタインは？","手作りを渡す","市販のものを渡す"],["好きな人にしたいのは？","相談","告白"],["恋愛相談するなら？","同性の友達","異性の友達"],["恋人の連絡頻度は？","多めがいい","少なめがいい"],["思い出に残るのは？","大きなイベント","何気ない日常"],["理想のカップルは？","いつも一緒の二人","それぞれの時間も大切にする二人"],["モテるなら？","たくさんの人に好かれたい","一人に深く愛されたい"],["付き合うなら？","面白い人","優しい人"],["好きな人の第一印象は？","大事","そこまで気にしない"],["振られたら？","すぐ次を探す","しばらく引きずる"],["告白されたら？","すぐ返事する","時間をもらう"],["恋愛ドラマは？","好き","あまり見ない"],["友達の恋は？","全力で応援する","見守る"],["好きな人のSNSは？","よく見る","あまり見ない"],["好きな人にもらうなら？","手紙","プレゼント"],["恋人に見せたいのは？","かっこいい・かわいい自分","ありのままの自分"],["恋人との旅行は？","計画しっかり","ノープラン"]].forEach(function(v){addV(v[0],v[1],v[2])});
 
 // ===== Firebase =====
 const firebaseConfig = {
@@ -121,17 +161,17 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var $=function(i){return document.getElementById(i)};
 var me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
-$("total").textContent=TOPICS.length;
+$("total").textContent=TOPICS.length+VOTES.length;
 
 function err(m){$("err").textContent=m}
-function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してね");return null}return n}
+function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}return n}
 function enter(c,host){code=c;isHost=host;roomRef=db.ref("rooms/"+c);joined=true;lastN=0;
  roomRef.onDisconnect().remove();
  roomRef.on("value",onRoom);
  $("home").classList.add("hide");$("room").classList.remove("hide");$("code").textContent=c;$("game").classList.add("hide")}
 $("create").onclick=function(){var n=myName();if(!n)return;err("");
  var c=String(Math.floor(1000+Math.random()*9000)),r=db.ref("rooms/"+c);
- r.once("value").then(function(s){if(s.exists()){err("もう一度押してね");return}
+ r.once("value").then(function(s){if(s.exists()){err("もう一度押してください");return}
   var o={host:me,started:false,round:{n:0},players:{}};o.players[me]={name:n};
   return r.set(o).then(function(){enter(c,true)})}).catch(function(e){err("接続エラー: "+e.message)})};
 $("join").onclick=function(){var n=myName();if(!n)return;err("");
@@ -144,32 +184,67 @@ function onRoom(s){
  if(!s.exists()){closeRoom();return}
  data=s.val();var ps=data.players||{},ids=Object.keys(ps);
  $("players").innerHTML="";
- ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");d.textContent=ps[id].name;$("players").appendChild(d)});
+ ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);$("players").appendChild(d)});
  isHost=(data.host===me);
  $("draw").classList.toggle("hide",!isHost);
  $("draw").disabled=ids.length<2||busy;
- $("draw").textContent=data.started?"次のお題へ！":"お題スタート！";
+ var rd0=data.round||{};$("draw").textContent=(data.started&&rd0.type==="vote"&&!rd0.reveal)?"結果を見る":(data.started?"次のお題へ":"ゲームスタート");
  $("wait").textContent=!data.started?(isHost?(ids.length<2?"もう1人参加を待っています…":"全員そろったらスタート！"):"ホストがスタートするのを待っています"):"";
  if(data.started&&data.round&&data.round.n!==lastN){lastN=data.round.n;play(data.round,ids.map(function(i){return ps[i].name}))}
+ renderVote();
 }
 function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);
  if(roomRef)roomRef.off();roomRef=null;busy=false;
  $("room").classList.add("hide");$("home").classList.remove("hide");err("誰かが退出したため、ルームは削除されました")}
 $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
- var t=TOPICS[Math.floor(Math.random()*TOPICS.length)],cand=ids.filter(function(i){return i!==lastPick}),p=cand[Math.floor(Math.random()*cand.length)];
- lastPick=p;$("draw").disabled=true;
- roomRef.update({started:true,round:{n:(data.round.n||0)+1,topic:t,name:ps[p].name}})};
+ var rd=data.round||{};
+ if(data.started&&rd.type==="vote"&&!rd.reveal){roomRef.child("round/reveal").set(true);return}
+ var n=(rd.n||0)+1,round;
+ if(Math.random()<0.25){var v=VOTES[Math.floor(Math.random()*VOTES.length)];round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false,name:""}}
+ else{var t=TOPICS[Math.floor(Math.random()*TOPICS.length)],cand=ids.filter(function(i){return i!==lastPick}),p=cand[Math.floor(Math.random()*cand.length)];lastPick=p;round={n:n,type:"ask",topic:t,name:ps[p].name}}
+ $("draw").disabled=true;
+ roomRef.update({started:true,round:round,votes:null})};
 
+var voteReady=false;
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function renderVote(){
+ var rd=data&&data.round,box=$("vote");
+ if(!rd||rd.type!=="vote"||!voteReady){box.classList.add("hide");return}
+ var ps=data.players||{},vs=data.votes||{},ids=Object.keys(ps);
+ var done=ids.filter(function(i){return vs[i]!==undefined}).length;
+ if(isHost&&!rd.reveal&&ids.length>1&&done>=ids.length){roomRef.child("round/reveal").set(true);return}
+ box.innerHTML="";box.classList.remove("hide");
+ var opts=[rd.a,rd.b];
+ if(!rd.reveal){
+  opts.forEach(function(o,i){var b=el("button","opt"+(vs[me]===i?" sel":""),o);b.onclick=function(){roomRef.child("votes/"+me).set(i)};box.appendChild(b)});
+  box.appendChild(el("div","hint","投票済み "+done+" / "+ids.length+(vs[me]===undefined?"　どちらかを選んでください":"　他の人を待っています（選び直せます）")));
+  $("msg").textContent="全員で多数決";
+ }else{
+  var c=[0,0];ids.forEach(function(id){if(vs[id]!==undefined)c[vs[id]]++});
+  var tot=(c[0]+c[1])||1;
+  opts.forEach(function(o,i){
+   var w=el("div","res"+(c[i]>c[1-i]?" win":"")),top=el("div","rtop");
+   top.appendChild(el("span","",o));top.appendChild(el("span","rc",c[i]+"票"));w.appendChild(top);
+   var bar=el("div","bar"),f=el("i");f.style.width=Math.round(c[i]/tot*100)+"%";bar.appendChild(f);w.appendChild(bar);
+   var nm=ids.filter(function(id){return vs[id]===i}).map(function(id){return ps[id].name}).join("、");
+   w.appendChild(el("div","rn2",nm||"なし"));box.appendChild(w)});
+  $("msg").textContent=c[0]===c[1]?"同票でした":(c[0]>c[1]?rd.a:rd.b)+" が多数派です";
+ }
+}
 function play(r,names){
- timers.forEach(clearTimeout);timers.forEach(clearInterval);timers=[];busy=true;$("draw").disabled=true;
- $("game").classList.remove("hide");$("msg").textContent="";$("topic").classList.remove("pop");$("pick").classList.remove("pop");$("pick").textContent="";
+ timers.forEach(clearTimeout);timers.forEach(clearInterval);timers=[];busy=true;voteReady=false;$("draw").disabled=true;
+ var isV=r.type==="vote";
+ $("game").classList.remove("hide");$("rn").textContent="第"+r.n+"問"+(isV?"　多数決":"");$("msg").textContent="";
+ $("vote").classList.add("hide");$("pickBox").classList.toggle("hide",isV);
+ $("topic").classList.remove("pop");$("pick").classList.remove("pop");$("pick").textContent="";
  $("topic").classList.add("spin");$("pick").classList.remove("spin");
  var i1=setInterval(function(){$("topic").textContent=TOPICS[Math.floor(Math.random()*TOPICS.length)]},70);timers.push(i1);
  timers.push(setTimeout(function(){clearInterval(i1);$("topic").classList.remove("spin");$("topic").textContent=r.topic;void $("topic").offsetWidth;$("topic").classList.add("pop");
+  if(isV){busy=false;voteReady=true;$("draw").disabled=!data||Object.keys(data.players||{}).length<2;renderVote();return}
   $("pick").classList.add("spin");
   var i2=setInterval(function(){$("pick").textContent=names[Math.floor(Math.random()*names.length)]},80);timers.push(i2);
   timers.push(setTimeout(function(){clearInterval(i2);$("pick").classList.remove("spin");$("pick").textContent=r.name;void $("pick").offsetWidth;$("pick").classList.add("pop");
-   $("msg").textContent="🎉 "+r.name+" さん、暴露タイム！";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<2},2400));
+   $("msg").textContent=r.name+" さん、答えてください";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<2},2400));
  },2600));
 }
 </script>
