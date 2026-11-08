@@ -82,11 +82,11 @@ html,body{overscroll-behavior:none}
 <div class="eyebrow">LEUS PARTY</div>
 <h1>レウスパーティ</h1>
 <div class="rule"></div>
-<p class="sub">暴露モードと大喜利モードで遊ぶ<br>オンラインパーティゲーム</p>
+<p class="sub">暴露モードとワードウルフで遊ぶ<br>オンラインパーティゲーム</p>
 <label>あなたの名前</label>
 <input id="name" maxlength="10" placeholder="例：あや">
 <label>モードを選んでルームを作る</label>
-<div class="modes"><button class="hm on" data-m="bakuro">暴露モード</button><button class="hm" data-m="ogiri">大喜利モード</button></div>
+<div class="modes"><button class="hm on" data-m="bakuro">暴露モード</button><button class="hm" data-m="wolf">ワードウルフ</button></div>
 <div class="hint" id="homeDesc" style="margin:8px 0 0"></div>
 <button class="main" id="create">ルームを作る</button>
 <label>ルーム番号で参加</label>
@@ -102,11 +102,11 @@ html,body{overscroll-behavior:none}
 <div class="modeTag" id="modeTag"></div>
 <div class="hint" id="modeDesc" style="margin:8px 0 18px"></div>
 <div id="game" class="hide">
-<div class="box"><div class="lab"><span>TOPIC</span><span id="rn"></span></div><div id="topic"></div></div>
+<div class="box" id="topicBox"><div class="lab"><span>TOPIC</span><span id="rn"></span></div><div id="topic"></div></div>
 <div class="box" id="pickBox"><div class="lab"><span>ANSWERER</span></div><div id="pick"></div></div>
 <div id="vote" class="hide"></div>
 <div id="msg"></div>
-<div class="hint">名前を聞かれたときは、フルネーム・下の名前・イニシャル・あだ名のどれでもOK</div>
+<div class="hint" id="nameHint">名前を聞かれたときは、フルネーム・下の名前・イニシャル・あだ名のどれでもOK</div>
 </div>
 <div id="wait" class="sub"></div>
 <button class="main" id="draw">ゲームスタート</button>
@@ -196,17 +196,8 @@ each(DR2,DR1,function(o,r){DRQ.push(o+"、"+r+"にあげるなら何？20秒で�
 TOPICS=TOPICS.filter(function(x){return x.charAt(0)!=="\u0000"});
 ["理想のデート","理想のプロポーズ","好きなタイプの顔","好きな人の特徴（似顔絵）","初恋の思い出の場面","理想の告白シーン","理想のお弁当","理想の相合傘","好きな人にあげたい手作りお菓子","理想の部屋","恋に落ちた瞬間","好きな人のイメージに近い動物","自分の恋愛を動物にすると","今の恋心を天気にすると","好きな人へのラブレターの封筒","理想の初デートの服","恋人とお揃いにしたいもの","恋人と行きたい旅行先","好きな人と食べたいもの","自分のモテ度のイメージ","恋愛あるあるの一コマ","好きな人と過ごしたい放課後","理想のバレンタインのお返し","好きな人のイメージカラーの持ち物","理想の恋人のシルエット","告白の返事を待つ自分","好きバレした瞬間の自分","好きな人を前にした自分","理想のカップルの後ろ姿","初デートの待ち合わせ","文化祭を好きな人と回る場面","夏祭りで好きな人と過ごす場面","好きな人と同じ班になった瞬間の自分","席替えで好きな人の隣になった自分","友達に恋バナをしている自分"].forEach(function(x){DRQ.push(x+"を20秒で絵に描いて")});
 
-// 13) 大喜利モード
-var OGP=["授業中","給食の時間","修学旅行のバス","体育の授業","文化祭の準備中","朝の通学電車","部活の練習中","家族との夕食中","友達の誕生日会","初デートの待ち合わせ","図書館","コンビニ","遊園地の行列","映画館","美容院","夏祭り","卒業式","面接","エレベーターの中","帰り道"];
-var OGE=["突然、先生が全員に「今から一発ギャグをして」と言った","隣の人が急に大声で恋の歌を歌い始めた","好きな人の名前が大音量の放送で呼ばれた","財布の中身が全部どんぐりになっていた","目の前の人が自分と全く同じ服を着ていた","知らない人に「久しぶり！」と抱きつかれた","隣に宇宙人が立っていた","スマホの画面に自分の黒歴史が大きく表示された","急に自分の声が全部ささやき声になった","猫がしゃべりかけてきた","周りの全員が同時に振り返ってこっちを見た","突然、会場から拍手が起こった","好きな人に変なあだ名をつけられた","自分だけ服が前後ろ逆だった","持ち物が全部ぬいぐるみになっていた","突然、時間が止まった","足元から小さなロボットが出てきた","目の前に突然ドアが現れた","先生が実は魔法使いだとバレた","かばんから謎の生き物が飛び出した","周りの全員がいきなりものまねを始めた","床が突然ふかふかになった","好きな人と同じ傘に入ることになった","雨が逆向きに降り始めた","自分の影が勝手に動き出した","全員の頭の上に今日の運勢が表示された"];
-var OGQ=[];
-OGP.forEach(function(p){OGE.forEach(function(e){OGQ.push(p+"、"+e+"。さあ、あなたはどうする？")})});
-["もし自分が漫画の主人公なら、タイトルは？","もし学校に新しい校則を一つ作れるなら？","もし先生が突然ラップを始めたら、返しのひと言は？","もし好きな人が実は宇宙人だったら、最初に何て言う？","もし朝起きたら教室が海になっていたら？","もし明日から1週間、語尾に「ござる」をつけるなら、どう過ごす？","もし1日だけ好きな動物になれるなら、何になって何をする？","もし世界一ダサい告白をするなら、何て言う？","もし自分専用の効果音が鳴るなら、どんなとき何の音？","もし給食に一品だけ好きなものを追加できるなら？","もしテストの答案に一言添えられるなら？","もし好きな人に一言で自分を売り込むなら？","もし自分のあだ名を自分で決められるなら？","もしクラスに宇宙人の転校生が来たら、歓迎の言葉は？","もし自分の部屋に突然ペンギンが住み着いたら？","もし1分間だけ透明人間になれるなら、何をする？","もし校長先生と入れ替わったら、朝礼で何を言う？","もし自分の人生に実況がついたら、今何て実況される？","もし好きな人にカレーを作るなら、隠し味は？","もし恋愛の神様に会えたら、一言目は？","もし未来の自分から手紙が届いたら、何と書いてある？","もし自分が発明家なら、何を発明する？","もし学校の七不思議に1つ加えるなら？","もし運動会に新種目を作るなら、名前と内容は？","もし自分の座右の銘を決めるなら？","もし好きな人への最初のLINEが誤送信されたら、何が届く？","もしバレンタインに変なチョコを渡すなら、何味？","もし時間割に新しい教科を追加するなら？","もし教室に自動販売機が置かれたら、何が売られている？","もし今日の日記にタイトルをつけるなら？"].forEach(function(x){OGQ.push(x)});
-var OGW=["これは何？一言で答えて","この謎の物体の名前と特徴を答えて","これは新商品です。商品名とキャッチコピーを答えて","これは新種の生き物です。名前と鳴き声を答えて","これは未来の発明品です。何に使う？","これは伝説の武器です。必殺技の名前は？","これは恋が叶うアイテムです。効果と副作用は？","これは名画です。タイトルをつけて","これは新しい校則を表した図です。どんな校則？","この形は何味？味の感想を答えて","これは動物園の新展示です。説明文を答えて","これは地図です。どこの宝の地図？","これは新しいスポーツのコートです。ルールは？","これは宇宙人からのメッセージです。何と書いてある？","これは新作ゲームの画面です。ゲームのタイトルは？","これは占いの結果です。あなたへの一言は？","これは新メニューの料理です。料理名は？","これは謎の建物です。何のためにある？","これは未来の乗り物です。名前と最高速度は？","これは先生の落書きです。何を描いた？","これは歴史的な発見です。博物館の説明文は？","これは新しいキャラクターです。名前と性格は？"];
-var OGD=[];
-OGE.forEach(function(e){["その瞬間の自分を20秒で絵に描いて","その場面を20秒で絵に描いて"].forEach(function(f){OGD.push(e.replace(/^突然、/,"")+"。"+f)})});
-OGP.forEach(function(p){OGD.push(p+"で起きたら一番面白い出来事を20秒で絵に描いて")});
-["世界一ダサいヒーロー","新種の生き物","未来の自動販売機","最強のお弁当","一番かっこ悪い告白シーン","ありえない校則","変なあだ名がついた理由の場面","宇宙人との初デート","先生の意外な休日","校長先生の秘密の趣味","世界一変な乗り物","恋のキューピッドの失敗","一番盛り上がらない文化祭の出し物","未来の教室","友達の変顔","この世にない新しい楽器","動物たちの運動会","最悪な寝ぐせの自分","ロボットが告白する場面","ペンギンの学校生活","一番おいしくなさそうな新作スイーツ","おばけの恋愛相談","自分の黒歴史の一場面","変な発明品を使っている自分","世界一あやしい占い師"].forEach(function(x){OGD.push(x+"を20秒で絵に描いて")});
+// 13) ワードウルフ用お題ペア（恋バナ限定）
+var WWP=[["初恋","片思い"],["告白","プロポーズ"],["両思い","相思相愛"],["一目惚れ","一途"],["ドキドキ","キュンキュン"],["ヤキモチ","嫉妬"],["ツンデレ","クーデレ"],["肉食系","草食系"],["三角関係","両片思い"],["ダブルデート","グループデート"],["屋上で告白","体育館裏で告白"],["夕焼けの帰り道","夜の公園"],["手紙で告白","LINEで告白"],["直接告白","電話で告白"],["遊園地デート","水族館デート"],["映画館","プラネタリウム"],["カフェ","ファミレス"],["動物園","植物園"],["ボウリング","カラオケ"],["花火大会","夏祭り"],["初詣","クリスマス"],["イルミネーション","クリスマスマーケット"],["バレンタイン","ホワイトデー"],["誕生日","記念日"],["文化祭","体育祭"],["修学旅行","遠足"],["卒業式","入学式"],["手をつなぐ","腕を組む"],["相合傘","二人乗り"],["壁ドン","頭ポンポン"],["あーん","ハグ"],["お姫様抱っこ","おんぶ"],["優しい人","面白い人"],["年上","年下"],["クール","天然"],["幼なじみ","同級生"],["先輩","後輩"],["笑顔","声"],["ロングヘア","ショートヘア"],["背が高い人","運動ができる人"],["頭がいい人","しっかり者"],["ラブレター","プレゼント"],["手作りチョコ","手作りクッキー"],["お揃いのキーホルダー","お揃いのストラップ"],["ペアリング","ネックレス"],["制服デート","私服デート"],["プリクラ","自撮り"],["ミサンガ","お守り"],["花束","ぬいぐるみ"],["マフラー","手袋"],["ひざ掛け","カイロ"],["お弁当","差し入れ"],["席替え","クラス替え"],["日直","委員会"],["図書室","保健室"],["放課後","昼休み"],["部活の応援","練習の見学"],["グループLINE","個別LINE"],["既読無視","未読スルー"],["おはようLINE","おやすみLINE"],["電話","ビデオ通話"],["好きバレ","両思いバレ"],["告白の返事待ち","告白の前日"],["隣の席","前の席"],["下校","登校"],["恋愛相談","恋バナ"],["連絡先交換","SNSフォロー"],["あだ名で呼ぶ","呼び捨てで呼ぶ"],["くん付け","さん付け"],["遠距離恋愛","同じクラスの恋愛"],["友達から恋人","一目惚れから恋人"],["失恋","振られる"],["未練","忘れられない恋"],["恋のライバル","恋のキューピッド"],["恋愛ソング","ラブコメ漫画"],["恋愛ドラマ","恋愛映画"],["理想のデート","理想の告白"],["初めて手をつないだ日","初めて名前を呼ばれた日"],["初デートの待ち合わせ","初デートの帰り道"],["相談相手","応援してくれる友達"],["恋占い","おまじない"],["ラッキーアイテム","恋のお守り"],["モテ期","青春"],["好きなタイプ","理想の恋人"]];
 
 // ===== Firebase =====
 const firebaseConfig = {
@@ -223,7 +214,7 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var $=function(i){return document.getElementById(i)};
 var myNm="",me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
-$("total").textContent=TOPICS.length+VOTES.length+PVQ.length+SAYQ.length+DRQ.length+OGQ.length+OGW.length+OGD.length;
+$("total").textContent=TOPICS.length+VOTES.length+PVQ.length+SAYQ.length+DRQ.length+WWP.length;
 
 function err(m){$("err").textContent=m}
 function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}myNm=n;return n}
@@ -241,7 +232,7 @@ $("join").onclick=function(){var n=myName();if(!n)return;err("");
  r.once("value").then(function(s){if(!s.exists()||!s.child("players").exists()){if(s.exists())r.remove();err("ルームが見つかりません");return}
   return r.child("players/"+me).set({name:n}).then(function(){enter(c,false)})}).catch(function(e){err("接続エラー: "+e.message)})};
 function armDisc(){roomRef.child("players/"+me).onDisconnect().remove();roomRef.child("votes/"+me).onDisconnect().remove();roomRef.child("answers/"+me).onDisconnect().remove();roomRef.child("draws/"+me).onDisconnect().remove()}
-function leaveRoom(){if(!roomRef)return;var r=roomRef;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);r.off();
+function leaveRoom(){if(!roomRef)return;var r=roomRef;joined=false;wwClear();timers.forEach(clearTimeout);timers.forEach(clearInterval);r.off();
  r.child("players/"+me).onDisconnect().cancel();r.child("votes/"+me).onDisconnect().cancel();r.child("answers/"+me).onDisconnect().cancel();r.child("answers/"+me).remove();r.child("draws/"+me).onDisconnect().cancel();r.child("draws/"+me).remove();
  r.child("votes/"+me).remove();
  r.child("players/"+me).remove().then(function(){return r.child("players").once("value")}).then(function(x){if(!x.exists())return r.remove()});
@@ -254,36 +245,40 @@ function onRoom(s){
  if(!ps[me]){roomRef.child("players/"+me).set({name:myNm});armDisc();return}
  if(!ps[data.host]&&ids.slice().sort()[0]===me)roomRef.child("host").set(me);
  $("players").innerHTML="";
- ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);if(data.mode==="ogiri"){var pt=document.createElement("em");pt.textContent=((data.scores||{})[id]||0)+"pt";d.appendChild(pt)}$("players").appendChild(d)});
+ ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);if(data.mode==="wolf"){var pt=document.createElement("em");pt.textContent=((data.scores||{})[id]||0)+"pt";d.appendChild(pt)}$("players").appendChild(d)});
  isHost=(data.host===me);
- var md=data.mode||"bakuro";$("modeTag").textContent=md==="ogiri"?"大喜利モード":"暴露モード";
- $("modeDesc").textContent=md==="ogiri"?"お題に面白く答えて、投票で一番面白い人を決めるモード":"名前や本音を暴露し合うモード";
+ var md=data.mode||"bakuro";$("modeTag").textContent=md==="wolf"?"ワードウルフ":"暴露モード";
+ $("modeDesc").textContent=md==="wolf"?"恋バナのお題で話して、みんなと違うお題のウルフを見破るモード":"名前や本音を暴露し合うモード";
  $("draw").classList.toggle("hide",!isHost);
- $("draw").disabled=ids.length<2||busy;
- var rd0=data.round||{};$("draw").textContent=btnLabel(data);
- $("wait").textContent=!data.started?(isHost?(ids.length<2?"もう1人参加を待っています…":"全員そろったらスタート！"):"ホストがスタートするのを待っています"):"";
+ var rd0=data.round||{};
+ $("draw").disabled=ids.length<minP()||busy;$("draw").textContent=btnLabel(data);
+ $("wait").textContent=!data.started?(isHost?(ids.length<minP()?(data.mode==="wolf"?"ワードウルフは3人から遊べます（あと"+(minP()-ids.length)+"人）":"もう1人参加を待っています…"):"全員そろったらスタート！"):"ホストがスタートするのを待っています"):"";
  if(data.started&&data.round&&data.round.n!==lastN){lastN=data.round.n;play(data.round,ids.map(function(i){return ps[i].name}))}
  renderVote();
 }
-function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);
+function closeRoom(){if(!joined)return;joined=false;wwClear();timers.forEach(clearTimeout);timers.forEach(clearInterval);
  if(roomRef)roomRef.off();roomRef=null;busy=false;
  $("room").classList.add("hide");$("home").classList.remove("hide");err("ルームが終了しました")}
 function btnLabel(d){var r=d.round||{};if(!d.started)return"ゲームスタート";
+ if(r.type==="ww")return({talk:"投票へ進む",vote:"結果を見る",result:"次のゲームへ"})[r.phase]||"次のゲームへ";
  if(r.type==="vote"||r.type==="pvote")return r.reveal?"次のお題へ":"結果を見る";
- if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";if((r.shown||0)<r.order.length)return"次の回答を見る";if(r.og){if(!r.vphase)return"投票スタート";if(!r.reveal)return"結果を見る"}return"次のお題へ"}
+ if(r.type==="say"||r.type==="draw"){if(!r.order)return r.type==="draw"?"絵を公開する":"回答を公開する";if((r.shown||0)<r.order.length)return"次の回答を見る";return"次のお題へ"}
  return"次のお題へ"}
-$("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
+$("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<minP())return;
  var rd=data.round||{},T=rd.type;
  if(data.started){
+  if(T==="ww"){if(rd.phase==="talk"){roomRef.child("round/phase").set("vote");return}if(rd.phase==="vote"){wwFinish();return}}
   if((T==="vote"||T==="pvote")&&!rd.reveal){advance();return}
-  if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}if(rd.og){if(!rd.vphase){roomRef.child("round/vphase").set(true);return}if(!rd.reveal){advance();return}}}
+  if(T==="say"||T==="draw"){if(!rd.order){advance();return}if((rd.shown||0)<rd.order.length){roomRef.child("round/shown").set((rd.shown||0)+1);return}}
  }
  var n=(rd.n||0)+1,round,x=Math.random();
  function pk(a){return a[Math.floor(Math.random()*a.length)]}
- if(data.mode==="ogiri"){var y=Math.random();
-  if(y<0.4)round={n:n,type:"say",og:true,topic:pk(OGQ),shown:0};
-  else if(y<0.65)round={n:n,type:"say",og:true,fig:Math.floor(Math.random()*1e9),topic:pk(OGW),shown:0};
-  else round={n:n,type:"draw",og:true,topic:pk(OGD),shown:0}}
+ if(data.mode==="wolf"){
+  var pr,tries=0;do{pr=pk(WWP);tries++}while(wwUsed.indexOf(pr[0]+"|"+pr[1])>=0&&tries<50);
+  wwUsed.push(pr[0]+"|"+pr[1]);if(wwUsed.length>=WWP.length-3)wwUsed=[];
+  var flip=Math.random()<.5,cw=flip?pr[0]:pr[1],xw=flip?pr[1]:pr[0],wolf=pk(ids),words={};
+  ids.forEach(function(i){words[i]=(i===wolf)?xw:cw});
+  round={n:n,type:"ww",topic:"ワードウルフ",phase:"talk",startAt:firebase.database.ServerValue.TIMESTAMP,wolf:wolf,words:words,cw:cw,xw:xw}}
  else if(x<0.15){var v=pk(VOTES);round={n:n,type:"vote",topic:v.q,a:v.a,b:v.b,reveal:false}}
  else if(x<0.29){round={n:n,type:"pvote",topic:pk(PVQ),reveal:false}}
  else if(x<0.43){round={n:n,type:"say",topic:pk(SAYQ),shown:0}}
@@ -293,6 +288,88 @@ $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.
  var u={started:true,round:round,votes:null,answers:null,draws:null};if(!data.started)u.scores=null;roomRef.update(u)};
 
 var voteReady=false;
+
+// ===== ワードウルフ =====
+var wwIv=null,svOff=0,WW_SEC=180,wwUsed=[];
+db.ref(".info/serverTimeOffset").on("value",function(x){svOff=x.val()||0});
+function minP(){return data&&data.mode==="wolf"?3:2}
+function wwClear(){if(wwIv){clearInterval(wwIv);wwIv=null}}
+function wwHead(rd,tag){var l=el("div","lab");l.appendChild(el("span","","第"+rd.n+"戦　ワードウルフ"));l.appendChild(el("span","",tag));return l}
+function wwConclude(outcome){var rd=data.round,n=rd.n,ps=data.players||{},ids=Object.keys(ps);
+ roomRef.child("round").transaction(function(r){if(!r||r.n!==n||r.phase==="result")return;r.phase="result";r.outcome=outcome;return r},function(e,ok){
+  if(e||!ok)return;
+  var w=rd.wolf,words=rd.words||{};
+  function addSc(i,v){roomRef.child("scores/"+i).transaction(function(x){return(x||0)+v})}
+  if(outcome==="citizen")ids.forEach(function(i){if(i!==w&&words[i]!==undefined)addSc(i,1)});
+  else if(outcome==="wolf"&&ps[w])addSc(w,2)})}
+function wwFinish(){var rd=data.round;if(!rd||rd.type!=="ww"||rd.phase!=="vote")return;
+ var key="wwf"+rd.n;if(advKey===key)return;advKey=key;
+ var ps=data.players||{},words=rd.words||{},part=Object.keys(ps).filter(function(i){return words[i]!==undefined}),vs=data.votes||{},cnt={},mx=0;
+ part.forEach(function(i){cnt[i]=0});
+ part.forEach(function(i){var t=vs[i];if(t!==undefined&&cnt[t]!==undefined)cnt[t]++});
+ part.forEach(function(i){if(cnt[i]>mx)mx=cnt[i]});
+ var tops=part.filter(function(i){return mx>0&&cnt[i]===mx});
+ if(!ps[rd.wolf]){wwConclude("none");return}
+ if(tops.length===1&&tops[0]===rd.wolf)wwConclude("citizen");
+ else wwConclude("wolf")}
+function renderWW(rd,box){
+ var ps=data.players||{},ids=Object.keys(ps),words=rd.words||{},myw=words[me],ph=rd.phase,vs=data.votes||{};
+ var part=ids.filter(function(i){return words[i]!==undefined});
+ function nm(list){return list.map(function(i){return ps[i]?ps[i].name:"（退出）"}).join("、")}
+ var wolfNm=ps[rd.wolf]?ps[rd.wolf].name:"（退出）";
+ if(ph==="talk"){
+  var key="ww"+rd.n+"t";
+  if(box.dataset.k!==key){
+   wwClear();box.dataset.k=key;box.innerHTML="";
+   var c=el("div","box");c.appendChild(wwHead(rd,"TALK"));
+   if(myw===undefined){c.appendChild(el("div","hint","このゲームの途中から参加しました。次のゲームから遊べます"))}
+   else{
+    var wd=el("div","",myw);wd.id="wwWord";wd.className="pop";wd.style.cssText="font-family:var(--serif);font-size:34px;font-weight:700;color:var(--acc);text-align:center;padding:16px 0 12px;letter-spacing:.06em;word-break:break-all";
+    c.appendChild(wd);
+    var tw=el("div","tools");tw.style.marginTop="2px";
+    var tg=el("button","tl","お題を隠す");tg.onclick=function(){var h=wd.dataset.h==="1";wd.dataset.h=h?"0":"1";wd.textContent=h?myw:"・・・・・";tg.textContent=h?"お題を隠す":"お題を見る"};
+    tw.appendChild(tg);c.appendChild(tw);
+    c.appendChild(el("div","hint","このお題で恋バナをしよう。他の人と話がかみ合わない人が、ひとりだけいる「ウルフ」かも。自分のお題は直接言わないでね。話し合いは口頭やチャットでどうぞ"))}
+   box.appendChild(c);
+   var tm=el("div","","");tm.id="wwTm";tm.style.cssText="font-family:var(--serif);font-size:22px;text-align:center;color:var(--acc);letter-spacing:.08em;margin-top:16px";box.appendChild(tm);
+   var tick=function(){var e=$("wwTm"),r=data&&data.round;if(!e||!r||r.type!=="ww"||r.phase!=="talk"){wwClear();return}
+    if(!r.startAt){e.textContent="";return}
+    var left=Math.max(0,Math.ceil((r.startAt+WW_SEC*1000-(Date.now()+svOff))/1000));
+    e.textContent=left>0?"残り "+Math.floor(left/60)+":"+("0"+left%60).slice(-2):"時間です！投票へ進みましょう"};
+   wwIv=setInterval(tick,500);tick()}
+  $("msg").textContent="話し合いがまとまったら、ホストが投票へ進めます";
+  return}
+ if(ph==="vote"){
+  wwClear();box.dataset.k="";box.innerHTML="";
+  var done=part.filter(function(i){return vs[i]!==undefined}).length;
+  if(isHost&&part.length>=3&&done>=part.length){wwFinish();return}
+  var c2=el("div","box");c2.appendChild(wwHead(rd,"VOTE"));
+  c2.appendChild(el("div","hint",myw===undefined?"このゲームの途中から参加したため、投票は見学です":"ウルフ（みんなと違うお題の人）だと思う人に投票。選び直しもできます"));
+  box.appendChild(c2);
+  if(myw!==undefined)part.filter(function(i){return i!==me}).forEach(function(id){
+   var b=el("button","opt"+(vs[me]===id?" sel":""),ps[id].name);b.onclick=function(){roomRef.child("votes/"+me).set(id)};box.appendChild(b)});
+  box.appendChild(el("div","hint","投票済み "+done+" / "+part.length));
+  $("msg").textContent="ウルフだと思う人に投票してください";
+  return}
+ // result
+ wwClear();box.dataset.k="";box.innerHTML="";
+ var oc=rd.outcome,title,sub;
+ if(oc==="citizen"){title="市民の勝ち！";sub="ウルフを見破りました　市民に+1pt"}
+ else if(oc==="wolf"){title="ウルフの逃げ切り！";sub="ウルフを見破れませんでした　ウルフに+2pt"}
+ else{title="ノーゲーム";sub="ウルフが退出したため、ポイントはありません"}
+ var wb=el("div","box");wb.appendChild(wwHead(rd,"RESULT"));
+ var tt=el("div","",title);tt.style.cssText="font-family:var(--serif);font-size:26px;font-weight:700;color:var(--acc);text-align:center;padding:8px 0";wb.appendChild(tt);
+ wb.appendChild(el("div","hint",sub));box.appendChild(wb);
+ var ic=el("div","ans");ic.appendChild(el("div","an","ウルフは "+wolfNm+" さん"));
+ ic.appendChild(el("div","at","市民のお題：「"+rd.cw+"」\nウルフのお題：「"+rd.xw+"」"));box.appendChild(ic);
+ var cnt={},mx=0;part.forEach(function(i){cnt[i]=0});
+ part.forEach(function(i){var t=vs[i];if(t!==undefined&&cnt[t]!==undefined)cnt[t]++});
+ var so=part.slice().sort(function(a,b){return cnt[b]-cnt[a]});mx=so.length?cnt[so[0]]:0;
+ var lb3=el("div","lab","");lb3.style.marginTop="22px";lb3.appendChild(el("span","","投票結果"));box.appendChild(lb3);
+ so.forEach(function(id){var w=el("div","res"+(mx>0&&cnt[id]===mx?" win":"")),top=el("div","rtop");
+  top.appendChild(el("span","",ps[id].name+(id===rd.wolf?"（ウルフ）":"")));top.appendChild(el("span","rc",cnt[id]+"票"));w.appendChild(top);
+  w.appendChild(el("div","rn2",nm(part.filter(function(v){return vs[v]===id}))||"なし"));box.appendChild(w)});
+ $("msg").textContent=""}
 function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
 function buildCanvas(box){
  var W=360,cv=el("canvas");cv.id="drCv";cv.width=W;cv.height=W;
@@ -330,21 +407,17 @@ function drawFig(cv,seed){var W=cv.width,c=cv.getContext("2d"),s=seed>>>0;functi
   if(k===0)c.arc(x,y,r,0,7);else if(k===1)c.rect(x-r,y-r/2,r*2,r);else if(k===2){c.moveTo(x,y-r);c.lineTo(x+r,y+r);c.lineTo(x-r,y+r);c.closePath()}else{c.moveTo(x-r,y);c.bezierCurveTo(x-r/2,y-r*1.5,x+r/2,y+r*1.5,x+r,y)}
   if(k===3||rnd()<.4)c.stroke();else c.fill()}}
 function figEl(seed){var c=el("canvas","fig");c.width=360;c.height=360;drawFig(c,seed);return c}
-function lblOf(r){if(r.og)return r.type==="draw"?"　大喜利・イラスト":(r.fig!==undefined?"　大喜利・これは何？":"　大喜利・回答");returnlblOf(r)}
-var selMode="bakuro",HD={bakuro:"名前や本音を暴露し合うモード",ogiri:"お題に面白く答えて、投票で一番面白い人を決めるモード"};
+var selMode="bakuro",HD={bakuro:"名前や本音を暴露し合うモード",wolf:"恋バナのお題で話して、みんなと違うお題のウルフを見破るモード"};
 function setHome(){document.querySelectorAll(".hm").forEach(function(b){b.classList.toggle("on",b.dataset.m===selMode)});$("homeDesc").textContent=HD[selMode]}
 document.querySelectorAll(".hm").forEach(function(b){b.onclick=function(){selMode=b.dataset.m;setHome()}});setHome();
 function advance(){var rd=data.round,ids=Object.keys(data.players||{});
  var key=rd.n+"|"+(rd.order?"o":"i")+(rd.vphase?"v":"");if(advKey===key)return;advKey=key;
  if((rd.type==="say"||rd.type==="draw")&&!rd.order)roomRef.child("round").update({order:shuf(ids),shown:1});
- else if(rd.og&&rd.vphase){var vs=data.votes||{},cnt={};
-  ids.forEach(function(i){var t=vs[i];if(t&&ids.indexOf(t)>=0)cnt[t]=(cnt[t]||0)+1});
-  Object.keys(cnt).forEach(function(i){roomRef.child("scores/"+i).transaction(function(v){return(v||0)+cnt[i]})});
-  roomRef.child("round/reveal").set(true)}
  else roomRef.child("round/reveal").set(true)}
 
 function renderVote(){
  var rd=data&&data.round,box=$("vote"),T=rd&&rd.type;
+ if(T==="ww"){if(!voteReady){box.classList.add("hide");return}box.classList.remove("hide");renderWW(rd,box);return}
  if(!rd||(T!=="vote"&&T!=="pvote"&&T!=="say"&&T!=="draw")||!voteReady){box.classList.add("hide");return}
  var ps=data.players||{},ids=Object.keys(ps),vs=data.votes||{},an=(T==="draw"?data.draws:data.answers)||{};
  var src=(T==="say"||T==="draw")?an:vs,done=ids.filter(function(i){return src[i]!==undefined}).length;
@@ -358,32 +431,11 @@ function renderVote(){
   return}
  if(T==="say"&&!started){
   if(box.dataset.k!=="say"+rd.n){box.dataset.k="say"+rd.n;box.innerHTML="";
-   if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));var ta=el("textarea");ta.id="sayTa";ta.maxLength=80;ta.rows=3;ta.placeholder=rd.og?"面白い答えを入力（80文字まで）":"あなたならどうする？（80文字まで）";ta.value=an[me]||"";box.appendChild(ta);
+   if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));var ta=el("textarea");ta.id="sayTa";ta.maxLength=80;ta.rows=3;ta.placeholder="あなたならどうする？（80文字まで）";ta.value=an[me]||"";box.appendChild(ta);
    var sb=el("button","opt","回答を送信");sb.onclick=function(){var v=ta.value.trim();if(!v)return;roomRef.child("answers/"+me).set(v);sb.textContent="送信済み（もう一度押すと修正できます）"};box.appendChild(sb);
    var ct=el("div","hint","");ct.id="sayCnt";box.appendChild(ct)}
   $("sayCnt").textContent="回答済み "+done+" / "+ids.length;
   $("msg").textContent="全員が送信すると、一人ずつ公開されます";
-  return}
- if(rd.og&&started&&rd.vphase&&(T==="say"||T==="draw")){
-  var vd=ids.filter(function(i){return vs[i]!==undefined}).length;
-  if(isHost&&!rd.reveal&&ids.length>1&&vd>=ids.length){advance();return}
-  box.dataset.k="";box.innerHTML="";
-  if(rd.fig!==undefined)box.appendChild(figEl(rd.fig));
-  var oo=rd.order.filter(function(i){return ps[i]});
-  var content=function(h,id){if(T==="draw"&&an[id]){var im=el("img","dr");im.src=an[id];h.appendChild(im)}else h.appendChild(el("div","at",an[id]!==undefined&&an[id]!==""?an[id]:"（なし）"))};
-  if(!rd.reveal){
-   box.appendChild(el("div","hint","一番面白かった回答に投票（自分には投票できません）"));
-   oo.forEach(function(id){var b=el("button","opt vt"+(vs[me]===id?" sel":""));b.appendChild(el("div","an",ps[id].name+(id===me?"（あなた）":"")));content(b,id);b.disabled=(id===me);b.onclick=function(){roomRef.child("votes/"+me).set(id)};box.appendChild(b)});
-   box.appendChild(el("div","hint","投票済み "+vd+" / "+ids.length));
-   $("msg").textContent="面白かった人に投票してください";
-  }else{
-   var cn={},all=0;ids.forEach(function(i){cn[i]=0});
-   ids.forEach(function(i){var t=vs[i];if(t!==undefined&&cn[t]!==undefined){cn[t]++;all++}});
-   var so=ids.slice().sort(function(a,b){return cn[b]-cn[a]}),mx=cn[so[0]]||0;
-   so.forEach(function(id){row(ps[id].name,cn[id],all||1,nm(ids.filter(function(v){return vs[v]===id})),mx>0&&cn[id]===mx)});
-   var tp=so.filter(function(id){return mx>0&&cn[id]===mx});
-   $("msg").textContent=!tp.length?"投票がありませんでした":"一番面白かったのは "+nm(tp)+" さん";
-  }
   return}
  box.dataset.k="";box.innerHTML="";
  function row(label,n,tot,names,win){var w=el("div","res"+(win?" win":"")),top=el("div","rtop");
@@ -427,6 +479,8 @@ function renderVote(){
 }
 function play(r,names){
  timers.forEach(clearTimeout);timers.forEach(clearInterval);timers=[];busy=true;voteReady=false;$("draw").disabled=true;
+ wwClear();var isW=r.type==="ww";$("topicBox").classList.toggle("hide",isW);$("nameHint").classList.toggle("hide",isW);
+ if(isW){$("game").classList.remove("hide");$("pickBox").classList.add("hide");$("vote").dataset.k="";$("msg").textContent="";busy=false;voteReady=true;$("draw").disabled=!data||Object.keys(data.players||{}).length<minP();renderVote();return}
  var isV=(r.type==="vote"||r.type==="pvote"||r.type==="say"||r.type==="draw");
  $("game").classList.remove("hide");$("rn").textContent="第"+r.n+"問"+({vote:"　多数決",pvote:"　指名投票",say:"　全員回答",draw:"　お絵かき"})[r.type]||"";$("msg").textContent="";
  $("vote").classList.add("hide");$("vote").dataset.k="";$("pickBox").classList.toggle("hide",isV);
@@ -434,11 +488,11 @@ function play(r,names){
  $("topic").classList.add("spin");$("pick").classList.remove("spin");
  var i1=setInterval(function(){$("topic").textContent=TOPICS[Math.floor(Math.random()*TOPICS.length)]},70);timers.push(i1);
  timers.push(setTimeout(function(){clearInterval(i1);$("topic").classList.remove("spin");$("topic").textContent=r.topic;void $("topic").offsetWidth;$("topic").classList.add("pop");
-  if(isV){busy=false;voteReady=true;$("draw").disabled=!data||Object.keys(data.players||{}).length<2;renderVote();return}
+  if(isV){busy=false;voteReady=true;$("draw").disabled=!data||Object.keys(data.players||{}).length<minP();renderVote();return}
   $("pick").classList.add("spin");
   var i2=setInterval(function(){$("pick").textContent=names[Math.floor(Math.random()*names.length)]},80);timers.push(i2);
   timers.push(setTimeout(function(){clearInterval(i2);$("pick").classList.remove("spin");$("pick").textContent=r.name;void $("pick").offsetWidth;$("pick").classList.add("pop");
-   $("msg").textContent=r.name+" さん、答えてください";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<2},2400));
+   $("msg").textContent=r.name+" さん、答えてください";busy=false;if(data)$("draw").disabled=Object.keys(data.players||{}).length<minP()},2400));
  },2600));
 }
 </script>
