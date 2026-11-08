@@ -79,8 +79,8 @@ button:active{transform:scale(.98)}
 </div>
 <div id="wait" class="sub"></div>
 <button class="main" id="draw">ゲームスタート</button>
-<button class="ghost" id="leave">退出する（ルームは削除されます）</button>
-<div class="cnt">収録お題 <span id="total"></span> 通り<br>誰かが抜けるとルームは削除されます</div>
+<button class="ghost" id="leave">退出する</button>
+<div class="cnt">収録お題 <span id="total"></span> 通り<br>全員が抜けるとルームは削除されます</div>
 </section>
 </main>
 
@@ -160,29 +160,37 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var $=function(i){return document.getElementById(i)};
-var me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
+var myNm="",me=Math.random().toString(36).slice(2,10),roomRef=null,code="",isHost=false,joined=false,lastN=0,timers=[],busy=false,data=null,lastPick="";
 $("total").textContent=TOPICS.length+VOTES.length;
 
 function err(m){$("err").textContent=m}
-function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}return n}
+function myName(){var n=$("name").value.trim();if(!n){err("名前を入力してください");return null}myNm=n;return n}
 function enter(c,host){code=c;isHost=host;roomRef=db.ref("rooms/"+c);joined=true;lastN=0;
- roomRef.onDisconnect().remove();
+ armDisc();
  roomRef.on("value",onRoom);
  $("home").classList.add("hide");$("room").classList.remove("hide");$("code").textContent=c;$("game").classList.add("hide")}
 $("create").onclick=function(){var n=myName();if(!n)return;err("");
  var c=String(Math.floor(1000+Math.random()*9000)),r=db.ref("rooms/"+c);
- r.once("value").then(function(s){if(s.exists()){err("もう一度押してください");return}
+ r.once("value").then(function(s){if(s.exists()&&s.child("players").exists()){err("もう一度押してください");return}
   var o={host:me,started:false,round:{n:0},players:{}};o.players[me]={name:n};
   return r.set(o).then(function(){enter(c,true)})}).catch(function(e){err("接続エラー: "+e.message)})};
 $("join").onclick=function(){var n=myName();if(!n)return;err("");
  var c=$("codeIn").value.trim(),r=db.ref("rooms/"+c);
- r.once("value").then(function(s){if(!s.exists()){err("ルームが見つかりません");return}
+ r.once("value").then(function(s){if(!s.exists()||!s.child("players").exists()){if(s.exists())r.remove();err("ルームが見つかりません");return}
   return r.child("players/"+me).set({name:n}).then(function(){enter(c,false)})}).catch(function(e){err("接続エラー: "+e.message)})};
-$("leave").onclick=function(){if(roomRef)roomRef.remove()};
+function armDisc(){roomRef.child("players/"+me).onDisconnect().remove();roomRef.child("votes/"+me).onDisconnect().remove()}
+function leaveRoom(){if(!roomRef)return;var r=roomRef;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);r.off();
+ r.child("players/"+me).onDisconnect().cancel();r.child("votes/"+me).onDisconnect().cancel();
+ r.child("votes/"+me).remove();
+ r.child("players/"+me).remove().then(function(){return r.child("players").once("value")}).then(function(x){if(!x.exists())return r.remove()});
+ roomRef=null;busy=false;$("room").classList.add("hide");$("home").classList.remove("hide");err("")}
+$("leave").onclick=leaveRoom;
 
 function onRoom(s){
  if(!s.exists()){closeRoom();return}
  data=s.val();var ps=data.players||{},ids=Object.keys(ps);
+ if(!ps[me]){roomRef.child("players/"+me).set({name:myNm});armDisc();return}
+ if(!ps[data.host]&&ids.slice().sort()[0]===me)roomRef.child("host").set(me);
  $("players").innerHTML="";
  ids.forEach(function(id){var d=document.createElement("div");d.className="pl"+(id===data.host?" h":"");var av=document.createElement("b");av.textContent=ps[id].name.charAt(0);var nm=document.createElement("span");nm.textContent=ps[id].name;d.appendChild(av);d.appendChild(nm);$("players").appendChild(d)});
  isHost=(data.host===me);
@@ -195,7 +203,7 @@ function onRoom(s){
 }
 function closeRoom(){if(!joined)return;joined=false;timers.forEach(clearTimeout);timers.forEach(clearInterval);
  if(roomRef)roomRef.off();roomRef=null;busy=false;
- $("room").classList.add("hide");$("home").classList.remove("hide");err("誰かが退出したため、ルームは削除されました")}
+ $("room").classList.add("hide");$("home").classList.remove("hide");err("ルームが終了しました")}
 $("draw").onclick=function(){if(!data)return;var ps=data.players||{},ids=Object.keys(ps);if(ids.length<2)return;
  var rd=data.round||{};
  if(data.started&&rd.type==="vote"&&!rd.reveal){roomRef.child("round/reveal").set(true);return}
